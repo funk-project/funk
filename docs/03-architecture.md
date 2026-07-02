@@ -55,7 +55,7 @@ The reactive model is not a library we add — it is **Go's native concurrency, 
 | `onNext(v)` | `ch <- v` |
 | `onComplete` | `close(ch)` |
 | `onError` / end a scope | cancel a `context.Context` |
-| scope (flow, loop iteration, `if` branch) | a child `context` |
+| scope (function, loop iteration, `if` branch) | a child `context` |
 | control terminals (`return`/`exit`/`break`/`continue`) | cancel / complete the target scope |
 
 - **Everything is a stream.** A single value is a stream of length 1 — one uniform model; the
@@ -97,7 +97,7 @@ the streaming.
   For finite pipelines it streams to completion; for infinite ones it is a *deployment* you
   observe and stop. Lifecycle: `funk run` (foreground stream) / detached deployment,
   `funk ps` / `funk logs` / `funk stop`.
-- **Scoped runs (partial execution).** `run` can target the **whole flow**, a **single
+- **Scoped runs (partial execution).** `run` can target the **whole function**, a **single
   function** (`funk run <fn> --input …` → inspect its output), or a **segment** (inject a value
   at an intermediate node and run downstream). Any node or slice is independently runnable
   because every function shares the typed NDJSON calling convention — the test/probe substrate

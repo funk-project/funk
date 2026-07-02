@@ -20,8 +20,7 @@ and rewrites.
 ```
 package "…" { … }     ; the module manifest (one per package)
 type Name { … }       ; a named type / schema
-fn name { … }         ; a function
-flow name { … }       ; a workflow
+fn name { … }         ; a function — atomic (src) or composite (body)
 ```
 
 **Expressions are prefix forms:** `(head arg arg …)`. There is no infix; sugar desugars 1:1 to
@@ -43,13 +42,25 @@ One uniform model; the engine optimizes the length-1 case.
   ```
   type User { name Str  age Num }
   ```
-- **Ports** (function / flow in/out) carry types: `(x Num)`, `(items Stream<Json>)`.
+- **Ports** (a function's in/out) carry types: `(x Num)`, `(items Stream<Json>)`.
 - The compiler **type-checks** that a producer's output type is compatible with each consumer's
   input port. `Any` / `Json` are wildcards.
 - **(proposal)** explicit `Stream<T>` when you want to be precise; otherwise `T` is a stream.
 
 ## 4. Functions — `fn`
 
+**Everything is a function.** `fn` is the *only* definition block — there is no separate `flow`.
+A function has a typed signature (`in` / `out`) and communicates as streams. It has one of two
+natures, decided by **which field you fill** — `src` **or** `body`, never both:
+
+- **atomic** — `src` + `engine`: a leaf that runs code in some runtime, per item.
+- **composite** — `body`: a composition of other functions; the graph is *derived* from `body`.
+
+A caller **cannot tell the two apart** — both present the same typed stream signature. That is
+what makes composition uniform: a composite function is called exactly like an atomic one, and
+functions import functions by address.
+
+**Atomic:**
 ```
 fn dbl {
   doc  "double a number"
@@ -61,23 +72,10 @@ fn dbl {
 }
 ```
 
-Fields: `doc`, `in` (ports), `out` (ports), `engine` (`python` | `go` | `claude` | `builtin` |
-…), `requires` (`(pip …) (go …) (os …)`), `src` (the body), `effects` **(proposal)**.
-
-**Calling convention** — a function body is a **stream processor**: it reads **NDJSON on
-stdin** (one object per `onNext`) and writes **NDJSON on stdout** (one per emitted value). The
-runtime **wraps the user's per-item body in the stream loop**, so simple bodies stay simple
-(`return n * 2` runs once per item). Flavors follow from arity:
-
-- **source** — `in ()`, `out (…)`: a generator (emits N, possibly forever).
-- **transform** — per-item map.
-- **sink / aggregate** — collapses a (windowed) stream to a value: reduce / collect.
-
-## 5. Flows — `flow`
-
-A workflow: a composition of calls; the graph is **derived** from `body`.
+**Composite:**
 ```
-flow analyze {
+fn analyze {
+  doc  "mean of the last 100, or exit if empty"
   in   (xs Stream<Num>)
   out  (r Num)
   body
@@ -87,8 +85,52 @@ flow analyze {
 }
 ```
 
-`in` / `out` declare the flow's signature. `body` is a single expression (usually a control
-form). Every branch ends in a terminal.
+**Fields:**
+- `doc` — description.
+- `in` / `out` — typed **ports** (streams); the function's signature.
+- **atomic only:** `engine` (`python` | `go` | `claude` | `builtin` | …), `requires`
+  (`(pip …) (go …) (os …)`), `src` (the body code).
+- **composite only:** `body` — a single composing expression (§5).
+- **resources / capabilities:** `needs` / `bind` and `effects` declare what the function
+  receives and may touch (§10 and [`05-resources-and-integrations.md`](05-resources-and-integrations.md)).
+
+**Exactly one of `src` / `body`.** A function with **neither** is a **signature-only
+declaration** — an interface / slot to be bound (**proposal**; this is the `needs T` of doc 05).
+
+**Calling convention (atomic).** An atomic body is a **stream processor**: it reads **NDJSON on
+stdin** (one object per `onNext`) and writes **NDJSON on stdout** (one per emitted value). The
+runtime **wraps the user's per-item body in the stream loop**, so simple bodies stay simple
+(`return n * 2` runs once per item). Flavors follow from arity:
+
+- **source** — `in ()`, `out (…)`: a generator (emits N, possibly forever).
+- **transform** — per-item map.
+- **sink / aggregate** — collapses a (windowed) stream to a value: reduce / collect.
+
+A **composite** function needs no calling convention of its own — it *composes* the streams of
+the functions it calls.
+
+## 5. Composition — the `body`
+
+A **composite** function's `body` is a **single expression** (usually a control form) that
+composes calls to other functions. The **graph is derived** from it — you never draw nodes or
+edges. From the `analyze` function above:
+
+```
+body
+  (if (isEmpty? xs)
+    (exit "no data")
+    (return (mean (window xs 100))))
+```
+
+- `in` / `out` are the function's signature, exactly as for an atomic function.
+- `body` is **one** expression; sequence with `do`, bind with `let`, branch / loop with the
+  control forms (§6).
+- **Every branch ends in a terminal** (`return` / `exit` / `break` / `continue`).
+- Because the graph is *derived*, the compiler **never produces an edge that bypasses a
+  condition** (§6, §9).
+
+Nested composition is just calls: a composite function calls other functions — atomic or
+composite — by address, and they compile in as subgraphs (§9).
 
 ## 6. Forms / constructs
 
@@ -101,15 +143,15 @@ form). Every branch ends in a terminal.
 - **`while`** — `(while (s init) cond step)`: stateful loop; `break` / `continue` control the
   loop scope.
 - **`do`** — `(do a b …)`: sequence; the last is the value.
-- **Terminals** — `(return v)` forwards the flow's output stream; `(exit s)` ends / errors the
-  scope; `(break)` / `(continue)` control the enclosing loop. All map to completing or
+- **Terminals** — `(return v)` forwards the function's output stream; `(exit s)` ends / errors
+  the scope; `(break)` / `(continue)` control the enclosing loop. All map to completing or
   cancelling a `context`.
 
 ## 7. Streams — the reactive core
 
 - Every edge carries a **stream**: zero or more `onNext`, then `onComplete` or `onError`.
 - **A value is a stream of length 1.**
-- **Infinite streams** are allowed — a source may never complete; the flow is then a **live
+- **Infinite streams** are allowed — a source may never complete; the run is then a **live
   pipeline** that runs until stopped.
 - **Aggregation over an unbounded stream requires windowing** — you cannot `collect` infinity.
   `(window s 100)` (count) / `(window s 5s)` (time) **(proposal)**. The time model is
@@ -121,8 +163,8 @@ form). Every branch ends in a terminal.
 ## 8. Packages & addressing
 
 - A **package is a git repo**; a reference is an **address** (`/`-path), **local or web**:
-  `funk/std/map`, `github.com/user/lib/fn`, `./localFn`. A function *is* an address; a workflow
-  is a composition of addresses.
+  `funk/std/map`, `github.com/user/lib/fn`, `./localFn`. A function *is* an address; a composite
+  function is a composition of addresses.
 - **Import with alias:** `use "github.com/user/lib" v1.2.0 as ml` → `(ml/fn …)`.
 - **Manifest** — `.funk` itself (self-hosting):
   ```
@@ -143,8 +185,8 @@ form). Every branch ends in a terminal.
 - **nodes** — typed: `function` / `condition` / `loop` / `terminal` / `input`; each with
   engine, `src`, `requires`.
 - **edges** — **data** (streams) and **control** (gating).
-- **subflows** — called flows, compiled in.
-- the flow's **signature** (in / out).
+- **subfunctions** — called composite functions, compiled in as subgraphs.
+- the function's **signature** (in / out).
 
 It is JSON, schema-defined (the `artifact` schema), and it is what the engine runs, what
 `introspect` reads, and what the server accepts. Because the graph is *derived*, the compiler
