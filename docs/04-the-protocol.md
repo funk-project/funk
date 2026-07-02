@@ -154,11 +154,26 @@ composite — by address, and they compile in as subgraphs (§9).
 - **Infinite streams** are allowed — a source may never complete; the run is then a **live
   pipeline** that runs until stopped.
 - **Aggregation over an unbounded stream requires windowing** — you cannot `collect` infinity.
-  `(window s 100)` (count) / `(window s 5s)` (time) **(proposal)**. The time model is
-  **event-time** (decided): windows are cut by the event's own timestamp, requiring watermarks
-  and a late-data policy. See `03 — Decisions`.
-- **Operators** (`map`, `filter`, `take`, `merge`, `zip`, `window`, `debounce`, …) live in
-  `funk/std` as functions; a few of the most primitive may be core forms.
+
+**Event-time (decided).** Windows are cut by each event's own timestamp, not by arrival:
+
+- **timestamp source** — each item carries a `time` field; if absent, the engine stamps arrival
+  time (that stream falls back to processing-time). `by <field>` selects the field:
+  `(window xs 5s by time)`.
+- **watermark** — a window closes when the largest event-time seen passes `window end +
+  lateness` (a small tolerance; default short). Plainly: *"I've seen everything up to T, close."*
+- **late-data** — an event arriving after its window closed: **default drop**, **configurable
+  per window** via `on-late` (re-emit / update, or a wider `lateness`).
+
+**Window kinds:**
+
+- `(window s 100)` — count (100 items).
+- `(window s 5s)` — time (5s of event-time; tumbling).
+- `(window s 5s every 1s)` — sliding **(proposal)**: every 1s, the last 5s.
+
+**Operators.** `map` / `filter` / `take` / `merge` / `zip` / `debounce` … live in `funk/std` as
+functions. **`window` and the aggregations are core** — the engine must manage event-time +
+watermarks, so they cannot be pure `.funk`.
 
 ## 8. Packages & addressing
 
@@ -180,17 +195,33 @@ composite — by address, and they compile in as subgraphs (§9).
 
 ## 9. The artifact (compiled form)
 
-`.funk` compiles to a **portable artifact** — a graph *derived* from the code:
+`.funk` compiles to a **portable artifact**: a `graph` *derived* from the code (never drawn by
+hand) — `nodes` (the functions) joined by `edges` (the data `streams` between them).
 
-- **nodes** — typed: `function` / `condition` / `loop` / `terminal` / `input`; each with
-  engine, `src`, `requires`.
-- **edges** — **data** (streams) and **control** (gating).
-- **subfunctions** — called composite functions, compiled in as subgraphs.
-- the function's **signature** (in / out).
+- **`nodes`** — each typed by its role:
+  - `function` — a call to a function. **Atomic:** carries its code (`engine`, `src`,
+    `requires`). **Composite:** carries the functions it **calls** — **inlined** when they are
+    local (unpublished, no resolvable address), or as an **address** (`funk/std/…@ver` + hash)
+    when published.
+  - `condition` — from `if`; gates its branches.
+  - `loop` — from `while` / `for-each`.
+  - `terminal` — `return` / `exit` / `break` / `continue`.
+  - `input` — the function's `in` ports; the entry.
+- **`edges`** — **data** (typed `streams`) and **control** (gating). No data edge bypasses a
+  condition, because the graph is *derived*, not drawn.
+- **resources & capabilities** — each node carries its declared `needs` / `effects` (doc 05), so
+  `introspect` **aggregates** what the whole artifact requires (secrets, integrations, network)
+  — for provisioning and audit.
+- **signature** — the `in` / `out` of the function it was compiled from.
 
-It is JSON, schema-defined (the `artifact` schema), and it is what the engine runs, what
-`introspect` reads, and what the server accepts. Because the graph is *derived*, the compiler
-never produces an edge that bypasses a condition.
+**Linking rule (how a called function is stored): local → inline** (there is no address to
+resolve elsewhere), **published → address + hash** (the target fetches it). `funk build
+--vendor` inlines everything, even published functions, to seal a 100% self-contained artifact
+for export.
+
+It is JSON, schema-defined (the `artifact` schema), and it is the single thing the engine runs,
+`introspect` reads, and the server accepts. Because atomic and composite functions present the
+same signature, composition is uniform — a composite is called exactly like an atomic one.
 
 ## 10. Effects & requirements
 
