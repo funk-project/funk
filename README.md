@@ -26,6 +26,7 @@ its own notation. funk makes itself.
 - [`docs/02-the-objective.md`](docs/02-the-objective.md) — what we're building, and why (a gift)
 - [`docs/03-architecture.md`](docs/03-architecture.md) — the shape: `cmd`+`std`, CLI↔server,
   the reactive engine, the module system, isolation
+- [`docs/04-the-protocol.md`](docs/04-the-protocol.md) — the `.funk` language spec (grammar, types, constructs, the artifact)
 
 ## Open — a gift
 
