@@ -37,7 +37,13 @@ forms.
 Types are **streams**. `T` is shorthand for `Stream<T>` — **a value is a stream of length 1.**
 One uniform model; the engine optimizes the length-1 case.
 
-- **Base:** `Num`, `Str`, `Bool`, `Bytes`, `List`, `Json` (dynamic), `Any` (unknown).
+- **Base:** `Num`, `Str`, `Bool`, `Bytes`, `Time`, `List`, `Json` (dynamic), `Any` (unknown).
+  `Time` is an instant — the event-time a `window … by <field>` reads (§7).
+- **`Stream<T>` vs `List<T>`** — the two "sequences", kept distinct:
+  - `Stream<T>` — items **over time** (may be infinite).
+  - `List<T>` — **one** whole collection, held as a single value (finite, in memory).
+  - The bridge: `(window s 5s)` turns a `Stream` into `List`s — each closed window is delivered
+    as the list of that window.
 - **Named types / schemas:**
   ```
   type User { name Str  age Num }
@@ -135,17 +141,27 @@ composite — by address, and they compile in as subgraphs (§9).
 ## 6. Forms / constructs
 
 - **Call** — `(f arg…)`, addressed `(pkg/f arg…)`, or aliased `(ml/fn arg…)`.
-- **`let`** — `(let (name expr) body)`: bind a name (a stream) for reuse.
+- **`let`** — `(let (name expr) body)`: bind a name (a stream) for reuse (fan-out).
 - **`if`** — `(if cond then else)`: `cond` is a `Bool`; the taken branch runs, the other is
   **cancelled** (its scope's context). The condition gates the branch's *operation*, so no data
   edge ever bypasses the condition.
-- **`for-each`** — `(for-each coll (item) body)`: run `body` per `onNext` of `coll`.
+- **`for-each`** — `(for-each coll (item) body)`: run `body` per `onNext` of `coll` to
+  **consume by effect** (returns nothing). Use `map` (in `funk/std`) when you want to
+  *transform* and get a stream back; `for-each` is the sink-like *consume-for-effect*.
 - **`while`** — `(while (s init) cond step)`: stateful loop; `break` / `continue` control the
   loop scope.
 - **`do`** — `(do a b …)`: sequence; the last is the value.
 - **Terminals** — `(return v)` forwards the function's output stream; `(exit s)` ends / errors
   the scope; `(break)` / `(continue)` control the enclosing loop. All map to completing or
   cancelling a `context`.
+
+**Parallelism is implicit.** Independent `calls` — those that do not depend on each other's
+output — run **concurrently** (each node is a goroutine). There is no `par` form: the graph
+already says what is parallel.
+
+**Errors: propagate-and-cancel.** An error is an `onError` that **cancels its scope**; it
+propagates upward and surfaces in the `RunReport`. A recovery form (`on-error` / `catch`:
+retry / fallback) is a **proposal** for later.
 
 ## 7. Streams — the reactive core
 
@@ -180,6 +196,10 @@ watermarks, so they cannot be pure `.funk`.
 - A **package is a git repo**; a reference is an **address** (`/`-path), **local or web**:
   `funk/std/map`, `github.com/user/lib/fn`, `./localFn`. A function *is* an address; a composite
   function is a composition of addresses.
+- **Published vs local.** A function is **published** when it lives in a package with a
+  resolvable **address + version** (a git repo); **local** is your working project, not yet
+  published. Publishing = giving it an address. This is the distinction §9's linking rule keys
+  on (**local → inline**, **published → address**).
 - **Import with alias:** `use "github.com/user/lib" v1.2.0 as ml` → `(ml/fn …)`.
 - **Manifest** — `.funk` itself (self-hosting):
   ```
@@ -192,6 +212,10 @@ watermarks, so they cannot be pure `.funk`.
 - **Resolution:** `funk/std/*` → local project functions → imported packages.
 - Versions: **semver + git tags**, **content-hash locked** (a re-pointed tag fails). Cache:
   `~/.funk/pkg/<path>@<version>/`.
+- **Signing & verification.** The content-hash gives **integrity**; a package may also carry an
+  author / registry **signature**, and a **verified** state (**authenticity**). Per the `03`
+  isolation decision, **verified** packages run inside the daemon container, **unsigned /
+  unverified** ones in their own — the trust tier keys on this.
 
 ## 9. The artifact (compiled form)
 
@@ -223,22 +247,32 @@ It is JSON, schema-defined (the `artifact` schema), and it is the single thing t
 `introspect` reads, and the server accepts. Because atomic and composite functions present the
 same signature, composition is uniform — a composite is called exactly like an atomic one.
 
-## 10. Effects & requirements
+## 10. Requirements, resources & capabilities
 
-- **`requires`** — build/runtime dependencies (`pip` / `go` / `os`), installed into the
-  (Docker) engine.
-- **`effects` (proposal)** — declared capabilities: which resources (network / fs / secrets) a
-  function may touch. The engine enforces them via what the sandbox is permitted to see. This
-  is the basis for capability-security (ambition #3). Syntax open.
-- **Resources & integrations** — how a function receives `env` / `volumes` / `secrets` /
-  `configs`, how integrations declare and inject them, and how secrets are protected
-  (brokering + egress) are specified in [`05-resources-and-integrations.md`](05-resources-and-integrations.md).
+Three declarations, distinct on purpose:
+
+- **`requires`** — **build dependencies** (`pip` / `go` / `os`), installed into the (Docker)
+  engine. → *what must exist for the code to run.*
+- **`needs` / `bind`** — **runtime resources received**: `secrets` / `configs` / `volumes` /
+  `env` and integration slots. Injected by the engine, least-privilege, never threaded through
+  callers. → *what the function is given.* Full model in
+  [`05-resources-and-integrations.md`](05-resources-and-integrations.md).
+- **`effects`** — **capabilities permitted**: the network endpoints a function may reach
+  (egress) and filesystem access, enforced by what the sandbox is permitted to see. The network
+  capability is what makes brokering + egress (doc 05) hold. → *what the function may do.* This
+  is the basis for capability-security (ambition #3).
+
+In short: `requires` = what exists · `needs` = what it receives · `effects` = what it may do.
+Syntax for `needs` / `bind` / `effects` is still **open** (the `05` syntax pass); the principle
+is fixed — **declared, injected, least-privilege, enforced.**
 
 ## Open (for this spec)
 
 - `Stream<T>` explicit syntax vs `T`-is-a-stream shorthand (or both).
-- Windowing syntax + the time model (event-time vs processing-time).
-- `effects` syntax.
-- Which stream operators are **core forms** vs purely `funk/std`.
+- Windowing **exact grammar** (`by` / `lateness` / `on-late` params; the sliding form). The
+  time model is decided (event-time); the operator split is decided (`window` + aggregations
+  are core, the rest live in `funk/std`).
+- `needs` / `bind` / `effects` syntax — the `05` syntax pass.
+- Error recovery form (`on-error` / `catch`: retry / fallback) — deferred.
 - The exact `type` / schema language (nesting, generics?).
 - The `package` manifest exact grammar.
