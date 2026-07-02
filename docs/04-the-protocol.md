@@ -44,14 +44,19 @@ One uniform model; the engine optimizes the length-1 case.
   - `List<T>` — **one** whole collection, held as a single value (finite, in memory).
   - The bridge: `(window s 5s)` turns a `Stream` into `List`s — each closed window is delivered
     as the list of that window.
-- **Named types / schemas:**
+- **Named types / schemas** — fields are `name Type`; **nesting** is by naming other types, and
+  the builtin **generics** `List<T>` / `Stream<T>` apply. User-defined generics are **deferred**
+  (v1 has no `type Foo<T>`).
   ```
   type User { name Str  age Num }
+  type Repo { name Str  owner User  tags List<Str> }
   ```
 - **Ports** (a function's in/out) carry types: `(x Num)`, `(items Stream<Json>)`.
 - The compiler **type-checks** that a producer's output type is compatible with each consumer's
   input port. `Any` / `Json` are wildcards.
-- **(proposal)** explicit `Stream<T>` when you want to be precise; otherwise `T` is a stream.
+- **Both forms (decided):** `T` *is* a stream (length-1 for a plain value); write `Stream<T>`
+  explicitly to emphasize a flowing / multi-item stream, and `List<T>` for a bounded collection
+  held at once.
 
 ## 4. Functions — `fn`
 
@@ -160,8 +165,16 @@ output — run **concurrently** (each node is a goroutine). There is no `par` fo
 already says what is parallel.
 
 **Errors: propagate-and-cancel.** An error is an `onError` that **cancels its scope**; it
-propagates upward and surfaces in the `RunReport`. A recovery form (`on-error` / `catch`:
-retry / fallback) is a **proposal** for later.
+propagates upward and surfaces in the `RunReport`.
+
+**Recovery forms** *(proposal)* — opt-in, so the default stays simple:
+
+- **`(on-error <body> (e) <handler>)`** — run `body`; if it errors, run `handler` with the error
+  `e` (fallback / substitute value).
+- **`(retry <body> <n> [backoff <dur>])`** — re-run `body` up to `n` times, optional backoff;
+  the error propagates only after the last attempt.
+
+Both are ordinary forms that scope a `context`; without them, errors propagate-and-cancel.
 
 ## 7. Streams — the reactive core
 
@@ -181,11 +194,26 @@ retry / fallback) is a **proposal** for later.
 - **late-data** — an event arriving after its window closed: **default drop**, **configurable
   per window** via `on-late` (re-emit / update, or a wider `lateness`).
 
-**Window kinds:**
+**`window` — the full form** *(proposal)*:
 
-- `(window s 100)` — count (100 items).
-- `(window s 5s)` — time (5s of event-time; tumbling).
-- `(window s 5s every 1s)` — sliding **(proposal)**: every 1s, the last 5s.
+```
+(window <stream> <size> [every <slide>] [by <field>] [lateness <dur>] [on-late <policy>])
+```
+
+- **`<size>`** — a bare number is a **count** (`100`); a duration (`5s`) is **event-time**.
+- **`every <slide>`** — optional; makes it **sliding**. Omitted ⇒ **tumbling** (slide = size).
+- **`by <field>`** — the event-time field; omitted ⇒ the conventional `time` field, else arrival.
+- **`lateness <dur>`** — tolerance before a window closes; default `0s`.
+- **`on-late <policy>`** — `drop` (default) · `emit` (re-emit the updated window) · `(sink f)`
+  (side-output late items to `f`).
+
+Durations: `ms` `s` `m` `h` `d`.
+
+```
+(window xs 100)                                              ; 100 items (count)
+(window clicks 1m by time)                                   ; tumbling 1-min event-time
+(window clicks 5m every 1m by time lateness 30s on-late drop) ; sliding, 30s tolerance
+```
 
 **Operators.** `map` / `filter` / `take` / `merge` / `zip` / `debounce` … live in `funk/std` as
 functions. **`window` and the aggregations are core** — the engine must manage event-time +
@@ -201,7 +229,14 @@ watermarks, so they cannot be pure `.funk`.
   published. Publishing = giving it an address. This is the distinction §9's linking rule keys
   on (**local → inline**, **published → address**).
 - **Import with alias:** `use "github.com/user/lib" v1.2.0 as ml` → `(ml/fn …)`.
-- **Manifest** — `.funk` itself (self-hosting):
+- **Manifest** — `.funk` itself (self-hosting). Grammar *(proposal)*:
+  ```
+  package "<address>" {
+    version <semver>                              ; this package's version
+    use "<address>" v<semver> [as <alias>]        ; a dependency — repeatable
+  }
+  ```
+  Example:
   ```
   package "github.com/user/proj" {
     version 0.1.0
@@ -209,6 +244,10 @@ watermarks, so they cannot be pure `.funk`.
     use "github.com/user/lib" v1.2.0 as ml
   }
   ```
+  The manifest holds **only deps** (portable, committed). Project **`object`** and **`bind`**
+  blocks (doc 05) are **environment config**, not the package definition — they carry
+  environment-specific values (vault refs, which concrete objects) and live in a separate
+  per-environment overlay, selected with `funk run --env <name>` / `--bind` *(proposal)*.
 - **Resolution:** `funk/std/*` → local project functions → imported packages.
 - Versions: **semver + git tags**, **content-hash locked** (a re-pointed tag fails). Cache:
   `~/.funk/pkg/<path>@<version>/`.
@@ -263,16 +302,41 @@ Three declarations, distinct on purpose:
   is the basis for capability-security (ambition #3).
 
 In short: `requires` = what exists · `needs` = what it receives · `effects` = what it may do.
-Syntax for `needs` / `bind` / `effects` is still **open** (the `05` syntax pass); the principle
-is fixed — **declared, injected, least-privilege, enforced.**
+
+**`effects {}` syntax** *(proposal)* — one line per capability, `<kind> <value…>`:
+
+```
+fn scrape {
+  effects {
+    net  api.github.com          ; an allowed egress host
+    net  *.googleapis.com
+    fs   read   /data            ; filesystem access, scoped
+    fs   write  /tmp/out
+  }
+  ...
+}
+```
+
+- **`net <host>`** — an egress host the sandbox will allow (glob ok). Anything else is blocked.
+- **`fs read|write <path>`** — scoped filesystem access.
+- **Integrations auto-declare their egress.** A function with `needs { github a }` inherits
+  `github`'s endpoints from the integration type — you only list `effects` for raw `net` / `fs`
+  the function does **itself**. Least surprise, and the integration owns its own reach.
+
+The principle is fixed — **declared, injected, least-privilege, enforced.** `needs` / `bind`
+syntax is settled in doc 05; `effects` grammar above is a proposal.
 
 ## Open (for this spec)
 
-- `Stream<T>` explicit syntax vs `T`-is-a-stream shorthand (or both).
-- Windowing **exact grammar** (`by` / `lateness` / `on-late` params; the sliding form). The
-  time model is decided (event-time); the operator split is decided (`window` + aggregations
-  are core, the rest live in `funk/std`).
-- `needs` / `bind` / `effects` syntax — the `05` syntax pass.
-- Error recovery form (`on-error` / `catch`: retry / fallback) — deferred.
-- The exact `type` / schema language (nesting, generics?).
-- The `package` manifest exact grammar.
+Everything below now has a **concrete proposal in-line** (marked *(proposal)*), pending
+Bruno's validation — none is a blank anymore:
+
+- `window` full grammar — §7 *(proposal)*.
+- `effects {}` grammar — §10 *(proposal)*.
+- Error recovery (`on-error` / `retry`) — §6 *(proposal)*.
+- `package` manifest grammar + where `object` / `bind` live — §8 *(proposal)*.
+- `Stream<T>` / `List<T>` / `T` forms — §3 *(decided)*; user-defined generics deferred.
+- `needs` / `bind` syntax — settled in doc 05.
+
+Still genuinely undecided (need Bruno): the per-call `with { … }` and project `object` block
+final grammar (doc 05), and the vault / broker-proxy interface (doc 05).
