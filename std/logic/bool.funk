@@ -1,0 +1,9 @@
+; funk/std — logic (Bool)
+
+package "funk/std/logic" {
+  version 0.0.1
+}
+
+fn and { doc "logical and" in (a Bool) (b Bool) out (r Bool) engine builtin src "bool.and" }
+fn or  { doc "logical or"  in (a Bool) (b Bool) out (r Bool) engine builtin src "bool.or" }
+fn not { doc "logical not" in (a Bool)          out (r Bool) engine builtin src "bool.not" }

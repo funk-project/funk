@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/funk-project/funk/internal/funk"
 )
@@ -24,6 +26,10 @@ func main() {
 		fmt.Println("funk", version)
 	case "parse":
 		err = cmdParse(args)
+	case "run":
+		err = cmdRun(args)
+	case "list", "ls":
+		err = cmdList(args)
 	case "help", "-h", "--help":
 		usage()
 	default:
@@ -41,9 +47,56 @@ func usage() {
 	fmt.Fprint(os.Stderr, `funk — a language and protocol for defining workflows
 
 usage:
-  funk version           print the version
-  funk parse <file>      parse a .funk file and print the AST (JSON)
+  funk version               print the version
+  funk parse <file>          parse a .funk file, print the AST (JSON)
+  funk list [-f path]        list loaded functions
+  funk run [-f path] <fn> [k=v …]   run a function with named inputs
+
+env:
+  FUNK_STD   path to the std library (default: ./std)
 `)
+}
+
+// loadLibrary loads std/ plus any extra files/dirs passed with -f.
+func loadLibrary(extra []string) (*funk.Library, error) {
+	lib := funk.NewLibrary()
+	std := os.Getenv("FUNK_STD")
+	if std == "" {
+		std = "std"
+	}
+	if fi, err := os.Stat(std); err == nil && fi.IsDir() {
+		if err := lib.LoadDir(std); err != nil {
+			return nil, err
+		}
+	}
+	for _, p := range extra {
+		fi, err := os.Stat(p)
+		if err != nil {
+			return nil, err
+		}
+		if fi.IsDir() {
+			err = lib.LoadDir(p)
+		} else {
+			err = lib.LoadFile(p)
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+	return lib, nil
+}
+
+// takeFlag extracts a repeated `-f path` flag, returning the rest.
+func takeFlag(args []string, name string) (vals []string, rest []string) {
+	for i := 0; i < len(args); i++ {
+		if args[i] == name && i+1 < len(args) {
+			vals = append(vals, args[i+1])
+			i++
+			continue
+		}
+		rest = append(rest, args[i])
+	}
+	return
 }
 
 func cmdParse(args []string) error {
@@ -58,10 +111,82 @@ func cmdParse(args []string) error {
 	if err != nil {
 		return err
 	}
-	out, err := json.MarshalIndent(prog, "", "  ")
-	if err != nil {
-		return err
-	}
+	out, _ := json.MarshalIndent(prog, "", "  ")
 	fmt.Println(string(out))
 	return nil
 }
+
+func cmdList(args []string) error {
+	files, rest := takeFlag(args, "-f")
+	_ = rest
+	lib, err := loadLibrary(files)
+	if err != nil {
+		return err
+	}
+	for _, f := range lib.Fns {
+		kind := "atomic:" + f.Engine
+		if f.Composite() {
+			kind = "composite"
+		}
+		fmt.Printf("%-28s %-12s %s\n", f.Address(), kind, f.Doc)
+	}
+	return nil
+}
+
+func cmdRun(args []string) error {
+	files, rest := takeFlag(args, "-f")
+	if len(rest) < 1 {
+		return fmt.Errorf("run: usage: funk run [-f path] <fn> [k=v …]")
+	}
+	ref := rest[0]
+	inputs := map[string]interface{}{}
+	for _, kv := range rest[1:] {
+		i := strings.IndexByte(kv, '=')
+		if i < 0 {
+			return fmt.Errorf("run: bad input %q (want k=v)", kv)
+		}
+		k, raw := kv[:i], kv[i+1:]
+		var v interface{}
+		if json.Unmarshal([]byte(raw), &v) == nil {
+			inputs[k] = v
+		} else {
+			inputs[k] = raw
+		}
+	}
+
+	// A bare .funk file may be passed as the ref target's source.
+	if strings.HasSuffix(ref, ".funk") {
+		files = append(files, ref)
+	}
+	lib, err := loadLibrary(files)
+	if err != nil {
+		return err
+	}
+
+	// If ref was a file, run its single/last fn unless a name follows.
+	target := ref
+	if strings.HasSuffix(ref, ".funk") {
+		if len(lib.Fns) == 0 {
+			return fmt.Errorf("run: %s has no functions", ref)
+		}
+		target = lib.Fns[len(lib.Fns)-1].Name
+	}
+
+	res := funk.Run(lib, target, inputs, funk.ExecOpts{})
+	if !res.OK {
+		return fmt.Errorf("%s", res.Error)
+	}
+	printValue(res.Value)
+	return nil
+}
+
+func printValue(v interface{}) {
+	if s, ok := v.(string); ok {
+		fmt.Println(s)
+		return
+	}
+	out, _ := json.Marshal(v)
+	fmt.Println(string(out))
+}
+
+var _ = filepath.Base

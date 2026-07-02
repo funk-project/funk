@@ -1,0 +1,12 @@
+; funk/std — comparisons (Num → Bool)
+
+package "funk/std/maths" {
+  version 0.0.1
+}
+
+fn gt  { doc "a greater than b"          in (a Num) (b Num) out (r Bool) engine builtin src "num.gt" }
+fn lt  { doc "a less than b"             in (a Num) (b Num) out (r Bool) engine builtin src "num.lt" }
+fn gte { doc "a greater than or equal b" in (a Num) (b Num) out (r Bool) engine builtin src "num.gte" }
+fn lte { doc "a less than or equal b"    in (a Num) (b Num) out (r Bool) engine builtin src "num.lte" }
+fn eq  { doc "a equals b"                in (a Num) (b Num) out (r Bool) engine builtin src "num.eq" }
+fn neq { doc "a not equal b"             in (a Num) (b Num) out (r Bool) engine builtin src "num.neq" }

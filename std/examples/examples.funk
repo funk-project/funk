@@ -1,0 +1,27 @@
+; funk/std — examples: composite functions that exercise the graph executor.
+
+package "funk/std/examples" {
+  version 0.0.1
+  use "funk/std/collections"
+  use "funk/std/maths"
+}
+
+fn analyze {
+  doc "mean of the last 100 items, or 'no data' if empty"
+  in  (xs Stream<Num>)
+  out (r Num)
+  body
+    (if (isEmpty? xs)
+      (exit "no data")
+      (return (mean (window xs 100))))
+}
+
+fn bump {
+  doc "add 100 when x > 5, else pass x through — proves the condition gates the add"
+  in  (x Num)
+  out (r Num)
+  body
+    (if (gt x 5)
+      (return (add x 100))
+      (return x))
+}

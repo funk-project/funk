@@ -1,0 +1,11 @@
+; funk/std — strings
+
+package "funk/std/strings" {
+  version 0.0.1
+}
+
+fn concat { doc "concatenate two strings" in (a Str) (b Str) out (r Str) engine builtin src "str.concat" }
+fn upper  { doc "uppercase"               in (a Str)         out (r Str) engine builtin src "str.upper" }
+fn lower  { doc "lowercase"               in (a Str)         out (r Str) engine builtin src "str.lower" }
+fn trim   { doc "trim whitespace"         in (a Str)         out (r Str) engine builtin src "str.trim" }
+fn length { doc "string length"           in (a Str)         out (r Num) engine builtin src "str.len" }
