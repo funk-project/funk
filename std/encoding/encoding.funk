@@ -1,0 +1,53 @@
+; funk/std — encoding (json, base64, url)
+
+package "funk/std/encoding" {
+  version 0.0.1
+}
+
+fn jsonParse {
+  doc "parse a JSON string into a value"
+  in  (a Str)
+  out (r Json)
+  engine python
+  src "import json\nreturn json.loads(a)"
+}
+
+fn jsonStringify {
+  doc "serialize a value to a JSON string"
+  in  (a Json)
+  out (r Str)
+  engine python
+  src "import json\nreturn json.dumps(a)"
+}
+
+fn base64Encode {
+  doc "base64-encode a UTF-8 string"
+  in  (a Str)
+  out (r Str)
+  engine python
+  src "import base64\nreturn base64.b64encode(a.encode('utf-8')).decode('ascii')"
+}
+
+fn base64Decode {
+  doc "decode a base64 string to a UTF-8 string"
+  in  (a Str)
+  out (r Str)
+  engine python
+  src "import base64\nreturn base64.b64decode(a.encode('ascii')).decode('utf-8')"
+}
+
+fn urlEncode {
+  doc "percent-encode a string for use in a URL"
+  in  (a Str)
+  out (r Str)
+  engine python
+  src "import urllib.parse\nreturn urllib.parse.quote(a, safe='')"
+}
+
+fn urlDecode {
+  doc "decode a percent-encoded URL string"
+  in  (a Str)
+  out (r Str)
+  engine python
+  src "import urllib.parse\nreturn urllib.parse.unquote(a)"
+}

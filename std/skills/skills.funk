@@ -1,0 +1,60 @@
+; funk/std — skills: the self-programming layer.
+;
+; Each skill is a function on the `claude` engine (an AI role). Composed, they
+; let funk write funk: architect -> programmer -> reviewer -> tester -> reflect.
+; This is the thesis in action — the plan (a funk workflow) whose nodes are the
+; agents that build and improve the plan. `reflect` self-analyzes and, if needed,
+; rewrites the source (docs/01 — the self-improving kernel).
+
+package "funk/std/skills" {
+  version 0.0.1
+}
+
+fn architect {
+  doc "turn a task into a concise function design"
+  in  (task Str)
+  out (design Str)
+  engine claude
+  src "You are a software architect for `funk`, a workflow language. Given a task, produce a TERSE design for ONE function: a snake or camelCase name, the inputs as (name Type), the single output (r Type), the engine (python for logic), and a one-line approach. Types are Num Str Bool List Json. Output only the design, no prose."
+}
+
+fn programmer {
+  doc "turn a design into a valid .funk function"
+  in  (design Str)
+  out (code Str)
+  engine claude
+  src "You write functions in `funk`. Output ONLY one `fn` block, no markdown, no fences, no prose. Template:\n\nfn NAME {\n  doc \"one line\"\n  in (arg Type) ...\n  out (r Type)\n  engine python\n  src \"PYTHON\"\n}\n\nRules: Types are Num Str Bool List Json. engine is python. The src is a double-quoted Python body where each input port is already a local variable and you must `return` the result; escape newlines inside src as \\n and quotes as \\\". Keep it correct and minimal. Produce the fn block for the given design."
+}
+
+fn reviewer {
+  doc "review a .funk function for correctness and clarity"
+  in  (code Str)
+  out (review Str)
+  engine claude
+  src "You are a code reviewer for `funk`. Review the given `fn` block: is the Python correct, are the port types right, is the doc clear, are edge cases handled? Reply with a short bulleted review ending with a verdict line: PASS or NEEDS-WORK."
+}
+
+fn tester {
+  doc "propose test cases and a verdict for a .funk function"
+  in  (code Str)
+  out (verdict Str)
+  engine claude
+  src "You are a tester for `funk`. For the given `fn` block, list 2-3 concrete input->expected-output test cases, then a verdict: LIKELY-CORRECT or SUSPECT, with one line of reasoning."
+}
+
+fn reflect {
+  doc "self-analyze a function against a report; rewrite the source if needed"
+  in  (code Str) (report Str)
+  out (code Str)
+  engine claude
+  src "You improve `funk` source. You are given a `fn` block and a report (an error, review, or run result). If the report shows a problem, output a CORRECTED `fn` block; if it is already fine, output the SAME block unchanged. Output ONLY the fn block — no markdown, no fences, no prose. Keep engine python; escape newlines in src as \\n and quotes as \\\"."
+}
+
+; The core generation pipeline, expressed IN funk: task -> design -> code.
+fn generate {
+  doc "generate a funk function from a task (architect then programmer)"
+  in  (task Str)
+  out (code Str)
+  body
+    (return (programmer (architect task)))
+}

@@ -1,0 +1,101 @@
+; funk/std — mathx (extended math, Python `math`)
+
+package "funk/std/mathx" {
+  version 0.0.1
+}
+
+fn floor {
+  doc "largest integer <= a"
+  in  (a Num)
+  out (r Num)
+  engine python
+  src "import math\nreturn math.floor(a)"
+}
+
+fn ceil {
+  doc "smallest integer >= a"
+  in  (a Num)
+  out (r Num)
+  engine python
+  src "import math\nreturn math.ceil(a)"
+}
+
+fn round {
+  doc "round a to n decimal places"
+  in  (a Num) (n Num)
+  out (r Num)
+  engine python
+  src "return round(a, int(n))"
+}
+
+fn log {
+  doc "natural logarithm of a"
+  in  (a Num)
+  out (r Num)
+  engine python
+  src "import math\nreturn math.log(a)"
+}
+
+fn log10 {
+  doc "base-10 logarithm of a"
+  in  (a Num)
+  out (r Num)
+  engine python
+  src "import math\nreturn math.log10(a)"
+}
+
+fn exp {
+  doc "e raised to the power a"
+  in  (a Num)
+  out (r Num)
+  engine python
+  src "import math\nreturn math.exp(a)"
+}
+
+fn sin {
+  doc "sine of a (radians)"
+  in  (a Num)
+  out (r Num)
+  engine python
+  src "import math\nreturn math.sin(a)"
+}
+
+fn cos {
+  doc "cosine of a (radians)"
+  in  (a Num)
+  out (r Num)
+  engine python
+  src "import math\nreturn math.cos(a)"
+}
+
+fn tan {
+  doc "tangent of a (radians)"
+  in  (a Num)
+  out (r Num)
+  engine python
+  src "import math\nreturn math.tan(a)"
+}
+
+fn factorial {
+  doc "factorial of a non-negative integer a"
+  in  (a Num)
+  out (r Num)
+  engine python
+  src "import math\nreturn math.factorial(int(a))"
+}
+
+fn gcd {
+  doc "greatest common divisor of a and b"
+  in  (a Num) (b Num)
+  out (r Num)
+  engine python
+  src "import math\nreturn math.gcd(int(a), int(b))"
+}
+
+fn clamp {
+  doc "clamp x into the inclusive range [lo, hi]"
+  in  (x Num) (lo Num) (hi Num)
+  out (r Num)
+  engine python
+  src "return max(lo, min(hi, x))"
+}

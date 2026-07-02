@@ -3,6 +3,8 @@ package funk
 import (
 	"fmt"
 	"math"
+	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -185,6 +187,25 @@ func init() {
 
 	// identity / debug
 	regBuiltin("id", func(in map[string]interface{}) (interface{}, error) { return in["a"], nil })
+
+	// filesystem (effect: fs) — the substrate reflect uses to rewrite source
+	regBuiltin("sys.readFile", func(in map[string]interface{}) (interface{}, error) {
+		b, err := os.ReadFile(str(in["path"]))
+		if err != nil {
+			return nil, err
+		}
+		return string(b), nil
+	})
+	regBuiltin("sys.writeFile", func(in map[string]interface{}) (interface{}, error) {
+		path := str(in["path"])
+		if dir := filepath.Dir(path); dir != "" {
+			_ = os.MkdirAll(dir, 0o755)
+		}
+		if err := os.WriteFile(path, []byte(str(in["content"])), 0o644); err != nil {
+			return nil, err
+		}
+		return path, nil
+	})
 }
 
 func str(v interface{}) string {

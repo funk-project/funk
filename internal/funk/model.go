@@ -107,16 +107,45 @@ func FnFromBlock(b Block, pkg string) (*Fn, error) {
 	return f, nil
 }
 
-// Library is a set of loaded functions, keyed by address and by bare name.
+// TypeDef is a named type / schema: `type User { name Str  age Num }`.
+type TypeDef struct {
+	Name    string
+	Package string
+	Fields  []Port
+}
+
+// Address returns the fully-qualified type address.
+func (t *TypeDef) Address() string {
+	if t.Package == "" {
+		return t.Name
+	}
+	return t.Package + "/" + t.Name
+}
+
+// TypeFromBlock builds a TypeDef from a parsed `type` block.
+func TypeFromBlock(b Block, pkg string) *TypeDef {
+	td := &TypeDef{Name: b.Name, Package: pkg}
+	for _, f := range b.Fields {
+		p := Port{Name: f.Key}
+		if len(f.Values) > 0 {
+			p.Type = nodeTypeString(f.Values[0])
+		}
+		td.Fields = append(td.Fields, p)
+	}
+	return td
+}
+
+// Library is a set of loaded functions and types.
 type Library struct {
 	byAddr map[string]*Fn
 	byName map[string]*Fn
 	Fns    []*Fn
+	Types  map[string]*TypeDef
 }
 
 // NewLibrary returns an empty library.
 func NewLibrary() *Library {
-	return &Library{byAddr: map[string]*Fn{}, byName: map[string]*Fn{}}
+	return &Library{byAddr: map[string]*Fn{}, byName: map[string]*Fn{}, Types: map[string]*TypeDef{}}
 }
 
 // Add registers a function (address wins on conflict; bare name is best-effort).
@@ -143,15 +172,11 @@ func (l *Library) Lookup(ref string) (*Fn, bool) {
 	return nil, false
 }
 
-// LoadFile parses a .funk file and adds its fn blocks to the library.
-func (l *Library) LoadFile(path string) error {
-	src, err := os.ReadFile(path)
+// LoadString parses .funk source and adds its fn and type blocks.
+func (l *Library) LoadString(src string) error {
+	prog, err := Parse(src)
 	if err != nil {
 		return err
-	}
-	prog, err := Parse(string(src))
-	if err != nil {
-		return fmt.Errorf("%s: %w", path, err)
 	}
 	pkg := ""
 	for _, b := range prog {
@@ -160,14 +185,30 @@ func (l *Library) LoadFile(path string) error {
 		}
 	}
 	for _, b := range prog {
-		if b.Head != "fn" {
-			continue
+		switch b.Head {
+		case "fn":
+			f, err := FnFromBlock(b, pkg)
+			if err != nil {
+				return err
+			}
+			l.Add(f)
+		case "type":
+			td := TypeFromBlock(b, pkg)
+			l.Types[td.Name] = td
+			l.Types[td.Address()] = td
 		}
-		f, err := FnFromBlock(b, pkg)
-		if err != nil {
-			return fmt.Errorf("%s: %w", path, err)
-		}
-		l.Add(f)
+	}
+	return nil
+}
+
+// LoadFile parses a .funk file and adds its blocks to the library.
+func (l *Library) LoadFile(path string) error {
+	src, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	if err := l.LoadString(string(src)); err != nil {
+		return fmt.Errorf("%s: %w", path, err)
 	}
 	return nil
 }

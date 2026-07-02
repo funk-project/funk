@@ -1,0 +1,85 @@
+; funk/std — text (string helpers, pure Python)
+
+package "funk/std/text" {
+  version 0.0.1
+}
+
+fn split {
+  doc "split a string by a separator into a list"
+  in  (a Str) (sep Str)
+  out (r List)
+  engine python
+  src "return a.split(sep)"
+}
+
+fn join {
+  doc "join a list of strings with a separator"
+  in  (xs List) (sep Str)
+  out (r Str)
+  engine python
+  src "return sep.join(str(x) for x in xs)"
+}
+
+fn replace {
+  doc "replace all occurrences of old with new in a"
+  in  (a Str) (old Str) (new Str)
+  out (r Str)
+  engine python
+  src "return a.replace(old, new)"
+}
+
+fn contains? {
+  doc "true if a contains the substring sub"
+  in  (a Str) (sub Str)
+  out (r Bool)
+  engine python
+  src "return sub in a"
+}
+
+fn startsWith? {
+  doc "true if a starts with the prefix"
+  in  (a Str) (prefix Str)
+  out (r Bool)
+  engine python
+  src "return a.startswith(prefix)"
+}
+
+fn endsWith? {
+  doc "true if a ends with the suffix"
+  in  (a Str) (suffix Str)
+  out (r Bool)
+  engine python
+  src "return a.endswith(suffix)"
+}
+
+fn reverse {
+  doc "reverse the characters of a string"
+  in  (a Str)
+  out (r Str)
+  engine python
+  src "return a[::-1]"
+}
+
+fn words {
+  doc "split a string on whitespace into a list of words"
+  in  (a Str)
+  out (r List)
+  engine python
+  src "return a.split()"
+}
+
+fn capitalize {
+  doc "capitalize the first character of a string"
+  in  (a Str)
+  out (r Str)
+  engine python
+  src "return a.capitalize()"
+}
+
+fn repeat {
+  doc "repeat a string n times"
+  in  (a Str) (n Num)
+  out (r Str)
+  engine python
+  src "return a * int(n)"
+}

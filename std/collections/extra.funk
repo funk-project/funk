@@ -1,0 +1,70 @@
+; funk/std — collections (extra List operations)
+; NOTE: adds to the existing "funk/std/collections" package (see list.funk).
+
+package "funk/std/collections" {
+  version 0.0.1
+}
+
+fn reverse {
+  doc "reverse the order of a list"
+  in  (a List)
+  out (r List)
+  engine python
+  src "return list(reversed(a))"
+}
+
+fn sort {
+  doc "sort a list in ascending order"
+  in  (a List)
+  out (r List)
+  engine python
+  src "return sorted(a)"
+}
+
+fn unique {
+  doc "distinct items of a list, preserving first-seen order"
+  in  (a List)
+  out (r List)
+  engine python
+  src "seen = []\nfor x in a:\n    if x not in seen:\n        seen.append(x)\nreturn seen"
+}
+
+fn take {
+  doc "first n items of a list"
+  in  (a List) (n Num)
+  out (r List)
+  engine python
+  src "return a[:int(n)]"
+}
+
+fn drop {
+  doc "list without its first n items"
+  in  (a List) (n Num)
+  out (r List)
+  engine python
+  src "return a[int(n):]"
+}
+
+fn flatten {
+  doc "flatten a list of lists by one level"
+  in  (a List)
+  out (r List)
+  engine python
+  src "out = []\nfor x in a:\n    if isinstance(x, list):\n        out.extend(x)\n    else:\n        out.append(x)\nreturn out"
+}
+
+fn zip2 {
+  doc "pairwise zip two lists into a list of [x, y] pairs"
+  in  (a List) (b List)
+  out (r List)
+  engine python
+  src "return [[x, y] for x, y in zip(a, b)]"
+}
+
+fn contains? {
+  doc "true if the list contains the given item"
+  in  (a List) (item Any)
+  out (r Bool)
+  engine python
+  src "return item in a"
+}

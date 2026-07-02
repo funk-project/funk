@@ -1,0 +1,52 @@
+; funk/std — datetime (Python `datetime`)
+
+package "funk/std/datetime" {
+  version 0.0.1
+}
+
+fn now {
+  doc "current Unix timestamp in seconds"
+  out (r Time)
+  engine python
+  src "return __import__('time').time()"
+}
+
+fn parseIso {
+  doc "parse an ISO-8601 string into a Unix timestamp"
+  in  (a Str)
+  out (r Time)
+  engine python
+  src "import datetime\nreturn datetime.datetime.fromisoformat(a).timestamp()"
+}
+
+fn formatIso {
+  doc "format a Unix timestamp as an ISO-8601 string (UTC)"
+  in  (t Time)
+  out (r Str)
+  engine python
+  src "import datetime\nreturn datetime.datetime.fromtimestamp(t, datetime.timezone.utc).isoformat()"
+}
+
+fn addSeconds {
+  doc "add n seconds to a Unix timestamp"
+  in  (t Time) (n Num)
+  out (r Time)
+  engine python
+  src "return t + n"
+}
+
+fn dayOfWeek {
+  doc "day of week for a timestamp (Monday=0 .. Sunday=6)"
+  in  (t Time)
+  out (r Num)
+  engine python
+  src "import datetime\nreturn datetime.datetime.fromtimestamp(t, datetime.timezone.utc).weekday()"
+}
+
+fn isoWeek {
+  doc "ISO week number (1-53) for a timestamp"
+  in  (t Time)
+  out (r Num)
+  engine python
+  src "import datetime\nreturn datetime.datetime.fromtimestamp(t, datetime.timezone.utc).isocalendar()[1]"
+}

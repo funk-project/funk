@@ -1,0 +1,86 @@
+; funk/std — a collection of common named types (schemas).
+; Types are structural: fields are `name Type`. They are checked at compile time
+; and travel with the artifact (docs/04 §3).
+
+package "funk/std/types" {
+  version 0.0.1
+}
+
+type User {
+  id    Str
+  name  Str
+  email Str
+}
+
+type Repo {
+  owner   Str
+  name    Str
+  private Bool
+  stars   Num
+}
+
+type Issue {
+  number Num
+  title  Str
+  body   Str
+  open   Bool
+  author User
+}
+
+type HttpResponse {
+  status  Num
+  headers Json
+  body    Str
+}
+
+type HttpRequest {
+  method  Str
+  url     Str
+  headers Json
+  body    Str
+}
+
+type Money {
+  amount   Num
+  currency Str
+}
+
+type GeoPoint {
+  lat Num
+  lng Num
+}
+
+type TimeRange {
+  start Time
+  end   Time
+}
+
+type Task {
+  id     Str
+  title  Str
+  done   Bool
+  due    Time
+}
+
+type FileRef {
+  path Str
+  size Num
+  mime Str
+}
+
+type KeyValue {
+  key   Str
+  value Json
+}
+
+type Event {
+  name    Str
+  time    Time
+  payload Json
+}
+
+type Result {
+  ok    Bool
+  value Json
+  error Str
+}

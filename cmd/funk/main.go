@@ -30,6 +30,12 @@ func main() {
 		err = cmdRun(args)
 	case "list", "ls":
 		err = cmdList(args)
+	case "types":
+		err = cmdTypes(args)
+	case "check":
+		err = cmdCheck(args)
+	case "make":
+		err = cmdMake(args)
 	case "help", "-h", "--help":
 		usage()
 	default:
@@ -50,7 +56,11 @@ usage:
   funk version               print the version
   funk parse <file>          parse a .funk file, print the AST (JSON)
   funk list [-f path]        list loaded functions
+  funk types [-f path]       list loaded types
+  funk check [-f path]       static-check every composite function
   funk run [-f path] <fn> [k=v …]   run a function with named inputs
+  funk make "<task>" [name]  funk writes a new funk function (architect→
+                             programmer→check→reflect), adds it to std/generated
 
 env:
   FUNK_STD   path to the std library (default: ./std)
@@ -131,6 +141,43 @@ func cmdList(args []string) error {
 		fmt.Printf("%-28s %-12s %s\n", f.Address(), kind, f.Doc)
 	}
 	return nil
+}
+
+func cmdTypes(args []string) error {
+	files, _ := takeFlag(args, "-f")
+	lib, err := loadLibrary(files)
+	if err != nil {
+		return err
+	}
+	seen := map[string]bool{}
+	for _, td := range lib.Types {
+		if seen[td.Address()] {
+			continue
+		}
+		seen[td.Address()] = true
+		fmt.Printf("%s\n", td.Address())
+		for _, f := range td.Fields {
+			fmt.Printf("    %-10s %s\n", f.Name, f.Type)
+		}
+	}
+	return nil
+}
+
+func cmdCheck(args []string) error {
+	files, _ := takeFlag(args, "-f")
+	lib, err := loadLibrary(files)
+	if err != nil {
+		return err
+	}
+	issues := funk.Check(lib)
+	if len(issues) == 0 {
+		fmt.Printf("ok — %d functions, %d types, no issues\n", len(lib.Fns), len(lib.Types)/2)
+		return nil
+	}
+	for _, i := range issues {
+		fmt.Fprintln(os.Stderr, i.String())
+	}
+	return fmt.Errorf("%d issue(s)", len(issues))
 }
 
 func cmdRun(args []string) error {

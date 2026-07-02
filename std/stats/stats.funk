@@ -1,0 +1,69 @@
+; funk/std — stats (Python `statistics`)
+
+package "funk/std/stats" {
+  version 0.0.1
+}
+
+fn median {
+  doc "median of a list of numbers"
+  in  (xs List)
+  out (r Num)
+  engine python
+  src "import statistics\nreturn statistics.median(xs)"
+}
+
+fn mode {
+  doc "most common value in a list"
+  in  (xs List)
+  out (r Any)
+  engine python
+  src "import statistics\nreturn statistics.mode(xs)"
+}
+
+fn variance {
+  doc "sample variance of a list of numbers"
+  in  (xs List)
+  out (r Num)
+  engine python
+  src "import statistics\nreturn statistics.variance(xs)"
+}
+
+fn stdev {
+  doc "sample standard deviation of a list of numbers"
+  in  (xs List)
+  out (r Num)
+  engine python
+  src "import statistics\nreturn statistics.stdev(xs)"
+}
+
+fn pmin {
+  doc "minimum value in a list"
+  in  (xs List)
+  out (r Num)
+  engine python
+  src "return min(xs)"
+}
+
+fn pmax {
+  doc "maximum value in a list"
+  in  (xs List)
+  out (r Num)
+  engine python
+  src "return max(xs)"
+}
+
+fn range {
+  doc "difference between the max and min of a list"
+  in  (xs List)
+  out (r Num)
+  engine python
+  src "return max(xs) - min(xs)"
+}
+
+fn percentile {
+  doc "p-th percentile (0-100) of a list, linear interpolation"
+  in  (p Num) (xs List)
+  out (r Num)
+  engine python
+  src "s = sorted(xs)\nif not s:\n    return 0\nif len(s) == 1:\n    return s[0]\nk = (len(s) - 1) * (p / 100.0)\nlo = int(k)\nhi = min(lo + 1, len(s) - 1)\nreturn s[lo] + (s[hi] - s[lo]) * (k - lo)"
+}
