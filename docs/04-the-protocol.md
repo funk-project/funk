@@ -156,6 +156,9 @@ never produces an edge that bypasses a condition.
 - **`effects` (proposal)** — declared capabilities: which resources (network / fs / secrets) a
   function may touch. The engine enforces them via what the sandbox is permitted to see. This
   is the basis for capability-security (ambition #3). Syntax open.
+- **Resources & integrations** — how a function receives `env` / `volumes` / `secrets` /
+  `configs`, how integrations declare and inject them, and how secrets are protected
+  (brokering + egress) are specified in [`05-resources-and-integrations.md`](05-resources-and-integrations.md).
 
 ## Open (for this spec)
 

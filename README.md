@@ -27,6 +27,7 @@ its own notation. funk makes itself.
 - [`docs/03-architecture.md`](docs/03-architecture.md) — the shape: `cmd`+`std`, CLI↔server,
   the reactive engine, the module system, isolation
 - [`docs/04-the-protocol.md`](docs/04-the-protocol.md) — the `.funk` language spec (grammar, types, constructs, the artifact)
+- [`docs/05-resources-and-integrations.md`](docs/05-resources-and-integrations.md) — resources, integrations & capabilities: secrets/configs/volumes/env, brokering, least-privilege
 
 ## Open — a gift
 
