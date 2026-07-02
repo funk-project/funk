@@ -112,8 +112,9 @@ form). Every branch ends in a terminal.
 - **Infinite streams** are allowed — a source may never complete; the flow is then a **live
   pipeline** that runs until stopped.
 - **Aggregation over an unbounded stream requires windowing** — you cannot `collect` infinity.
-  `(window s 100)` (count) / `(window s 5s)` (time) **(proposal)**. The time model (event-time
-  vs processing-time) is an open question.
+  `(window s 100)` (count) / `(window s 5s)` (time) **(proposal)**. The time model is
+  **event-time** (decided): windows are cut by the event's own timestamp, requiring watermarks
+  and a late-data policy. See `03 — Decisions`.
 - **Operators** (`map`, `filter`, `take`, `merge`, `zip`, `window`, `debounce`, …) live in
   `funk/std` as functions; a few of the most primitive may be core forms.
 
