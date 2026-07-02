@@ -1,0 +1,95 @@
+; funk/std — maths
+; Core arithmetic runs on the native `builtin` engine (fast, no subprocess).
+; `src` names the registered Go primitive.
+
+package "funk/std/maths" {
+  version 0.0.1
+}
+
+fn add {
+  doc "add two numbers"
+  in  (a Num) (b Num)
+  out (r Num)
+  engine builtin
+  src "num.add"
+}
+
+fn sub {
+  doc "subtract b from a"
+  in  (a Num) (b Num)
+  out (r Num)
+  engine builtin
+  src "num.sub"
+}
+
+fn mul {
+  doc "multiply two numbers"
+  in  (a Num) (b Num)
+  out (r Num)
+  engine builtin
+  src "num.mul"
+}
+
+fn div {
+  doc "divide a by b"
+  in  (a Num) (b Num)
+  out (r Num)
+  engine builtin
+  src "num.div"
+}
+
+fn mod {
+  doc "remainder of a divided by b"
+  in  (a Num) (b Num)
+  out (r Num)
+  engine builtin
+  src "num.mod"
+}
+
+fn neg {
+  doc "negate a number"
+  in  (a Num)
+  out (r Num)
+  engine builtin
+  src "num.neg"
+}
+
+fn abs {
+  doc "absolute value"
+  in  (a Num)
+  out (r Num)
+  engine builtin
+  src "num.abs"
+}
+
+fn sqrt {
+  doc "square root"
+  in  (a Num)
+  out (r Num)
+  engine builtin
+  src "num.sqrt"
+}
+
+fn pow {
+  doc "a raised to the power b"
+  in  (a Num) (b Num)
+  out (r Num)
+  engine builtin
+  src "num.pow"
+}
+
+fn min {
+  doc "the smaller of two numbers"
+  in  (a Num) (b Num)
+  out (r Num)
+  engine builtin
+  src "num.min"
+}
+
+fn max {
+  doc "the larger of two numbers"
+  in  (a Num) (b Num)
+  out (r Num)
+  engine builtin
+  src "num.max"
+}
