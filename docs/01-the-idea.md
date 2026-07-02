@@ -71,6 +71,50 @@ ecosystem lacks what it most needs: a **shared, inspectable, portable medium** f
 agents do — a common artifact that a human can edit, an agent can run and observe, and both
 can improve, while the library of reusable capabilities grows.
 
+## The ambition — what this could become
+
+> Marked as **vision, not claim.** These are the directions in which funk could become not
+> "a better workflow tool" but something new. The core above stands on its own; these are
+> what it could grow into.
+
+1. **A lingua franca between AIs (and humans).** The workflow is model-neutral: a plan Claude
+   writes, GPT runs and observes, a local model improves, and a human edits — *the same
+   object*. Today agents cannot interoperate; each lives in its own context window. funk could
+   be the **TCP/IP of agent plans** — the medium where different AIs hand off, co-edit, and
+   improve work together. (And the human is *just another stream* — a peer, not an external
+   operator.)
+
+2. **Intelligence that accumulates and composes.** Today each agent re-derives everything in
+   ephemeral context; the work evaporates. Here, every function and workflow an agent creates
+   persists — portable, typed, verifiable, **composable, with provenance** — and improves
+   itself. A **library of executable capabilities that grows across agents and over time**
+   (an npm / Docker Hub for AI capabilities, but self-improving). Intelligence *compounds*
+   instead of being lost.
+
+3. **Trust, verifiability, capability-security.** Because it is typed, structured, and
+   reproducible — and because **effects are declared, sandboxed, and permissioned** — you can
+   **prove what an agent did** and run plans safely (this workflow may only touch these
+   resources). Today, autonomous AI in production is an act of faith. funk could be the
+   **trust layer** that lets it in for real. *(Not by accident, this is also the enterprise
+   moat.)*
+
+4. **Git for agent execution.** Because a run is a structured, streamed artifact, every
+   execution is **reproducible, forkable, diffable**. Time-travel, deterministic replay, and
+   *"why did the agent do X?"* answered by **inspecting structure** — not guesswork. Debugging
+   and auditing AI like `git`, which is impossible today with opaque prose and tool-calls.
+
+5. **A self-optimizing runtime.** Beyond the agent rewriting the plan, the **engine** observes
+   execution (streams, latencies, costs) and **re-plans on its own**: placement, parallelism,
+   caching, model selection. The workflow gets faster and cheaper **without anyone touching
+   it** — a *query planner* for agent plans. The plan is declarative; the engine finds the
+   best execution.
+
+6. **The plan as the agent's substrate of cognition.** The most radical: the agent does not
+   *"emit funk"* — it **thinks in funk**. The typed, inspectable, improvable plan **is where
+   the reasoning lives**, not a byproduct of ephemeral chain-of-thought. This reframes what an
+   agent *is*: not a text generator with tools, but a planner whose mind is a living,
+   editable, self-observable artifact.
+
 ## The north star
 
 Every part of funk must answer one question:
