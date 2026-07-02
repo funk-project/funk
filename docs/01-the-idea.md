@@ -95,8 +95,8 @@ can improve, while the library of reusable capabilities grows.
    reproducible — and because **effects are declared, sandboxed, and permissioned** — you can
    **prove what an agent did** and run plans safely (this workflow may only touch these
    resources). Today, autonomous AI in production is an act of faith. funk could be the
-   **trust layer** that lets it in for real. *(Not by accident, this is also the enterprise
-   moat.)*
+   **trust layer** that lets it in for real — into regulated, high-stakes settings where a
+   black box cannot go.
 
 4. **Git for agent execution.** Because a run is a structured, streamed artifact, every
    execution is **reproducible, forkable, diffable**. Time-travel, deterministic replay, and
