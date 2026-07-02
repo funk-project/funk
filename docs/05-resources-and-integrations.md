@@ -41,19 +41,27 @@ environment** level and referenced by path from functions.
 3. **Reference** — a function declares the **specific** resources it needs, by path, and may
    declare several (plus isolated secrets).
 
-## Resource addressing: `<object>.<kind>.<key>`
+## Resource addressing — two scopes
 
-Uniform, with `kind ∈ { secret, config, volume, env }`:
+`kind ∈ { <integration type>, secret, config, volume, env }`, in two places:
 
-```
-github-work.secret.token
-github-work.config.owner
-db.volume.data
-app.env.LOG_LEVEL
-```
+- **Project scope** — `<object>.<kind>.<key>`: how a project's configured objects expose their
+  values.
+  ```
+  github-work.secret.token
+  github-work.config.owner
+  ```
+- **Function scope** — `needs.<kind>.<alias>`: how a function reaches the slots it declared (see
+  *Syntax*). The **alias** lets one function hold several of a kind — two githubs are
+  `needs.github.a` and `needs.github.b`.
+  ```
+  needs.github.a          ; an integration slot
+  needs.volume.data
+  needs.secret.tok
+  needs.config.cfg.repo
+  ```
 
-The same grammar serves **integrations and isolated resources** (an isolated secret is a
-standalone object, or `secret.my_key`), and lines up with the `/`-addressing of functions.
+`bind` wires a function's slot to a project object (`github.a = github-work`).
 
 ## Least-privilege
 
@@ -107,19 +115,22 @@ decides *which* object `B` uses (a name). The value is resolved from the vault a
 
 To keep functions reusable (not hardcoded to a project's objects):
 
-1. A function declares an **abstract need**: `needs gh: github`, and uses `gh.secret.token`.
+1. A function declares an **abstract slot**: `needs { github gh }`, and reaches it as
+   `needs.github.gh` — calling `(needs.github.gh/…)`.
 2. The **concrete object** is **bound** — by the *run* (default) or by a parent
-   (`bind B.gh = github-work`). A reference, not the token.
-3. At runtime the engine resolves `github-work.secret.token` from the vault and **injects it
-   into the function**. The parent **delegates authority** (chooses which github) **without ever
-   holding the value.**
+   (`bind { github.gh = github-work }`). A reference, not the token.
+3. At runtime the engine resolves the object's secret from the vault and **injects it into the
+   function**. The parent **delegates authority** (chooses which github) **without ever holding
+   the value.**
 
 ## Two modes, both valid
 
-- **direct** — `github-work.secret.token`: hardcoded to a project object; simple, for
+Both use `needs` slots; the difference is **who binds**:
+
+- **direct** — the function's own project binds the slot to a fixed object; simple, for
   project-local functions.
-- **slot** — `needs gh: github` + `bind`: abstract and reusable; for shared libraries /
-  integrations, and for a parent to delegate. The general form.
+- **delegated** — a parent or the run binds the slot (`bind` / `with`); abstract and reusable,
+  for shared libraries / integrations. The general form.
 
 ## Declaration vs injection (provisioning & audit)
 
@@ -134,10 +145,62 @@ Because the integration TYPE carries a schema, `github-work.secret.token` is **t
 does it exist? is it a secret? A reference to a resource the integration does not define **fails
 at compile** — not in production. Integrations are self-describing and verifiable.
 
+## Syntax
+
+**Declaration — the `needs {}` block.** One line per resource: `<kind> <alias> [schema]`, where
+`kind` is an **integration type** (e.g. `github`) or a builtin `secret | config | volume | env`.
+
+```
+fn syncRepo {
+  in  (x Json)
+  out (r Json)
+  needs {
+    github  a               ; an integration slot (type github)
+    github  b               ; a second github — aliases keep them apart
+    volume  data
+    secret  tok
+    config  cfg  Config     ; typed by a `type` schema
+    env     LOG_LEVEL
+  }
+  body
+    (do
+      (needs.github.a/createIssue needs.config.cfg.repo x)   ; token brokered, never seen
+      (return (audit needs.env.LOG_LEVEL needs.volume.data needs.secret.tok)))
+}
+```
+
+**Access — `needs.<kind>.<alias>`.**
+
+- **integrations** — `needs.github.a`; call its functions `(needs.github.a/createIssue …)`. The
+  secret is **brokered** — the body never references the token.
+- **config / secret / volume / env** — by path: `needs.config.cfg.repo`, `needs.secret.tok`,
+  `needs.volume.data`, `needs.env.LOG_LEVEL`.
+- **short alias** — no new syntax; `let` binds a local name: `(let (gh needs.github.a)
+  (gh/createIssue …))`.
+
+**Objects — the project side.** A project defines the concrete objects a slot can bind to:
+
+```
+object github-work github {
+  token = vault://gh/work      ; secret → a vault reference, never inline
+  owner = "me"                 ; config → data
+}
+```
+
+**`bind` — map slots to objects.** By the run or the project (default), or per-call by a parent:
+
+```
+bind { github.a = github-work   github.b = github-personal }     ; run / project
+(syncRepo x) with { github.a = github-personal }                 ; per-call override
+```
+
+End to end: **`needs` declares typed slots by `kind`+`alias`; you reach them by
+`needs.kind.alias`; `bind` wires each slot to a concrete `object`; integrations broker the
+secret, everything else injects by path** — declared, injected, least-privilege, enforced.
+
 ## Open
 
-- Exact syntax: declaring needs (`needs gh: github`), the `bind` form, and a function's resource
-  declarations.
 - The vault / config-store interface, and the **broker / egress-proxy** interface (how an
   integration declares its endpoints and how the proxy attaches credentials).
 - Volume semantics (shared / persistent state) and its relation to stateful streaming.
+- Final grammar of the per-call `with { … }` override and the project `object` block.
