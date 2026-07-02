@@ -1,0 +1,15 @@
+# Go build
+/bin/
+/dist/
+*.exe
+*.out
+*.test
+# deps
+/vendor/
+# env / secrets
+.env
+*.local
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
