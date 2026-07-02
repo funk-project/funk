@@ -4,8 +4,9 @@
 execution plan of an (AI) agent into a first-class artifact: **portable, typed, editable,
 self-observable, and reactive.**
 
-> Status: **early / design.** We are (re)writing this from the idea up, document by
-> document. Start with [`docs/01-the-idea.md`](docs/01-the-idea.md).
+> Status: **design + a working reference CLI (Go).** The design lives in `docs/`; a real
+> `funk` CLI parses, type-checks, and runs `.funk` — and can **write funk with funk**. Start
+> with [`docs/01-the-idea.md`](docs/01-the-idea.md), or jump to the CLI below.
 
 ## The artifact, in five properties
 
@@ -28,6 +29,35 @@ its own notation. funk makes itself.
   the reactive engine, the module system, isolation
 - [`docs/04-the-protocol.md`](docs/04-the-protocol.md) — the `.funk` language spec (grammar, types, constructs, the artifact)
 - [`docs/05-resources-and-integrations.md`](docs/05-resources-and-integrations.md) — resources, integrations & capabilities: secrets/configs/volumes/env, brokering, least-privilege
+
+## The CLI (Go) — working
+
+```sh
+go build -o bin/funk ./cmd/funk
+
+./bin/funk run add a=40 b=2            # 42          (native builtin engine)
+./bin/funk run analyze xs='[1,2,3,4]'  # 2.5         (composite: if/window/mean)
+./bin/funk run bump x=3                # 3           (the condition gates the add)
+./bin/funk list                        # ~90 functions across 12 packages
+./bin/funk types                       # the type collection
+./bin/funk check                       # static-check every composite
+```
+
+**Engines** (any NDJSON-speaking runtime): `builtin` (native Go primitives — fast, no
+subprocess), `python`, `go`, and the LLM engines `claude` / `codex`. A function is **atomic**
+(`src` + `engine`) or **composite** (`body` — a composition; the graph is derived).
+
+**funk writes funk.** The skills in `std/skills` (`architect → programmer → reviewer → tester →
+reflect`, on the `claude` engine) let funk generate, check, and self-correct new funk:
+
+```sh
+./bin/funk make "reverse the order of words in a sentence" reverseWords
+# architect → programmer generate it, check passes, it's added to std/generated,
+# then:  ./bin/funk run reverse_words s="hello world funk"  →  "funk world hello"
+```
+
+`reflect` self-analyzes a function against its errors/review and rewrites the source — the
+self-improving kernel of docs/01, running for real.
 
 ## Open — a gift
 

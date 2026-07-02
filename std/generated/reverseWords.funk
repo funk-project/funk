@@ -1,0 +1,7 @@
+fn reverse_words {
+  doc "reverse the order of words in s"
+  in (s Str)
+  out (r Str)
+  engine python
+  src "words = s.split()\nwords.reverse()\nreturn \" \".join(words)"
+}

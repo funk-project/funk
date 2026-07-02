@@ -60,6 +60,21 @@ Dates are absolute.
 | G2 | **GitHub: `funk-project/funk`, private for now** (created 2026-07-02). `LICENSE` to be added when opened. | DECIDED (Bruno) |
 | G3 | **funk is Go** (reactive engine + server); engines (python/go/claude/builtin) stay — any NDJSON-speaking runtime qualifies. | DECIDED (Bruno) |
 
+## Implementation — the Go CLI (build phase, 2026-07-02)
+
+Bruno directed the move from design-first to **build** ("trabalhes até teres um working version
+do cli"). Ported from the TS reference in the `functions` repo; funk is Go from here.
+
+| # | Decision | Status |
+|---|---|---|
+| I1 | **Layout:** `cmd/funk` (CLI) + `internal/funk` (parser, model, engine, typecheck) + `std/` (.funk stdlib) + `memory/`. | Built |
+| I2 | **`builtin` engine is native Go**, not the trivial reference stub — a primitive registry (`num.*`, `bool.*`, `str.*`, `list.*`, `sys.*`) so core ops are fast with no subprocess. The kernel shrinks; everything else composes or uses python. | Built |
+| I3 | **Engines:** `builtin`, `python`, `go` (subprocess, NDJSON calling convention), `claude` (`claude -p --model sonnet`), `codex` (`codex exec`). LLM default = claude (Bruno). | Built |
+| I4 | **Composite executor is tree-eval** — only the taken `if` branch is evaluated, so a condition gates its branch **by construction** (the old bypass bug cannot occur). | Built |
+| I5 | **Skills as funk** (`std/skills`, claude engine): architect / programmer / reviewer / tester / reflect + `generate`. `funk make "<task>"` runs architect→programmer→check→reflect and adds the result to `std/generated`. **Verified live**: generated `reverse_words`, checked, ran → correct. | Built |
+| I6 | **stdlib** (~90 fns, 12 packages): maths, compare, logic, strings, text, collections, mathx, stats, encoding, datetime, examples, skills; **13 types** in `std/types`. `funk check` green. | Built |
+| I7 | **Reflect self-edits source** (Bruno's mid-pipeline ask): reads code + report, rewrites the `fn`; fires on parse/check failure, bounded attempts. | Built (fires on failure) |
+
 ## Still genuinely open (need Bruno)
 
 - Per-call `with { … }` and project `object` block final grammar (doc 05).
