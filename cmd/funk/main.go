@@ -34,6 +34,8 @@ func main() {
 		err = cmdTypes(args)
 	case "check":
 		err = cmdCheck(args)
+	case "introspect", "inspect":
+		err = cmdIntrospect(args)
 	case "make":
 		err = cmdMake(args)
 	case "help", "-h", "--help":
@@ -58,6 +60,7 @@ usage:
   funk list [-f path]        list loaded functions
   funk types [-f path]       list loaded types
   funk check [-f path]       static-check every composite function
+  funk introspect [-f path] <fn>    print a function's structure (JSON)
   funk run [-f path] <fn> [k=v …]   run a function with named inputs
   funk make "<task>" [name]  funk writes a new funk function (architect→
                              programmer→check→reflect), adds it to std/generated
@@ -160,6 +163,24 @@ func cmdTypes(args []string) error {
 			fmt.Printf("    %-10s %s\n", f.Name, f.Type)
 		}
 	}
+	return nil
+}
+
+func cmdIntrospect(args []string) error {
+	files, rest := takeFlag(args, "-f")
+	if len(rest) != 1 {
+		return fmt.Errorf("introspect: usage: funk introspect [-f path] <fn>")
+	}
+	lib, err := loadLibrary(files)
+	if err != nil {
+		return err
+	}
+	in, ok := funk.Introspect(lib, rest[0])
+	if !ok {
+		return fmt.Errorf("unknown function %q", rest[0])
+	}
+	out, _ := json.MarshalIndent(in, "", "  ")
+	fmt.Println(string(out))
 	return nil
 }
 

@@ -9,8 +9,8 @@ import (
 
 // Port is a typed input/output of a function: `(name Type)`.
 type Port struct {
-	Name string
-	Type string // "Num", "Str", "Stream<Num>", … ("" ⇒ Any)
+	Name string `json:"name"`
+	Type string `json:"type"` // "Num", "Str", "Stream<Num>", … ("" ⇒ Any)
 }
 
 // Fn is a function: atomic (Engine+Src) or composite (Body). Never both.

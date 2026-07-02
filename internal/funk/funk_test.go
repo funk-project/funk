@@ -103,6 +103,28 @@ func TestCompositeAnalyze(t *testing.T) {
 	}
 }
 
+func TestIntrospect(t *testing.T) {
+	lib := loadStd(t)
+	in, ok := Introspect(lib, "analyze")
+	if !ok || in.Kind != "composite" {
+		t.Fatalf("analyze introspection: %+v", in)
+	}
+	got := map[string]bool{}
+	for _, c := range in.Calls {
+		got[c] = true
+	}
+	if !got["isEmpty?"] || !got["mean"] {
+		t.Fatalf("analyze should call isEmpty? and mean, got %v", in.Calls)
+	}
+	if len(in.Unresolved) != 0 {
+		t.Fatalf("analyze has unresolved calls: %v", in.Unresolved)
+	}
+	add, _ := Introspect(lib, "add")
+	if add.Kind != "atomic" || add.Engine != "builtin" {
+		t.Fatalf("add introspection: %+v", add)
+	}
+}
+
 func mustNum(t *testing.T, v interface{}) float64 {
 	t.Helper()
 	f, err := toNum(v)
