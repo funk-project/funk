@@ -35,3 +35,23 @@ func TestExpandBinding(t *testing.T) {
 		t.Fatal("expected an error for a missing file")
 	}
 }
+
+// splitRef must peel a trailing @ref without tripping on the @ in an scp URL.
+func TestSplitRef(t *testing.T) {
+	cases := []struct {
+		in, repo, ref string
+	}{
+		{"git@github.com:u/r.git", "git@github.com:u/r.git", ""},
+		{"git@github.com:u/r.git@v1.2.0", "git@github.com:u/r.git", "v1.2.0"},
+		{"https://github.com/u/r.git", "https://github.com/u/r.git", ""},
+		{"https://github.com/u/r@v0.1.0", "https://github.com/u/r", "v0.1.0"},
+		{"./local/lib@main", "./local/lib", "main"},
+		{"./local/lib", "./local/lib", ""},
+	}
+	for _, c := range cases {
+		repo, ref := splitRef(c.in)
+		if repo != c.repo || ref != c.ref {
+			t.Errorf("splitRef(%q) = (%q,%q), want (%q,%q)", c.in, repo, ref, c.repo, c.ref)
+		}
+	}
+}

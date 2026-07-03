@@ -93,7 +93,8 @@ usage:
                              programmer→check→reflect), adds it to std/generated
   funk serve [--addr :7777]  run funkd (HTTP: /run streams NDJSON, /functions,
                              /introspect)
-  funk get <url> [name]      fetch a package (git repo) into ~/.funk/pkg
+  funk get <url>[@ref] [name]   fetch a package (git repo) into ~/.funk/pkg;
+                             @ref pins a tag/branch/commit
 
 env:
   FUNK_STD      path to the std library (default: ./std)
