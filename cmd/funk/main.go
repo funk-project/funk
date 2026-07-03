@@ -63,7 +63,8 @@ usage:
   funk types [-f path]       list loaded types
   funk check [-f path]       static-check every composite function
   funk introspect [-f path] <fn>    print a function's structure (JSON)
-  funk run [-f path] <fn> [k=v …]   run a function with named inputs
+  funk run [-f path] [--server url] [--sandbox docker] <fn> [k=v …]
+                             run a function with named inputs (streams live)
   funk make "<task>" [name]  funk writes a new funk function (architect→
                              programmer→check→reflect), adds it to std/generated
   funk serve [--addr :7777]  run funkd (HTTP: /run streams NDJSON, /functions,
@@ -209,9 +210,14 @@ func cmdCheck(args []string) error {
 func cmdRun(args []string) error {
 	files, rest := takeFlag(args, "-f")
 	servers, rest := takeFlag(rest, "--server")
+	sandboxes, rest := takeFlag(rest, "--sandbox")
 	server := os.Getenv("FUNK_SERVER")
 	if len(servers) > 0 {
 		server = servers[len(servers)-1]
+	}
+	opts := funk.ExecOpts{}
+	if len(sandboxes) > 0 {
+		opts.Sandbox = sandboxes[len(sandboxes)-1]
 	}
 	if len(rest) < 1 {
 		return fmt.Errorf("run: usage: funk run [-f path] [--server url] <fn> [k=v …]")
@@ -255,7 +261,7 @@ func cmdRun(args []string) error {
 		target = lib.Fns[len(lib.Fns)-1].Name
 	}
 
-	res := funk.RunStreaming(lib, target, inputs, funk.ExecOpts{}, printValue)
+	res := funk.RunStreaming(lib, target, inputs, opts, printValue)
 	if !res.OK {
 		return fmt.Errorf("%s", res.Error)
 	}
