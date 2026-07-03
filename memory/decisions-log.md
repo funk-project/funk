@@ -74,6 +74,10 @@ do cli"). Ported from the TS reference in the `functions` repo; funk is Go from 
 | I5 | **Skills as funk** (`std/skills`, claude engine): architect / programmer / reviewer / tester / reflect + `generate`. `funk make "<task>"` runs architect→programmer→check→reflect and adds the result to `std/generated`. **Verified live**: generated `reverse_words`, checked, ran → correct. | Built |
 | I6 | **stdlib** (~90 fns, 12 packages): maths, compare, logic, strings, text, collections, mathx, stats, encoding, datetime, examples, skills; **13 types** in `std/types`. `funk check` green. | Built |
 | I7 | **Reflect self-edits source** (Bruno's mid-pipeline ask): reads code + report, rewrites the `fn`; fires on parse/check failure, bounded attempts. | Built (fires on failure) |
+| I8 | **Reactive engine** (`stream.go`): `Stream = chan`; sources `range`/`nats`/`repeat`; operators `map`/`filter`/`take`/`collect` as core forms (higher-order `map`/`filter` take a function name). `take` cancels its source upstream via `context` — an infinite `nats` is bounded and stopped cleanly. `funk run` streams live. **Verified**: evens(5)=0,2,4,6,8 over an infinite source. | Built |
+| I9 | **funkd server** (`serve.go`): `funk serve` runs HTTP — `POST /run` streams NDJSON flushed per item, `GET /functions` / `/introspect` / `/health`. `funk run --server URL` (or `FUNK_SERVER`) is a thin client that streams back. Realizes docs/03 §5. **Verified** over the wire. | Built |
+| I10 | **Resources in the parser** (docs/05): nested `needs {}` / `effects {}` blocks parsed line-by-line into `Fn.Needs`/`Effects`; `introspect` **aggregates them up** a composite (declaration bubbles up). **Verified**: triage inherits createIssue's github/secret/config + net effect. | Built |
+| I11 | **Docker sandbox**: `funk run --sandbox docker` executes python/go bodies in `python:3-slim`/`golang` (isolation, docs/03 §7). **Verified** live. Runtime secret injection (the vault/broker) is **not** built yet. | Built (injection pending) |
 
 ## Still genuinely open (need Bruno)
 

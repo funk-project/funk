@@ -35,17 +35,30 @@ its own notation. funk makes itself.
 ```sh
 go build -o bin/funk ./cmd/funk
 
-./bin/funk run add a=40 b=2            # 42          (native builtin engine)
-./bin/funk run analyze xs='[1,2,3,4]'  # 2.5         (composite: if/window/mean)
-./bin/funk run bump x=3                # 3           (the condition gates the add)
-./bin/funk list                        # ~90 functions across 12 packages
-./bin/funk types                       # the type collection
-./bin/funk check                       # static-check every composite
+./bin/funk run add a=40 b=2             # 42       (native builtin engine)
+./bin/funk run analyze xs='[1,2,3,4]'   # 2.5      (composite: if/window/mean)
+./bin/funk run bump x=3                 # 3        (the condition gates the add)
+./bin/funk run evens n=5                # 0 2 4 6 8  (maps an INFINITE source, streams live)
+./bin/funk run --sandbox docker floor a=3.7   # 3  (python body isolated in a container)
+./bin/funk list        # ~100 functions across 12 packages
+./bin/funk types       # 13 schemas
+./bin/funk check       # static-check every composite
+./bin/funk introspect triage   # the plan as data — needs/effects aggregated up
+./bin/funk serve       # funkd: POST /run streams NDJSON, /functions, /introspect
 ```
 
 **Engines** (any NDJSON-speaking runtime): `builtin` (native Go primitives — fast, no
 subprocess), `python`, `go`, and the LLM engines `claude` / `codex`. A function is **atomic**
 (`src` + `engine`) or **composite** (`body` — a composition; the graph is derived).
+
+**Reactive.** Streams are Go channels; sources (`range` / `nats`) can be infinite; operators
+(`map` / `filter` / `take`) run as live pipelines; `take` cancels its source upstream (real
+reactive cancellation). `funk run` streams each item as it is produced, and `funkd` streams it
+over HTTP.
+
+**Self-observable & resource-aware.** `funk introspect` shows a function's structure as data —
+what it calls, and the `needs` (secrets/configs/integrations) and `effects` (network/fs) it
+declares, **aggregated up** through composition (docs/05).
 
 **funk writes funk.** The skills in `std/skills` (`architect → programmer → reviewer → tester →
 reflect`, on the `claude` engine) let funk generate, check, and self-correct new funk:
