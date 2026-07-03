@@ -221,10 +221,6 @@ func (e *evalEnv) evalForm(f Form) (interface{}, error) {
 		return e.evalTick(f.Args)
 	case "repeat":
 		return e.evalRepeat(f.Args)
-	case "map":
-		return e.evalMap(f.Args)
-	case "filter":
-		return e.evalFilter(f.Args)
 	case "take":
 		return e.evalTake(f.Args)
 	case "collect":
@@ -431,11 +427,34 @@ func (e *evalEnv) evalCall(f Form) (interface{}, error) {
 		}
 		inputs[name] = v
 	}
-	res := Run(e.lib, ref, inputs, e.opts)
+	// Composite calls run INLINE — sharing this scope's context (so cancellation
+	// propagates through funk-defined stream operators) and returning a live
+	// stream (not drained). Atomic calls execute directly.
+	if callee.Composite() {
+		v, err := e.runInline(callee, inputs)
+		if err != nil {
+			e.emit(TraceEvent{Fn: ref, Kind: "call", Error: err.Error()})
+			return nil, fmt.Errorf("%s: %s", ref, err.Error())
+		}
+		e.emit(TraceEvent{Fn: ref, Kind: "call", Value: v})
+		return v, nil
+	}
+	res := Exec(callee, inputs, e.opts)
 	if !res.OK {
 		e.emit(TraceEvent{Fn: ref, Kind: "call", Error: res.Error})
 		return nil, fmt.Errorf("%s: %s", ref, res.Error)
 	}
 	e.emit(TraceEvent{Fn: ref, Kind: "call", Value: res.Value})
 	return res.Value, nil
+}
+
+// runInline evaluates a composite in a child scope that SHARES this env's
+// context, cancel, and trace (isolating only variables to the callee's inputs).
+func (e *evalEnv) runInline(f *Fn, inputs map[string]interface{}) (interface{}, error) {
+	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{},
+		ctx: e.ctx, cancel: e.cancel, resources: resolveResources(f, e.opts), trace: e.trace}
+	for k, v := range inputs {
+		c.vars[k] = v
+	}
+	return c.eval(f.Body)
 }

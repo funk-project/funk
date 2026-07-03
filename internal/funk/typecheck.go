@@ -16,7 +16,7 @@ func (i Issue) String() string { return fmt.Sprintf("%s: %s", i.Fn, i.Msg) }
 var coreForms = map[string]bool{
 	"do": true, "let": true, "if": true, "return": true, "exit": true,
 	"for-each": true, "while": true, "window": true, "break": true, "continue": true,
-	"range": true, "nats": true, "repeat": true, "map": true, "filter": true,
+	"range": true, "nats": true, "repeat": true,
 	"take": true, "collect": true, "tick": true, "scan": true, "merge": true,
 	"each": true, "yield": true,
 }
@@ -104,15 +104,6 @@ func checkForm(lib *Library, fn string, f Form, scope map[string]bool) []Issue {
 		}
 	case "tick":
 		// (tick <duration>) — a duration literal, nothing to check.
-	case "map", "filter":
-		if len(f.Args) == 2 {
-			issues = append(issues, checkNode(lib, fn, f.Args[0], scope)...)
-			if name, ok := fnRefName(f.Args[1]); ok {
-				if _, ok := lib.Lookup(name); !ok {
-					issues = append(issues, Issue{fn, fmt.Sprintf("map/filter references unknown function %q", name)})
-				}
-			}
-		}
 	case "let":
 		if len(f.Args) == 2 {
 			if bind, ok := f.Args[0].(Form); ok {

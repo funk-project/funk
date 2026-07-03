@@ -112,14 +112,6 @@ func fnRefName(n Node) (string, bool) {
 	return "", false
 }
 
-func (e *evalEnv) oneArg(fn string, v interface{}) map[string]interface{} {
-	name := "a"
-	if callee, ok := e.lib.Lookup(fn); ok && len(callee.In) > 0 {
-		name = callee.In[0].Name
-	}
-	return map[string]interface{}{name: v}
-}
-
 // (range a b) — emit a..b inclusive.
 func (e *evalEnv) evalRange(args []Node) (interface{}, error) {
 	if len(args) != 2 {
@@ -223,69 +215,8 @@ func (e *evalEnv) evalRepeat(args []Node) (interface{}, error) {
 	return out, nil
 }
 
-// (map stream fn) — apply fn to each item.
-func (e *evalEnv) evalMap(args []Node) (interface{}, error) {
-	if len(args) != 2 {
-		return nil, fmt.Errorf("map: (map stream fn)")
-	}
-	src, err := e.eval(args[0])
-	if err != nil {
-		return nil, err
-	}
-	fn, ok := fnRefName(args[1])
-	if !ok {
-		return nil, fmt.Errorf("map: second arg must be a function name")
-	}
-	in := e.asStream(src)
-	out := make(Stream)
-	go func() {
-		defer close(out)
-		for v := range in {
-			res := Run(e.lib, fn, e.oneArg(fn, v), e.opts)
-			if !res.OK {
-				e.cancel()
-				return
-			}
-			if !e.send(out, res.Value) {
-				return
-			}
-		}
-	}()
-	return out, nil
-}
-
-// (filter stream fn) — keep items where fn is truthy.
-func (e *evalEnv) evalFilter(args []Node) (interface{}, error) {
-	if len(args) != 2 {
-		return nil, fmt.Errorf("filter: (filter stream fn)")
-	}
-	src, err := e.eval(args[0])
-	if err != nil {
-		return nil, err
-	}
-	fn, ok := fnRefName(args[1])
-	if !ok {
-		return nil, fmt.Errorf("filter: second arg must be a function name")
-	}
-	in := e.asStream(src)
-	out := make(Stream)
-	go func() {
-		defer close(out)
-		for v := range in {
-			res := Run(e.lib, fn, e.oneArg(fn, v), e.opts)
-			if !res.OK {
-				e.cancel()
-				return
-			}
-			if truthy(res.Value) {
-				if !e.send(out, v) {
-					return
-				}
-			}
-		}
-	}()
-	return out, nil
-}
+// map and filter are no longer core forms — they are defined in funk std, over
+// each/yield (see std/stream/operators.funk). The Go kernel shrank.
 
 // (take stream n) — first n items, then cancel upstream (reactive cancellation).
 func (e *evalEnv) evalTake(args []Node) (interface{}, error) {

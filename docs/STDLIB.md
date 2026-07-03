@@ -1,6 +1,6 @@
 # funk — standard library
 
-110 functions across 12 packages.
+118 functions across 13 packages.
 
 ## (local)
 
@@ -72,10 +72,14 @@
 
 - **`analyze`** — mean of the last 100 items, or 'no data' if empty  
   `analyze(xs Stream<Num>) → r Num` · *composite*
+- **`applyTwice`** — apply a function to x, twice — higher-order  
+  `applyTwice(f Fn, x Num) → r Num` · *composite*
 - **`batchSums`** — sum of each tumbling window of 3 over 1..n (windowed stream aggregate)  
   `batchSums(n Num) → r Stream<Num>` · *composite*
 - **`bump`** — add 100 when x > 5, else pass x through — proves the condition gates the add  
   `bump(x Num) → r Num` · *composite*
+- **`compose2`** — apply g then f to x — two functions as values  
+  `compose2(f Fn, g Fn, x Num) → r Num` · *composite*
 - **`countUp`** — count up to n (returns n) — a minimal while  
   `countUp(n Num) → r Num` · *composite*
 - **`createIssue`** — open a GitHub issue (illustrative) — declares what it needs  
@@ -84,12 +88,16 @@
   `evens(n Num) → r Stream<Num>` · *composite*
 - **`firstEvens`** — the first n even naturals, filtered from an infinite source  
   `firstEvens(n Num) → r Stream<Num>` · *composite*
+- **`incThenSquare`** — square(inc(x)) via compose2  
+  `incThenSquare(x Num) → r Num` · *composite*
 - **`liveSquares`** — square of a tick, every 200ms, n times  
   `liveSquares(n Num) → r Stream<Num>` · *composite*
 - **`mergedCount`** — how many items when two ranges are merged  
   `mergedCount(n Num) → r Num` · *composite*
 - **`powTwoLE`** — largest power of two <= n, via a while loop  
   `powTwoLE(n Num) → r Num` · *composite*
+- **`quadruple`** — double twice, by passing the `double` function to applyTwice  
+  `quadruple(x Num) → r Num` · *composite*
 - **`runningMax`** — running maximum of 1..n  
   `runningMax(n Num) → r Stream<Num>` · *composite*
 - **`runningSum`** — running sum of 1..n — a stateful stream fold  
@@ -221,6 +229,17 @@
   `stdev(xs List) → r Num` · *atomic · python*
 - **`variance`** — sample variance of a list of numbers  
   `variance(xs List) → r Num` · *atomic · python*
+
+## funk/std/stream
+
+- **`filter`** — keep items where f is true (defined in funk)  
+  `filter(xs Stream, f Fn) → r Stream` · *composite*
+- **`filterCount`** — how many even numbers in 1..n via the funk-defined filter  
+  `filterCount(n Num) → r Num` · *composite*
+- **`map`** — apply f to each item of a stream (defined in funk)  
+  `map(xs Stream, f Fn) → r Stream` · *composite*
+- **`mapSum`** — sum of doubles of 1..n via the funk-defined map  
+  `mapSum(n Num) → r Num` · *composite*
 
 ## funk/std/strings
 

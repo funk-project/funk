@@ -232,6 +232,12 @@ func asList(v interface{}) []interface{} {
 	if l, ok := v.([]interface{}); ok {
 		return l
 	}
+	// a live stream reaching a list context is drained (bounded streams only)
+	if s, ok := v.(Stream); ok {
+		if l, ok := drain(s).([]interface{}); ok {
+			return l
+		}
+	}
 	if v == nil {
 		return nil
 	}

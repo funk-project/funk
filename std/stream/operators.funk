@@ -1,14 +1,15 @@
 ; funk/std — stream operators DEFINED IN FUNK, over the minimal each/yield
-; primitive. This is the self-hosting proof: map is not a Go black box — it is a
-; readable, introspectable funk artifact the agent can reason about and improve.
-; (The Go core `map`/`filter` remain as fast-paths; these are the canonical defs.)
+; primitive. map and filter are no longer Go core forms — they are readable,
+; introspectable funk artifacts the agent can reason about and improve. The Go
+; kernel shrinks; the notation defines its own vocabulary. (Sources like nats and
+; the cancelling `take` stay in Go — the irreducible reactive plumbing.)
 
 package "funk/std/stream" {
   version 0.0.1
 }
 
-fn fmap {
-  doc "map — apply f to each item (defined in funk)"
+fn map {
+  doc "apply f to each item of a stream (defined in funk)"
   in  (xs Stream) (f Fn)
   out (r Stream)
   body
@@ -16,8 +17,8 @@ fn fmap {
       (yield (f item)))
 }
 
-fn ffilter {
-  doc "filter — keep items where f is true (defined in funk)"
+fn filter {
+  doc "keep items where f is true (defined in funk)"
   in  (xs Stream) (f Fn)
   out (r Stream)
   body
@@ -26,20 +27,20 @@ fn ffilter {
         (yield item)))
 }
 
-fn fmapSum {
-  doc "sum of doubles of 1..n via the funk-defined fmap — proves it matches Go map"
+fn mapSum {
+  doc "sum of doubles of 1..n via the funk-defined map"
   in  (n Num)
   out (r Num)
   body
-    (return (sum (collect (fmap (range 1 n) double))))
-  test (is (fmapSum 4) 20)
+    (return (sum (collect (map (range 1 n) double))))
+  test (is (mapSum 4) 20)
 }
 
-fn evensVia {
-  doc "even numbers in 1..n via the funk-defined ffilter"
+fn filterCount {
+  doc "how many even numbers in 1..n via the funk-defined filter"
   in  (n Num)
   out (r Num)
   body
-    (return (count (collect (ffilter (range 1 n) even?))))
-  test (is (evensVia 10) 5)
+    (return (count (collect (filter (range 1 n) even?))))
+  test (is (filterCount 10) 5)
 }
