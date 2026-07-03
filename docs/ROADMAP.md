@@ -49,8 +49,9 @@ leak by accident. Not "production platform" — "a language you can rely on for 
 
 ## v0.2 — "reproducible & safe with real credentials"
 
-- [ ] **Module resolution for real** — `use "<addr>" <semver> as <alias>` driving per-package
-      namespaces + a lockfile; today `funk get` clones by URL and resolves by bare name.
+- [~] **Module resolution for real** — `funk get <url>@<ref>` now pins a tag/branch/commit (a
+      first reproducibility step); still to come: `use "<addr>" <semver> as <alias>` driving
+      per-package namespaces + a lockfile.
 - [ ] **Secret broker + egress control** — the function receives a *capability*, not the token;
       the sandbox reaches only declared endpoints (docs/05 A–C). Redaction stops being the only
       line of defense.

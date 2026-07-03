@@ -200,7 +200,7 @@ The spec runs ahead of the engine; this table is the contract for the **referenc
 | `each` / `yield` (define your own operators) · `fold` | **Experimental** |
 | Recovery — `(on-error …)` · `(retry …)` | **Experimental** |
 | `needs` / `effects` blocks; injection via `--bind` / env; trace redaction | **Experimental** |
-| `funk get` (clone a package by URL, resolve by bare name) | **Experimental** |
+| `funk get <url>[@ref]` (clone/pin a package by URL+ref, resolve by bare name) | **Experimental** |
 | `window` extras — `every` on **event-time** · `lateness` · `on-late` | **Proposal** |
 | `use "<addr>" <semver> as <alias>` (namespaced/versioned resolution) | **Proposal** |
 | Secret **broker** / **egress** control; `with { … }` / project `object` | **Proposal** |
