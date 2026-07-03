@@ -38,6 +38,8 @@ func main() {
 		err = cmdIntrospect(args)
 	case "make":
 		err = cmdMake(args)
+	case "serve":
+		err = cmdServe(args)
 	case "help", "-h", "--help":
 		usage()
 	default:
@@ -64,9 +66,12 @@ usage:
   funk run [-f path] <fn> [k=v …]   run a function with named inputs
   funk make "<task>" [name]  funk writes a new funk function (architect→
                              programmer→check→reflect), adds it to std/generated
+  funk serve [--addr :7777]  run funkd (HTTP: /run streams NDJSON, /functions,
+                             /introspect)
 
 env:
-  FUNK_STD   path to the std library (default: ./std)
+  FUNK_STD      path to the std library (default: ./std)
+  FUNK_SERVER   run against a funkd server instead of locally
 `)
 }
 
@@ -203,8 +208,13 @@ func cmdCheck(args []string) error {
 
 func cmdRun(args []string) error {
 	files, rest := takeFlag(args, "-f")
+	servers, rest := takeFlag(rest, "--server")
+	server := os.Getenv("FUNK_SERVER")
+	if len(servers) > 0 {
+		server = servers[len(servers)-1]
+	}
 	if len(rest) < 1 {
-		return fmt.Errorf("run: usage: funk run [-f path] <fn> [k=v …]")
+		return fmt.Errorf("run: usage: funk run [-f path] [--server url] <fn> [k=v …]")
 	}
 	ref := rest[0]
 	inputs := map[string]interface{}{}
@@ -220,6 +230,11 @@ func cmdRun(args []string) error {
 		} else {
 			inputs[k] = raw
 		}
+	}
+
+	// Thin client: if a server is configured, run there and stream back.
+	if server != "" {
+		return runViaServer(server, ref, inputs)
 	}
 
 	// A bare .funk file may be passed as the ref target's source.
