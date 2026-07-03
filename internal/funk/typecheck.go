@@ -100,8 +100,14 @@ func checkForm(lib *Library, fn string, f Form, scope map[string]bool) []Issue {
 			issues = append(issues, checkNode(lib, fn, f.Args[2], sc)...)
 		}
 	case "while":
-		for _, a := range f.Args {
-			issues = append(issues, checkNode(lib, fn, a, scope)...)
+		if len(f.Args) == 3 {
+			if bind, ok := f.Args[0].(Form); ok && len(bind.Args) == 1 {
+				issues = append(issues, checkNode(lib, fn, bind.Args[0], scope)...) // init
+				sc := child()
+				sc[bind.Head] = true
+				issues = append(issues, checkNode(lib, fn, f.Args[1], sc)...) // cond
+				issues = append(issues, checkNode(lib, fn, f.Args[2], sc)...) // step
+			}
 		}
 	default:
 		// a call

@@ -193,6 +193,16 @@ func TestNeedsParseAndAggregate(t *testing.T) {
 	}
 }
 
+func TestWhileLoop(t *testing.T) {
+	lib := loadStd(t)
+	if res := Run(lib, "powTwoLE", map[string]interface{}{"n": 100.0}, ExecOpts{}); !res.OK || mustNum(t, res.Value) != 64 {
+		t.Fatalf("powTwoLE(100) = %v (%s), want 64", res.Value, res.Error)
+	}
+	if res := Run(lib, "countUp", map[string]interface{}{"n": 7.0}, ExecOpts{}); !res.OK || mustNum(t, res.Value) != 7 {
+		t.Fatalf("countUp(7) = %v (%s), want 7", res.Value, res.Error)
+	}
+}
+
 func TestResourceInjection(t *testing.T) {
 	lib := loadStd(t)
 	// siteGreeting reads needs.config.site in a funk body; bind resolves it.

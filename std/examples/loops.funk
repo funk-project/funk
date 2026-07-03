@@ -1,0 +1,25 @@
+; funk/std — loop examples (the `while` core form: stateful iteration).
+
+package "funk/std/examples" {
+  version 0.0.1
+}
+
+fn powTwoLE {
+  doc "largest power of two <= n, via a while loop"
+  in  (n Num)
+  out (r Num)
+  body
+    (while (s 1)
+      (lte (mul s 2) n)
+      (mul s 2))
+}
+
+fn countUp {
+  doc "count up to n (returns n) — a minimal while"
+  in  (n Num)
+  out (r Num)
+  body
+    (while (s 0)
+      (lt s n)
+      (inc s))
+}

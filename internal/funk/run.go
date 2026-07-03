@@ -2,9 +2,16 @@ package funk
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+)
+
+// Loop control signals, propagated as errors and caught by the enclosing loop.
+var (
+	errBreak    = errors.New("break")
+	errContinue = errors.New("continue")
 )
 
 // Run executes a function by reference; a live stream result is drained to a List.
@@ -153,6 +160,12 @@ func (e *evalEnv) evalForm(f Form) (interface{}, error) {
 		return e.eval(f.Args[0]) // v1: exit yields its value (a terminal)
 	case "for-each":
 		return e.evalForEach(f.Args)
+	case "while":
+		return e.evalWhile(f.Args)
+	case "break":
+		return nil, errBreak
+	case "continue":
+		return nil, errContinue
 	case "window":
 		return e.evalWindow(f.Args)
 	case "range":
@@ -239,10 +252,54 @@ func (e *evalEnv) evalForEach(args []Node) (interface{}, error) {
 		c := e.child()
 		c.vars[bind.Head] = item
 		if _, err := c.eval(args[2]); err != nil {
+			if errors.Is(err, errContinue) {
+				continue
+			}
+			if errors.Is(err, errBreak) {
+				break
+			}
 			return nil, err
 		}
 	}
 	return nil, nil
+}
+
+// (while (s init) cond step) — stateful loop; s carries state across iterations.
+func (e *evalEnv) evalWhile(args []Node) (interface{}, error) {
+	if len(args) != 3 {
+		return nil, fmt.Errorf("while: (while (s init) cond step)")
+	}
+	bind, ok := args[0].(Form)
+	if !ok || len(bind.Args) != 1 {
+		return nil, fmt.Errorf("while: first arg must be (s init)")
+	}
+	val, err := e.eval(bind.Args[0])
+	if err != nil {
+		return nil, err
+	}
+	c := e.child()
+	c.vars[bind.Head] = val
+	for {
+		cond, err := c.eval(args[1])
+		if err != nil {
+			return nil, err
+		}
+		if !truthy(cond) {
+			break
+		}
+		nv, err := c.eval(args[2])
+		if err != nil {
+			if errors.Is(err, errContinue) {
+				continue
+			}
+			if errors.Is(err, errBreak) {
+				break
+			}
+			return nil, err
+		}
+		c.vars[bind.Head] = nv
+	}
+	return c.vars[bind.Head], nil
 }
 
 // (window coll size …) — count window on a finite list: last `size` items.
