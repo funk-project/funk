@@ -1,0 +1,69 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "funk",
+  "scopeName": "source.funk",
+  "patterns": [
+    { "include": "#comment" },
+    { "include": "#string" },
+    { "include": "#block-head" },
+    { "include": "#number" },
+    { "include": "#field" },
+    { "include": "#control" },
+    { "include": "#reactive" },
+    { "include": "#type" },
+    { "include": "#engine" },
+    { "include": "#boolean" }
+  ],
+  "repository": {
+    "comment": {
+      "match": ";.*$",
+      "name": "comment.line.semicolon.funk"
+    },
+    "string": {
+      "name": "string.quoted.double.funk",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        { "match": "\\\\.", "name": "constant.character.escape.funk" }
+      ]
+    },
+    "number": {
+      "match": "(?<![\\w.])-?\\d+(\\.\\d+)?(?![\\w.])",
+      "name": "constant.numeric.funk"
+    },
+    "block-head": {
+      "match": "\\b(fn|type)\\s+([A-Za-z_][\\w?!.-]*)",
+      "captures": {
+        "1": { "name": "storage.type.funk" },
+        "2": { "name": "entity.name.function.funk" }
+      }
+    },
+    "field": {
+      "comment": "field heads inside an fn / type / package block",
+      "match": "\\b(package|version|doc|in|out|engine|src|body|test|needs|effects|import|use)\\b",
+      "name": "keyword.other.funk"
+    },
+    "control": {
+      "comment": "the composite core forms",
+      "match": "\\b(do|let|if|while|return|exit|break|continue|is)\\b",
+      "name": "keyword.control.funk"
+    },
+    "reactive": {
+      "comment": "stream sources, operators and the each/yield primitive",
+      "match": "\\b(range|nats|tick|repeat|map|filter|scan|merge|take|collect|window|each|yield)\\b",
+      "name": "support.function.builtin.funk"
+    },
+    "type": {
+      "match": "\\b(Num|Str|Bool|List|Json|Time|Any|Stream|Fn)\\b",
+      "name": "support.type.funk"
+    },
+    "engine": {
+      "match": "\\b(builtin|python|go|claude|codex)\\b",
+      "name": "support.constant.funk"
+    },
+    "boolean": {
+      "match": "\\b(true|false)\\b",
+      "name": "constant.language.funk"
+    }
+  }
+}

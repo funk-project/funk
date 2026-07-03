@@ -1,0 +1,35 @@
+{
+  "name": "funk-lang",
+  "displayName": "funk",
+  "description": "Syntax highlighting for the funk language (.funk) — a language for the plans AIs make.",
+  "version": "0.0.1",
+  "publisher": "funk-project",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/funk-project/funk"
+  },
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "funk",
+        "aliases": ["funk", "Funk"],
+        "extensions": [".funk"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "funk",
+        "scopeName": "source.funk",
+        "path": "./syntaxes/funk.tmLanguage.json"
+      }
+    ]
+  }
+}
