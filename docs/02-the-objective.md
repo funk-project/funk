@@ -16,6 +16,24 @@ Three deliverables, one spine:
    protocol is real, runnable, and adoptable from day one.
 3. **The paper** — the statement of the invention and the evidence that the thesis holds.
 
+## For humanity
+
+funk is **for humanity** — a permanent public good, not a product to protect. We give up the
+commercial fork worry on purpose: you cannot truly *give* something to the world and still hold
+a leash on it. A gift restrained is not a gift.
+
+Concretely, this means:
+
+- **Code — Apache-2.0.** Permissive *and* protective: its **patent grant** stops anyone from
+  patenting parts of funk and suing its users. It defends the freedom we are giving.
+- **Spec — CC0.** True public domain; anyone may implement `.funk` without asking.
+- **Irrevocable.** What is released under Apache-2.0 / CC0 can never be un-freed — not by a
+  fork, not by a company, **not even by us**. That permanence is the point.
+- **No CLA.** We keep no relicensing leverage, because we want none. Inbound equals outbound;
+  humans and AIs contribute freely.
+- **Toward neutral stewardship.** As funk grows, it should pass to a neutral steward / foundation
+  so no single party — us included — can ever capture it. It belongs to everyone.
+
 ## Open, permissively — a gift
 
 funk is given to the world. Not a product with a moat; a **standard**, in the lineage of
