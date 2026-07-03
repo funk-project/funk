@@ -57,6 +57,7 @@ func cmdServe(args []string) error {
 		var req struct {
 			Ref    string                 `json:"ref"`
 			Inputs map[string]interface{} `json:"inputs"`
+			Trace  bool                   `json:"trace"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -65,18 +66,30 @@ func cmdServe(args []string) error {
 		w.Header().Set("Content-Type", "application/x-ndjson")
 		flusher, _ := w.(http.Flusher)
 		enc := json.NewEncoder(w)
-		emit := func(v interface{}) {
-			_ = enc.Encode(map[string]interface{}{"value": v})
+		flush := func() {
 			if flusher != nil {
 				flusher.Flush()
 			}
 		}
+		if req.Trace {
+			res, rep := funk.RunWithReport(lib, req.Ref, req.Inputs, funk.ExecOpts{})
+			if !res.OK {
+				_ = enc.Encode(map[string]interface{}{"error": res.Error})
+			} else {
+				_ = enc.Encode(map[string]interface{}{"value": res.Value})
+				_ = enc.Encode(map[string]interface{}{"report": rep})
+			}
+			flush()
+			return
+		}
+		emit := func(v interface{}) {
+			_ = enc.Encode(map[string]interface{}{"value": v})
+			flush()
+		}
 		res := funk.RunStreaming(lib, req.Ref, req.Inputs, funk.ExecOpts{}, emit)
 		if !res.OK {
 			_ = enc.Encode(map[string]interface{}{"error": res.Error})
-			if flusher != nil {
-				flusher.Flush()
-			}
+			flush()
 		}
 	})
 
