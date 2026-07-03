@@ -1,0 +1,26 @@
+; funk/std — stateful stream operators: scan (running fold) and merge.
+
+package "funk/std/examples" {
+  version 0.0.1
+}
+
+fn runningSum {
+  doc "running sum of 1..n — a stateful stream fold"
+  in  (n Num)
+  out (r Stream<Num>)
+  body (scan (range 1 n) add 0)
+}
+
+fn runningMax {
+  doc "running maximum of 1..n"
+  in  (n Num)
+  out (r Stream<Num>)
+  body (scan (range 1 n) max 0)
+}
+
+fn mergedCount {
+  doc "how many items when two ranges are merged"
+  in  (n Num)
+  out (r Num)
+  body (return (count (collect (merge (range 1 n) (range 1 n)))))
+}

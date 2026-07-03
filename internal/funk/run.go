@@ -184,6 +184,10 @@ func (e *evalEnv) evalForm(f Form) (interface{}, error) {
 		return e.evalTake(f.Args)
 	case "collect":
 		return e.evalCollect(f.Args)
+	case "scan":
+		return e.evalScan(f.Args)
+	case "merge":
+		return e.evalMerge(f.Args)
 	default:
 		return e.evalCall(f)
 	}

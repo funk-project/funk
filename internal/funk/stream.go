@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -372,6 +373,83 @@ func parseDuration(s string) (float64, bool) {
 		}
 	}
 	return 0, false
+}
+
+// (scan stream fn init) — running fold: emit fn(acc, x) for each item, starting
+// from init. e.g. (scan (range 1 5) add 0) → 1,3,6,10,15.
+func (e *evalEnv) evalScan(args []Node) (interface{}, error) {
+	if len(args) != 3 {
+		return nil, fmt.Errorf("scan: (scan stream fn init)")
+	}
+	src, err := e.eval(args[0])
+	if err != nil {
+		return nil, err
+	}
+	fn, ok := fnRefName(args[1])
+	if !ok {
+		return nil, fmt.Errorf("scan: second arg must be a function name")
+	}
+	init, err := e.eval(args[2])
+	if err != nil {
+		return nil, err
+	}
+	in := e.asStream(src)
+	out := make(Stream)
+	go func() {
+		defer close(out)
+		acc := init
+		callee, _ := e.lib.Lookup(fn)
+		for v := range in {
+			m := map[string]interface{}{"a": acc, "b": v}
+			if callee != nil && len(callee.In) >= 2 {
+				m = map[string]interface{}{callee.In[0].Name: acc, callee.In[1].Name: v}
+			}
+			res := Run(e.lib, fn, m, e.opts)
+			if !res.OK {
+				e.cancel()
+				return
+			}
+			acc = res.Value
+			if !e.send(out, acc) {
+				return
+			}
+		}
+	}()
+	return out, nil
+}
+
+// (merge s1 s2) — interleave two streams as items arrive.
+func (e *evalEnv) evalMerge(args []Node) (interface{}, error) {
+	if len(args) != 2 {
+		return nil, fmt.Errorf("merge: (merge s1 s2)")
+	}
+	a, err := e.eval(args[0])
+	if err != nil {
+		return nil, err
+	}
+	b, err := e.eval(args[1])
+	if err != nil {
+		return nil, err
+	}
+	sa, sb := e.asStream(a), e.asStream(b)
+	out := make(Stream)
+	go func() {
+		defer close(out)
+		var wg sync.WaitGroup
+		wg.Add(2)
+		pipe := func(s Stream) {
+			defer wg.Done()
+			for v := range s {
+				if !e.send(out, v) {
+					return
+				}
+			}
+		}
+		go pipe(sa)
+		go pipe(sb)
+		wg.Wait()
+	}()
+	return out, nil
 }
 
 // (collect stream) — drain a (bounded) stream to a List.

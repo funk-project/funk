@@ -17,7 +17,7 @@ var coreForms = map[string]bool{
 	"do": true, "let": true, "if": true, "return": true, "exit": true,
 	"for-each": true, "while": true, "window": true, "break": true, "continue": true,
 	"range": true, "nats": true, "repeat": true, "map": true, "filter": true,
-	"take": true, "collect": true, "tick": true,
+	"take": true, "collect": true, "tick": true, "scan": true, "merge": true,
 }
 
 // Check statically validates every composite function in the library:
@@ -66,9 +66,20 @@ func checkForm(lib *Library, fn string, f Form, scope map[string]bool) []Issue {
 	}
 	switch f.Head {
 	case "do", "return", "exit", "if", "break", "continue",
-		"range", "nats", "repeat", "take", "collect":
+		"range", "nats", "repeat", "take", "collect", "merge":
 		for _, a := range f.Args {
 			issues = append(issues, checkNode(lib, fn, a, scope)...)
+		}
+	case "scan":
+		// (scan stream fn init)
+		if len(f.Args) == 3 {
+			issues = append(issues, checkNode(lib, fn, f.Args[0], scope)...)
+			if name, ok := fnRefName(f.Args[1]); ok {
+				if _, ok := lib.Lookup(name); !ok {
+					issues = append(issues, Issue{fn, fmt.Sprintf("scan references unknown function %q", name)})
+				}
+			}
+			issues = append(issues, checkNode(lib, fn, f.Args[2], scope)...)
 		}
 	case "window":
 		// (window stream size [every s] [by field] …) — only the stream is checked;

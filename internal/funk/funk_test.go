@@ -172,6 +172,18 @@ func TestStreamMapInfiniteTake(t *testing.T) {
 	}
 }
 
+func TestScanAndMerge(t *testing.T) {
+	lib := loadStd(t)
+	res := Run(lib, "runningSum", map[string]interface{}{"n": 5.0}, ExecOpts{})
+	list, ok := res.Value.([]interface{})
+	if !ok || len(list) != 5 || mustNum(t, list[4]) != 15 {
+		t.Fatalf("runningSum(5) = %v, want [1 3 6 10 15]", res.Value)
+	}
+	if res := Run(lib, "mergedCount", map[string]interface{}{"n": 4.0}, ExecOpts{}); !res.OK || mustNum(t, res.Value) != 8 {
+		t.Fatalf("mergedCount(4) = %v, want 8", res.Value)
+	}
+}
+
 func TestStreamFilter(t *testing.T) {
 	lib := loadStd(t)
 	res := Run(lib, "firstEvens", map[string]interface{}{"n": 4.0}, ExecOpts{})
