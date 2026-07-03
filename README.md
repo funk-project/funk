@@ -43,6 +43,7 @@ its own notation. funk makes itself.
 - [`docs/04-the-protocol.md`](docs/04-the-protocol.md) — the `.funk` language spec (grammar, types, constructs, the artifact)
 - [`docs/05-resources-and-integrations.md`](docs/05-resources-and-integrations.md) — resources, integrations & capabilities: secrets/configs/volumes/env, brokering, least-privilege
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — milestones and the **stability contract** (stable vs experimental vs proposal)
+- [`docs/EXAMPLES.md`](docs/EXAMPLES.md) — a **cookbook**: task-shaped, copy-paste examples with real output
 
 ## The CLI (Go) — working
 

@@ -1,6 +1,6 @@
 # funk — standard library
 
-120 functions across 13 packages.
+124 functions across 13 packages.
 
 ## (local)
 
@@ -82,6 +82,8 @@
   `batchSums(n Num) → r Stream<Num>` · *composite*
 - **`bump`** — add 100 when x > 5, else pass x through — proves the condition gates the add  
   `bump(x Num) → r Num` · *composite*
+- **`celsiusToF`** — convert a temperature in Celsius to Fahrenheit  
+  `celsiusToF(c Num) → r Num` · *composite*
 - **`compose2`** — apply g then f to x — two functions as values  
   `compose2(f Fn, g Fn, x Num) → r Num` · *composite*
 - **`countUp`** — count up to n (returns n) — a minimal while  
@@ -94,6 +96,8 @@
   `firstEvens(n Num) → r Stream<Num>` · *composite*
 - **`incThenSquare`** — square(inc(x)) via compose2  
   `incThenSquare(x Num) → r Num` · *composite*
+- **`initials`** — the uppercased initials of each word  
+  `initials(s Str) → r Str` · *atomic · python*
 - **`liveSquares`** — square of a tick, every 200ms, n times  
   `liveSquares(n Num) → r Stream<Num>` · *composite*
 - **`mergedCount`** — how many items when two ranges are merged  
@@ -110,6 +114,8 @@
   `secretPeek() → r Str` · *atomic · python*
 - **`siteGreeting`** — greet using an injected config value — needs.kind.alias in a funk body  
   `siteGreeting() → r Str` · *composite*
+- **`slugify`** — turn a title into a url slug (lowercase, non-alnum → single hyphen)  
+  `slugify(s Str) → r Str` · *atomic · python*
 - **`squares`** — squares of 1..n  
   `squares(n Num) → r Stream<Num>` · *composite*
 - **`sumSquares`** — sum of the squares of 1..n (a windowed aggregate)  
@@ -118,15 +124,17 @@
   `ticks(n Num) → r Stream<Num>` · *composite*
 - **`triage`** — a composite that calls createIssue — its needs/effects aggregate up  
   `triage(title Str) → r Json` · *composite*
+- **`wordCount`** — how many words in a sentence  
+  `wordCount(s Str) → r Num` · *atomic · python*
 
 ## funk/std/logic
 
-- **`and`** — logical and  
-  `and(a Bool, b Bool) → r Bool` · *atomic · builtin*
+- **`and`** — logical and (short-circuit)  
+  `and(a Bool, b Bool) → r Bool` · *composite*
 - **`not`** — logical not  
-  `not(a Bool) → r Bool` · *atomic · builtin*
-- **`or`** — logical or  
-  `or(a Bool, b Bool) → r Bool` · *atomic · builtin*
+  `not(a Bool) → r Bool` · *composite*
+- **`or`** — logical or (short-circuit)  
+  `or(a Bool, b Bool) → r Bool` · *composite*
 
 ## funk/std/maths
 

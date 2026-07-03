@@ -1,0 +1,43 @@
+; funk/std — cookbook: small, practical, task-shaped functions used by
+; docs/EXAMPLES.md. Each is self-contained and carries an inline test.
+
+package "funk/std/examples" {
+  version 0.0.1
+  use "funk/std/maths"
+}
+
+fn celsiusToF {
+  doc "convert a temperature in Celsius to Fahrenheit"
+  in  (c Num)
+  out (r Num)
+  body (return (add (mul c 1.8) 32))
+  test (is (celsiusToF 100) 212)
+  test (is (celsiusToF 0) 32)
+}
+
+fn slugify {
+  doc "turn a title into a url slug (lowercase, non-alnum → single hyphen)"
+  in  (s Str)
+  out (r Str)
+  engine python
+  src "import re; return re.sub(r'[^a-z0-9]+', '-', s.lower()).strip('-')"
+  test (is (slugify "The Machine Is No Longer a Black Box!") "the-machine-is-no-longer-a-black-box")
+}
+
+fn initials {
+  doc "the uppercased initials of each word"
+  in  (s Str)
+  out (r Str)
+  engine python
+  src "return ''.join(w[0] for w in s.split()).upper()"
+  test (is (initials "funk over fear") "FOF")
+}
+
+fn wordCount {
+  doc "how many words in a sentence"
+  in  (s Str)
+  out (r Num)
+  engine python
+  src "return len(s.split())"
+  test (is (wordCount "a language for the plans AIs make") 7)
+}
