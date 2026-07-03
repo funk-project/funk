@@ -98,6 +98,9 @@ printing is *impossible*. The rare code that genuinely needs a raw secret in-pro
 to send it out. Honest limit: hand a raw secret to arbitrary code *with an open network* and
 there is no guarantee — which is why the architecture is **don't (broker) and can't (egress).**
 
+> The concrete, implementable design of the broker + egress enforcer — interface, mechanism,
+> threat model, and a phased build plan — lives in [`docs/06-broker-egress.md`](06-broker-egress.md).
+
 ### What the reference CLI does today (v1)
 
 Injection is direct-value (the broker/vault of (A)–(C) is still future), but the two moves that
