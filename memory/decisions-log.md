@@ -83,9 +83,13 @@ do cli"). Ported from the TS reference in the `functions` repo; funk is Go from 
 | I14 | **`funk fmt`**: canonical formatter (decompile AST → .funk), idempotent. | Built |
 | I15 | **Module system**: `funk get <git-url\|path> [name]` clones a package (a git repo) into `~/.funk/pkg`; cached packages resolve like std and compose. **Verified** with a local git package. Semver/lockfile/`use`-driven resolution still future. | Built (basic) |
 
-**CLI (11 commands):** `version · parse · fmt · run · list · types · check · introspect · make · serve · get`. ~3100 lines Go, 104 fns / 13 types, tests green.
+| I16 | **Reactive set completed**: sources `range`/`nats`/`repeat`/`tick` (tick = real-time, verified over ~1s); operators `map`/`filter`/`take`/`collect`/`scan`/`merge`/`window`; **count + event-time windowing** (watermark closes earlier buckets). | Built |
+| I17 | **`funk test`**: inline `test (is (call) expected)` assertions — funk verifies funk (6/6 green). **`funk doc`**: generated `docs/STDLIB.md` (self-describing). | Built |
+| I18 | **`go` engine verified** (goAdd=42); all of builtin/python/go/claude verified live, codex wired. | Built |
 
-**Not yet built:** event-time windowing on live streams (window is count/list); `use`-driven per-package resolution + semver lockfile; the vault/broker for secrets; `bind`/`with` at the funk level; hot-mutation.
+**CLI (14 commands):** `version · parse · fmt · run · list · types · check · test · doc · introspect · make · serve · get · help`. ~3600 lines Go, 110 fns / 13 types, all tests green.
+
+**Not yet built:** `use`-driven per-package namespace resolution + semver lockfile; the vault/broker for secrets (injection is direct-value only); `bind`/`with` at the funk level; hot-mutation; persistent streaming workers (python map spawns per item).
 
 ## Still genuinely open (need Bruno)
 
