@@ -44,8 +44,12 @@ func checkNode(lib *Library, fn string, n Node, scope map[string]bool) []Issue {
 			switch {
 			case t.Value == "true", t.Value == "false", t.Value == "null", t.Value == "nil":
 			case strings.HasPrefix(t.Value, "needs."): // resource access (docs/05)
-			case !scope[t.Value]:
-				return []Issue{{fn, fmt.Sprintf("unknown identifier %q", t.Value)}}
+			case scope[t.Value]: // a bound variable
+			default:
+				// otherwise it must name a function (a first-class function value)
+				if _, ok := lib.Lookup(t.Value); !ok {
+					return []Issue{{fn, fmt.Sprintf("unknown identifier %q", t.Value)}}
+				}
 			}
 		}
 		return nil
@@ -129,12 +133,15 @@ func checkForm(lib *Library, fn string, f Form, scope map[string]bool) []Issue {
 			}
 		}
 	default:
-		// a call
-		callee, ok := lib.Lookup(f.Head)
-		if !ok {
-			issues = append(issues, Issue{fn, fmt.Sprintf("unknown function %q", f.Head)})
-		} else if len(f.Args) != len(callee.In) {
-			issues = append(issues, Issue{fn, fmt.Sprintf("%q expects %d input(s), got %d", f.Head, len(callee.In), len(f.Args))})
+		// a call. If the head is a bound variable it holds a function value —
+		// its target and arity are known only at runtime, so skip that check.
+		if !scope[f.Head] {
+			callee, ok := lib.Lookup(f.Head)
+			if !ok {
+				issues = append(issues, Issue{fn, fmt.Sprintf("unknown function %q", f.Head)})
+			} else if len(f.Args) != len(callee.In) {
+				issues = append(issues, Issue{fn, fmt.Sprintf("%q expects %d input(s), got %d", f.Head, len(callee.In), len(f.Args))})
+			}
 		}
 		for _, a := range f.Args {
 			issues = append(issues, checkNode(lib, fn, a, scope)...)

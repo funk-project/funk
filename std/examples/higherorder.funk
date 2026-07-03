@@ -1,0 +1,40 @@
+; funk/std — first-class functions: a function passed as a value (an
+; introspectable reference, not an opaque closure) and applied.
+
+package "funk/std/examples" {
+  version 0.0.1
+}
+
+fn applyTwice {
+  doc "apply a function to x, twice — higher-order"
+  in  (f Fn) (x Num)
+  out (r Num)
+  body
+    (return (f (f x)))
+}
+
+fn quadruple {
+  doc "double twice, by passing the `double` function to applyTwice"
+  in  (x Num)
+  out (r Num)
+  body
+    (return (applyTwice double x))
+  test (is (quadruple 5) 20)
+}
+
+fn compose2 {
+  doc "apply g then f to x — two functions as values"
+  in  (f Fn) (g Fn) (x Num)
+  out (r Num)
+  body
+    (return (f (g x)))
+}
+
+fn incThenSquare {
+  doc "square(inc(x)) via compose2"
+  in  (x Num)
+  out (r Num)
+  body
+    (return (compose2 square inc x))
+  test (is (incThenSquare 4) 25)
+}

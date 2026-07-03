@@ -14,6 +14,13 @@ var (
 	errContinue = errors.New("continue")
 )
 
+// FnValue is a first-class function: an introspectable reference (an address),
+// not an opaque closure. The agent can read what it is and improve it — the
+// black box stays open (docs/01: the plan is data the agent reasons over).
+type FnValue struct {
+	Ref string `json:"fn"`
+}
+
 // Run executes a function by reference; a live stream result is drained to a List.
 func Run(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts) ExecResult {
 	v, cancel, err := evalTop(lib, ref, inputs, opts, nil)
@@ -165,6 +172,10 @@ func (e *evalEnv) evalAtom(a Atom) (interface{}, error) {
 		}
 		if v, ok := e.vars[a.Value]; ok {
 			return v, nil
+		}
+		// a bare function name in value position → a first-class function value
+		if _, ok := e.lib.Lookup(a.Value); ok {
+			return FnValue{Ref: a.Value}, nil
 		}
 		return nil, fmt.Errorf("unknown identifier %q", a.Value)
 	}
@@ -390,9 +401,18 @@ func (e *evalEnv) evalWindow(args []Node) (interface{}, error) {
 
 // A plain call: (fn arg…). Args map positionally to the callee's `in` ports.
 func (e *evalEnv) evalCall(f Form) (interface{}, error) {
-	callee, ok := e.lib.Lookup(f.Head)
+	// the head may be a function-valued variable (a first-class function passed in)
+	ref := f.Head
+	if v, ok := e.vars[f.Head]; ok {
+		fv, ok := v.(FnValue)
+		if !ok {
+			return nil, fmt.Errorf("%q is not callable", f.Head)
+		}
+		ref = fv.Ref
+	}
+	callee, ok := e.lib.Lookup(ref)
 	if !ok {
-		return nil, fmt.Errorf("unknown function %q", f.Head)
+		return nil, fmt.Errorf("unknown function %q", ref)
 	}
 	inputs := map[string]interface{}{}
 	for i, arg := range f.Args {
@@ -406,11 +426,11 @@ func (e *evalEnv) evalCall(f Form) (interface{}, error) {
 		}
 		inputs[name] = v
 	}
-	res := Run(e.lib, f.Head, inputs, e.opts)
+	res := Run(e.lib, ref, inputs, e.opts)
 	if !res.OK {
-		e.emit(TraceEvent{Fn: f.Head, Kind: "call", Error: res.Error})
-		return nil, fmt.Errorf("%s: %s", f.Head, res.Error)
+		e.emit(TraceEvent{Fn: ref, Kind: "call", Error: res.Error})
+		return nil, fmt.Errorf("%s: %s", ref, res.Error)
 	}
-	e.emit(TraceEvent{Fn: f.Head, Kind: "call", Value: res.Value})
+	e.emit(TraceEvent{Fn: ref, Kind: "call", Value: res.Value})
 	return res.Value, nil
 }
