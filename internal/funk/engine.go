@@ -190,7 +190,9 @@ sys.stdout.write(_out if isinstance(_out, str) else json.dumps(_out))
 		if imageExists("funk-py:latest") {
 			image = "funk-py:latest"
 		}
-		return runCmd("docker", []string{"run", "--rm", "-e", "FUNK_NEEDS=" + nJSON, image, "python3", "-c", wrapper, inJSON}, env, opts.timeout(180*time.Second))
+		// `-e FUNK_NEEDS` (no value) forwards it from the subprocess env, keeping
+		// the secret off the docker command line (visible via `ps`/`docker inspect`).
+		return runCmd("docker", []string{"run", "--rm", "-e", "FUNK_NEEDS", image, "python3", "-c", wrapper, inJSON}, env, opts.timeout(180*time.Second))
 	}
 	return runCmd("python3", []string{"-c", wrapper, inJSON}, env, opts.timeout(30*time.Second))
 }

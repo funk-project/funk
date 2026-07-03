@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -324,9 +325,16 @@ func cmdRun(args []string) error {
 	if len(binds) > 0 {
 		opts.Bindings = map[string]string{}
 		for _, b := range binds {
-			if i := strings.IndexByte(b, '='); i > 0 {
-				opts.Bindings[b[:i]] = b[i+1:]
+			i := strings.IndexByte(b, '=')
+			if i <= 0 {
+				return fmt.Errorf("run: bad --bind %q (want kind.alias=value)", b)
 			}
+			key, raw := b[:i], b[i+1:]
+			val, err := expandBinding(raw)
+			if err != nil {
+				return fmt.Errorf("run: --bind %s: %w", key, err)
+			}
+			opts.Bindings[key] = val
 		}
 	}
 	if len(rest) < 1 {
@@ -386,6 +394,35 @@ func cmdRun(args []string) error {
 		return fmt.Errorf("%s", res.Error)
 	}
 	return nil
+}
+
+// expandBinding resolves a --bind value from a source, keeping secrets off the
+// command line (where `ps`/shell history would capture them): `@path` reads a
+// file, `@-` reads stdin, `env:VAR` reads an env var; anything else is literal.
+func expandBinding(raw string) (string, error) {
+	switch {
+	case raw == "@-":
+		b, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimRight(string(b), "\r\n"), nil
+	case strings.HasPrefix(raw, "@"):
+		b, err := os.ReadFile(raw[1:])
+		if err != nil {
+			return "", err
+		}
+		return strings.TrimRight(string(b), "\r\n"), nil
+	case strings.HasPrefix(raw, "env:"):
+		name := raw[len("env:"):]
+		v, ok := os.LookupEnv(name)
+		if !ok {
+			return "", fmt.Errorf("env var %q is not set", name)
+		}
+		return v, nil
+	default:
+		return raw, nil
+	}
 }
 
 func printValue(v interface{}) {

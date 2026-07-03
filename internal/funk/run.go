@@ -21,6 +21,78 @@ type FnValue struct {
 	Ref string `json:"fn"`
 }
 
+// secretSet holds the resolved values of `secret` needs so the trace can mask
+// them. Self-observation (docs/01 #4) must not turn into credential exposure:
+// the RunReport is data the agent — and anyone it shares the trace with — reads,
+// so any secret that surfaces in it is redacted to "***". The function's actual
+// return value is left intact (it is the result the caller asked for).
+type secretSet struct{ vals []string }
+
+func (s *secretSet) add(v string) {
+	if s == nil || v == "" {
+		return
+	}
+	for _, e := range s.vals {
+		if e == v {
+			return
+		}
+	}
+	s.vals = append(s.vals, v)
+}
+
+// redact replaces every occurrence of a secret value inside x (walking strings,
+// lists, and maps) with "***".
+func (s *secretSet) redact(x interface{}) interface{} {
+	if s == nil || len(s.vals) == 0 {
+		return x
+	}
+	switch t := x.(type) {
+	case string:
+		for _, sec := range s.vals {
+			t = strings.ReplaceAll(t, sec, "***")
+		}
+		return t
+	case []interface{}:
+		out := make([]interface{}, len(t))
+		for i, v := range t {
+			out[i] = s.redact(v)
+		}
+		return out
+	case map[string]interface{}:
+		out := make(map[string]interface{}, len(t))
+		for k, v := range t {
+			out[k] = s.redact(v)
+		}
+		return out
+	default:
+		return x
+	}
+}
+
+func (s *secretSet) redactStr(x string) string {
+	if v, ok := s.redact(x).(string); ok {
+		return v
+	}
+	return x
+}
+
+// registerSecrets records the resolved values of a function's `secret` needs.
+func registerSecrets(f *Fn, res map[string]map[string]interface{}, set *secretSet) {
+	if set == nil || res == nil {
+		return
+	}
+	for _, n := range f.Needs {
+		if n.Kind != "secret" {
+			continue
+		}
+		if kind, ok := res[n.Kind]; ok {
+			if v, ok := kind[n.Alias].(string); ok {
+				set.add(v)
+			}
+		}
+	}
+}
+
 // Run executes a function by reference; a live stream result is drained to a List.
 func Run(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts) ExecResult {
 	v, cancel, err := evalTop(lib, ref, inputs, opts, nil)
@@ -84,7 +156,12 @@ func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecO
 	if !f.Composite() {
 		res := Exec(f, inputs, opts)
 		if trace != nil {
-			*trace = append(*trace, TraceEvent{Fn: f.Name, Kind: "call", Value: res.Value, Error: res.Error})
+			ev := TraceEvent{Fn: f.Name, Kind: "call", Value: res.Value, Error: res.Error}
+			s := &secretSet{}
+			registerSecrets(f, resolveResources(f, opts), s)
+			ev.Value = s.redact(ev.Value)
+			ev.Error = s.redactStr(ev.Error)
+			*trace = append(*trace, ev)
 		}
 		if !res.OK {
 			return nil, noop, fmt.Errorf("%s", res.Error)
@@ -92,8 +169,14 @@ func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecO
 		return res.Value, noop, nil
 	}
 	ctx, cancel := context.WithCancel(context.Background())
+	res := resolveResources(f, opts)
+	var secrets *secretSet
+	if trace != nil {
+		secrets = &secretSet{}
+		registerSecrets(f, res, secrets)
+	}
 	e := &evalEnv{lib: lib, opts: opts, vars: map[string]interface{}{}, ctx: ctx, cancel: cancel,
-		resources: resolveResources(f, opts), trace: trace}
+		resources: res, trace: trace, secrets: secrets}
 	for k, v := range inputs {
 		e.vars[k] = v
 	}
@@ -113,11 +196,12 @@ type evalEnv struct {
 	cancel    context.CancelFunc
 	resources map[string]map[string]interface{} // needs: kind → alias → value
 	trace     *[]TraceEvent                      // nil ⇒ no tracing
+	secrets   *secretSet                         // resolved secret values, masked in the trace
 	yieldTo   Stream                             // the enclosing each's output (for yield)
 }
 
 func (e *evalEnv) child() *evalEnv {
-	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{}, ctx: e.ctx, cancel: e.cancel, resources: e.resources, trace: e.trace, yieldTo: e.yieldTo}
+	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{}, ctx: e.ctx, cancel: e.cancel, resources: e.resources, trace: e.trace, secrets: e.secrets, yieldTo: e.yieldTo}
 	for k, v := range e.vars {
 		c.vars[k] = v
 	}
@@ -125,9 +209,15 @@ func (e *evalEnv) child() *evalEnv {
 }
 
 func (e *evalEnv) emit(ev TraceEvent) {
-	if e.trace != nil {
-		*e.trace = append(*e.trace, ev)
+	if e.trace == nil {
+		return
 	}
+	if e.secrets != nil {
+		ev.Value = e.secrets.redact(ev.Value)
+		ev.Error = e.secrets.redactStr(ev.Error)
+		ev.Detail = e.secrets.redactStr(ev.Detail)
+	}
+	*e.trace = append(*e.trace, ev)
 }
 
 func (e *evalEnv) eval(n Node) (interface{}, error) {
@@ -453,8 +543,10 @@ func (e *evalEnv) evalCall(f Form) (interface{}, error) {
 // runInline evaluates a composite in a child scope that SHARES this env's
 // context, cancel, and trace (isolating only variables to the callee's inputs).
 func (e *evalEnv) runInline(f *Fn, inputs map[string]interface{}) (interface{}, error) {
+	res := resolveResources(f, e.opts)
+	registerSecrets(f, res, e.secrets)
 	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{},
-		ctx: e.ctx, cancel: e.cancel, resources: resolveResources(f, e.opts), trace: e.trace}
+		ctx: e.ctx, cancel: e.cancel, resources: res, trace: e.trace, secrets: e.secrets}
 	for k, v := range inputs {
 		c.vars[k] = v
 	}

@@ -2,6 +2,8 @@ package funk
 
 import (
 	"context"
+	"encoding/json"
+	"strings"
 	"testing"
 )
 
@@ -114,6 +116,39 @@ func TestCheckIssuePosition(t *testing.T) {
 	}
 	if issues[0].Pos.Line != 4 || issues[0].Pos.Col != 9 {
 		t.Fatalf("issue reported at %s, want 4:9", issues[0].Pos)
+	}
+}
+
+func TestTraceRedactsSecret(t *testing.T) {
+	lib := NewLibrary()
+	// `flow` touches the secret in an intermediate step (whose call Value the trace
+	// would capture) but returns a non-secret. The trace must mask the secret; the
+	// returned value is the caller's result and is left intact.
+	src := `
+fn echo { in (a Str) out (r Str) engine builtin src "id" }
+fn flow {
+  in (x Num)
+  out (r Str)
+  needs { secret token }
+  body (do (echo needs.secret.token) (return "done"))
+}`
+	if err := lib.LoadString(src); err != nil {
+		t.Fatal(err)
+	}
+	opts := ExecOpts{Bindings: map[string]string{"secret.token": "s3cr3t-value"}}
+	res, rep := RunWithReport(lib, "flow", map[string]interface{}{"x": 1.0}, opts)
+	if !res.OK {
+		t.Fatalf("run failed: %s", res.Error)
+	}
+	if res.Value != "done" {
+		t.Fatalf("output = %v, want \"done\"", res.Value)
+	}
+	blob, _ := json.Marshal(rep)
+	if strings.Contains(string(blob), "s3cr3t-value") {
+		t.Fatalf("secret leaked into trace: %s", blob)
+	}
+	if !strings.Contains(string(blob), "***") {
+		t.Fatalf("expected redaction marker in trace: %s", blob)
 	}
 }
 
