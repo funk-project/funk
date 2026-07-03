@@ -1,6 +1,6 @@
 # funk — standard library
 
-124 functions across 13 packages.
+126 functions across 13 packages.
 
 ## (local)
 
@@ -90,6 +90,8 @@
   `countUp(n Num) → r Num` · *composite*
 - **`createIssue`** — open a GitHub issue (illustrative) — declares what it needs  
   `createIssue(title Str) → r Json` · *atomic · python*
+- **`divOrDefault`** — divide a by b, else return the supplied fallback  
+  `divOrDefault(a Num, b Num, fallback Num) → r Num` · *composite*
 - **`evens`** — the first n even numbers, mapped lazily from an infinite source  
   `evens(n Num) → r Stream<Num>` · *composite*
 - **`firstEvens`** — the first n even naturals, filtered from an infinite source  
@@ -110,6 +112,8 @@
   `runningMax(n Num) → r Stream<Num>` · *composite*
 - **`runningSum`** — running sum of 1..n — a stateful stream fold  
   `runningSum(n Num) → r Stream<Num>` · *composite*
+- **`safeDiv`** — divide a by b; on any error (e.g. divide-by-zero) fall back to 0  
+  `safeDiv(a Num, b Num) → r Num` · *composite*
 - **`secretPeek`** — show a config value and a masked secret — injected at runtime into python  
   `secretPeek() → r Str` · *atomic · python*
 - **`siteGreeting`** — greet using an injected config value — needs.kind.alias in a funk body  

@@ -167,14 +167,16 @@ already says what is parallel.
 **Errors: propagate-and-cancel.** An error is an `onError` that **cancels its scope**; it
 propagates upward and surfaces in the `RunReport`.
 
-**Recovery forms** *(proposal)* — opt-in, so the default stays simple:
+**Recovery forms** *(implemented; Experimental)* — opt-in, so the default stays simple:
 
-- **`(on-error <body> (e) <handler>)`** — run `body`; if it errors, run `handler` with the error
-  `e` (fallback / substitute value).
-- **`(retry <body> <n> [backoff <dur>])`** — re-run `body` up to `n` times, optional backoff;
-  the error propagates only after the last attempt.
+- **`(on-error <body> (e) <handler>)`** — run `body`; if it errors, bind the error message to
+  `e` and run `handler` (fallback / substitute value). Loop signals (`break`/`continue`) are not
+  caught.
+- **`(retry <body> <n> [backoff <dur>])`** — re-run `body` up to `n` attempts, optional
+  (cancellable) backoff between them; the error propagates only after the last attempt.
 
-Both are ordinary forms that scope a `context`; without them, errors propagate-and-cancel.
+Both are ordinary forms that scope a `context`; without them, errors propagate-and-cancel. The
+run's `RunReport` records a `recover` / `retry` event when they fire.
 
 ## 6a. Stability (what is stable today)
 
@@ -195,10 +197,10 @@ The spec runs ahead of the engine; this table is the contract for the **referenc
 | Operators `map` · `filter` · `take` · `scan` · `merge` · `collect` | **Stable** |
 | `window` — count + event-time (`by <field>`) | **Stable** |
 | `each` / `yield` (define your own operators) · `fold` | **Experimental** |
+| Recovery — `(on-error …)` · `(retry …)` | **Experimental** |
 | `needs` / `effects` blocks; injection via `--bind` / env; trace redaction | **Experimental** |
 | `funk get` (clone a package by URL, resolve by bare name) | **Experimental** |
 | `window` extras — `every` (sliding) · `lateness` · `on-late` | **Proposal** |
-| Recovery — `(on-error …)` · `(retry …)` | **Proposal** |
 | `use "<addr>" <semver> as <alias>` (namespaced/versioned resolution) | **Proposal** |
 | Secret **broker** / **egress** control; `with { … }` / project `object` | **Proposal** |
 

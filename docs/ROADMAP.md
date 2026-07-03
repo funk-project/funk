@@ -54,7 +54,8 @@ leak by accident. Not "production platform" — "a language you can rely on for 
 - [ ] **Secret broker + egress control** — the function receives a *capability*, not the token;
       the sandbox reaches only declared endpoints (docs/05 A–C). Redaction stops being the only
       line of defense.
-- [ ] **Recovery forms** — `(on-error …)` / `(retry …)` (docs/04 §6, proposal).
+- [x] **Recovery forms** — `(on-error <body> (e) <handler>)` and `(retry <body> <n> [backoff
+      <dur>])`, implemented + tested (Experimental). *Landed early.*
 - [ ] **Full `window`** — `every` (sliding), `lateness`, `on-late` (docs/04 §7, proposal).
 
 ## v0.3+ — "live pipelines & shared state"

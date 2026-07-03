@@ -155,7 +155,31 @@ $ funk run powTwoLE n=1000    # largest power of two ≤ n, via a while loop
 512
 ```
 
-## 9. Inject config & secrets (and watch them stay masked)
+## 9. Recover from errors (fallback & retry)
+
+By default an error propagates and cancels the run. Two opt-in forms handle it. `on-error` runs a
+fallback; the trace records a `recover` event so you can see it fired.
+
+```
+fn safeDiv {
+  in  (a Num) (b Num)
+  out (r Num)
+  body (on-error (return (div a b)) (e) (return 0))
+}
+```
+
+```sh
+$ funk run safeDiv a=10 b=2
+5
+$ funk run safeDiv a=10 b=0        # divide-by-zero → recovered
+0
+```
+
+`(retry <body> <n> [backoff <dur>])` re-runs a flaky body up to `n` attempts (the error
+propagates only after the last), with an optional cancellable backoff — ideal for a network or
+LLM call that occasionally fails.
+
+## 10. Inject config & secrets (and watch them stay masked)
 
 A function declares what it `needs`; values are injected at runtime from `--bind` (or env
 `FUNK_<KIND>_<ALIAS>`). Keep secrets off the command line with `@file`, `@-` (stdin), or
@@ -181,7 +205,7 @@ funk-project/funk @ ghp***
 The raw token never appears — not in the trace, not in `ps` (it was read from a file). See
 [`docs/05`](05-resources-and-integrations.md) for the full resource model.
 
-## 10. Inspect a function without running it
+## 11. Inspect a function without running it
 
 ```sh
 $ funk graph bump
@@ -212,7 +236,7 @@ $ funk introspect secretPeek     # structure + declared needs/effects (aggregate
 }
 ```
 
-## 11. Serve funk over HTTP
+## 12. Serve funk over HTTP
 
 ```sh
 $ funk serve &                    # funkd on :7777
@@ -226,7 +250,7 @@ $ curl -N localhost:7777/run -d '{"ref":"evens","inputs":{"n":5}}'
 
 Each stream item is flushed as it is produced — the pipeline streams over the wire.
 
-## 12. Let funk write funk
+## 13. Let funk write funk
 
 The self-programming loop (`architect → programmer → check → reflect`, on the `claude` engine)
 generates a new function, checks it, runs its tests, and keeps it only if green (a failing
