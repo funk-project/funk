@@ -113,10 +113,11 @@ type evalEnv struct {
 	cancel    context.CancelFunc
 	resources map[string]map[string]interface{} // needs: kind → alias → value
 	trace     *[]TraceEvent                      // nil ⇒ no tracing
+	yieldTo   Stream                             // the enclosing each's output (for yield)
 }
 
 func (e *evalEnv) child() *evalEnv {
-	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{}, ctx: e.ctx, cancel: e.cancel, resources: e.resources, trace: e.trace}
+	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{}, ctx: e.ctx, cancel: e.cancel, resources: e.resources, trace: e.trace, yieldTo: e.yieldTo}
 	for k, v := range e.vars {
 		c.vars[k] = v
 	}
@@ -228,6 +229,10 @@ func (e *evalEnv) evalForm(f Form) (interface{}, error) {
 		return e.evalTake(f.Args)
 	case "collect":
 		return e.evalCollect(f.Args)
+	case "each":
+		return e.evalEach(f.Args)
+	case "yield":
+		return e.evalYield(f.Args)
 	case "scan":
 		return e.evalScan(f.Args)
 	case "merge":

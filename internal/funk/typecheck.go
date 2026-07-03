@@ -18,6 +18,7 @@ var coreForms = map[string]bool{
 	"for-each": true, "while": true, "window": true, "break": true, "continue": true,
 	"range": true, "nats": true, "repeat": true, "map": true, "filter": true,
 	"take": true, "collect": true, "tick": true, "scan": true, "merge": true,
+	"each": true, "yield": true,
 }
 
 // Check statically validates every composite function in the library:
@@ -70,9 +71,19 @@ func checkForm(lib *Library, fn string, f Form, scope map[string]bool) []Issue {
 	}
 	switch f.Head {
 	case "do", "return", "exit", "if", "break", "continue",
-		"range", "nats", "repeat", "take", "collect", "merge":
+		"range", "nats", "repeat", "take", "collect", "merge", "yield":
 		for _, a := range f.Args {
 			issues = append(issues, checkNode(lib, fn, a, scope)...)
+		}
+	case "each":
+		// (each stream (item) body) — binds item in the body scope
+		if len(f.Args) == 3 {
+			issues = append(issues, checkNode(lib, fn, f.Args[0], scope)...)
+			sc := child()
+			if bind, ok := f.Args[1].(Form); ok {
+				sc[bind.Head] = true
+			}
+			issues = append(issues, checkNode(lib, fn, f.Args[2], sc)...)
 		}
 	case "scan":
 		// (scan stream fn init)

@@ -1,6 +1,7 @@
 package funk
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -8,6 +9,59 @@ import (
 	"sync"
 	"time"
 )
+
+// (each stream (item) body) — iterate a stream; body may `yield` to the output.
+// This + yield is the minimal primitive over which map/filter are defined IN
+// funk (self-hosting: the operators become readable artifacts, not Go core).
+func (e *evalEnv) evalEach(args []Node) (interface{}, error) {
+	if len(args) != 3 {
+		return nil, fmt.Errorf("each: (each stream (item) body)")
+	}
+	src, err := e.eval(args[0])
+	if err != nil {
+		return nil, err
+	}
+	bind, ok := args[1].(Form)
+	if !ok {
+		return nil, fmt.Errorf("each: second arg must be (item)")
+	}
+	in := e.asStream(src)
+	out := make(Stream)
+	go func() {
+		defer close(out)
+		for item := range in {
+			c := e.child()
+			c.vars[bind.Head] = item
+			c.yieldTo = out
+			if _, err := c.eval(args[2]); err != nil {
+				if errors.Is(err, errContinue) {
+					continue
+				}
+				if errors.Is(err, errBreak) {
+					return
+				}
+				e.cancel()
+				return
+			}
+		}
+	}()
+	return out, nil
+}
+
+// (yield v) — emit v to the enclosing each's output stream.
+func (e *evalEnv) evalYield(args []Node) (interface{}, error) {
+	if len(args) != 1 {
+		return nil, fmt.Errorf("yield: (yield v)")
+	}
+	v, err := e.eval(args[0])
+	if err != nil {
+		return nil, err
+	}
+	if e.yieldTo != nil {
+		e.send(e.yieldTo, v)
+	}
+	return nil, nil
+}
 
 // Stream is a reactive stream: values over time, closed on completion.
 // docs/03: stream = chan; onNext = send; onComplete = close; cancel = ctx.

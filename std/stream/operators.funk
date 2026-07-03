@@ -1,0 +1,45 @@
+; funk/std — stream operators DEFINED IN FUNK, over the minimal each/yield
+; primitive. This is the self-hosting proof: map is not a Go black box — it is a
+; readable, introspectable funk artifact the agent can reason about and improve.
+; (The Go core `map`/`filter` remain as fast-paths; these are the canonical defs.)
+
+package "funk/std/stream" {
+  version 0.0.1
+}
+
+fn fmap {
+  doc "map — apply f to each item (defined in funk)"
+  in  (xs Stream) (f Fn)
+  out (r Stream)
+  body
+    (each xs (item)
+      (yield (f item)))
+}
+
+fn ffilter {
+  doc "filter — keep items where f is true (defined in funk)"
+  in  (xs Stream) (f Fn)
+  out (r Stream)
+  body
+    (each xs (item)
+      (if (f item)
+        (yield item)))
+}
+
+fn fmapSum {
+  doc "sum of doubles of 1..n via the funk-defined fmap — proves it matches Go map"
+  in  (n Num)
+  out (r Num)
+  body
+    (return (sum (collect (fmap (range 1 n) double))))
+  test (is (fmapSum 4) 20)
+}
+
+fn evensVia {
+  doc "even numbers in 1..n via the funk-defined ffilter"
+  in  (n Num)
+  out (r Num)
+  body
+    (return (count (collect (ffilter (range 1 n) even?))))
+  test (is (evensVia 10) 5)
+}
