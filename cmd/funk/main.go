@@ -42,6 +42,8 @@ func main() {
 		err = cmdMake(args)
 	case "serve":
 		err = cmdServe(args)
+	case "get":
+		err = cmdGet(args)
 	case "help", "-h", "--help":
 		usage()
 	default:
@@ -72,10 +74,12 @@ usage:
                              programmer→check→reflect), adds it to std/generated
   funk serve [--addr :7777]  run funkd (HTTP: /run streams NDJSON, /functions,
                              /introspect)
+  funk get <url> [name]      fetch a package (git repo) into ~/.funk/pkg
 
 env:
   FUNK_STD      path to the std library (default: ./std)
   FUNK_SERVER   run against a funkd server instead of locally
+  FUNK_CACHE    package cache dir (default: ~/.funk/pkg)
 `)
 }
 
@@ -89,6 +93,14 @@ func loadLibrary(extra []string) (*funk.Library, error) {
 	if fi, err := os.Stat(std); err == nil && fi.IsDir() {
 		if err := lib.LoadDir(std); err != nil {
 			return nil, err
+		}
+	}
+	// fetched packages in the shared cache (~/.funk/pkg) resolve like std.
+	if cache := cacheDir(); cache != "" {
+		if fi, err := os.Stat(cache); err == nil && fi.IsDir() {
+			if err := lib.LoadDir(cache); err != nil {
+				return nil, err
+			}
 		}
 	}
 	for _, p := range extra {
