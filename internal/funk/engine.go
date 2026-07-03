@@ -196,7 +196,14 @@ sys.stdout.write(_out if isinstance(_out, str) else json.dumps(_out))
 		}
 		// `-e FUNK_NEEDS` (no value) forwards it from the subprocess env, keeping
 		// the secret off the docker command line (visible via `ps`/`docker inspect`).
-		return runCmd("docker", []string{"run", "--rm", "-e", "FUNK_NEEDS", image, "python3", "-c", wrapper, inJSON}, env, opts.timeout(180*time.Second))
+		dargs := []string{"run", "--rm", "-e", "FUNK_NEEDS"}
+		// Egress default-deny (docs/06 §7): a body with no declared `net` effect
+		// gets no network at all — the raw-secret tier's guarantee (docs/06 §6).
+		if !hasNetEffect(f) {
+			dargs = append(dargs, "--network", "none")
+		}
+		dargs = append(dargs, image, "python3", "-c", wrapper, inJSON)
+		return runCmd("docker", dargs, env, opts.timeout(180*time.Second))
 	}
 	return runCmd("python3", []string{"-c", wrapper, inJSON}, env, opts.timeout(30*time.Second))
 }
@@ -244,6 +251,17 @@ func execCodex(f *Fn, in map[string]interface{}, opts ExecOpts) ExecResult {
 	inJSON := inputsJSON(in)
 	prompt := fmt.Sprintf("%s\n\nInputs (JSON): %s\n\nRespond with ONLY the result value (no prose).", f.Src, inJSON)
 	return runCmd("codex", []string{"exec", prompt}, baseEnv(inJSON), opts.timeout(120*time.Second))
+}
+
+// hasNetEffect reports whether f declares any `net` egress capability. A body
+// without one runs with no network (docs/06 §7, egress default-deny).
+func hasNetEffect(f *Fn) bool {
+	for _, e := range f.Effects {
+		if e.Kind == "net" {
+			return true
+		}
+	}
+	return false
 }
 
 func imageExists(img string) bool {

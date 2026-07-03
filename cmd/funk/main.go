@@ -299,14 +299,25 @@ func cmdCheck(args []string) error {
 		return err
 	}
 	issues := funk.Check(lib)
-	if len(issues) == 0 {
-		fmt.Printf("ok — %d functions, %d types, no issues\n", len(lib.Fns), len(lib.Types)/2)
+	errs := 0
+	for _, i := range issues {
+		if i.Warn {
+			fmt.Fprintln(os.Stderr, "warning: "+i.String())
+			continue
+		}
+		fmt.Fprintln(os.Stderr, i.String())
+		errs++
+	}
+	if errs == 0 {
+		warns := len(issues)
+		if warns == 0 {
+			fmt.Printf("ok — %d functions, %d types, no issues\n", len(lib.Fns), len(lib.Types)/2)
+		} else {
+			fmt.Printf("ok — %d functions, %d types, no errors (%d warning(s))\n", len(lib.Fns), len(lib.Types)/2, warns)
+		}
 		return nil
 	}
-	for _, i := range issues {
-		fmt.Fprintln(os.Stderr, i.String())
-	}
-	return fmt.Errorf("%d issue(s)", len(issues))
+	return fmt.Errorf("%d issue(s)", errs)
 }
 
 func cmdRun(args []string) error {

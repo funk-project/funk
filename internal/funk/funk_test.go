@@ -178,6 +178,49 @@ fn bad {
 	}
 }
 
+func TestSecretWithNetWarning(t *testing.T) {
+	lib := NewLibrary()
+	src := `
+fn risky {
+  in  (t Str)
+  out (r Str)
+  engine python
+  needs { secret token }
+  effects { net evil.example.com }
+  src "return t"
+}
+fn safe {
+  in  (t Str)
+  out (r Str)
+  engine python
+  needs { secret token }
+  src "return t"
+}`
+	if err := lib.LoadString(src); err != nil {
+		t.Fatal(err)
+	}
+	var warns []Issue
+	for _, i := range Check(lib) {
+		if i.Warn {
+			warns = append(warns, i)
+		}
+	}
+	if len(warns) != 1 || warns[0].Fn != "risky" {
+		t.Fatalf("want exactly one secret+net warning on 'risky', got %+v", warns)
+	}
+}
+
+func TestHasNetEffect(t *testing.T) {
+	withNet := &Fn{Effects: []Effect{{Kind: "net", Args: []string{"api.github.com"}}}}
+	noNet := &Fn{Effects: []Effect{{Kind: "fs", Args: []string{"read", "/tmp"}}}}
+	if !hasNetEffect(withNet) {
+		t.Fatal("expected net effect to be detected")
+	}
+	if hasNetEffect(noNet) || hasNetEffect(&Fn{}) {
+		t.Fatal("expected no net effect for fs-only / empty")
+	}
+}
+
 func TestOnErrorRecovers(t *testing.T) {
 	lib := NewLibrary()
 	src := `

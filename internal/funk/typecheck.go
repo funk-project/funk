@@ -5,12 +5,14 @@ import (
 	"strings"
 )
 
-// Issue is a static problem found by Check.
+// Issue is a static problem found by Check. Warn marks a non-fatal advisory
+// (a security caution) — it is reported but does not fail the check.
 type Issue struct {
 	Fn   string
 	Msg  string
 	File string // source file, if known
 	Pos  Pos    // position of the offending node, if known
+	Warn bool   // advisory, not an error
 }
 
 // String formats as "path:line:col: fn: message" when a location is known (a
@@ -40,6 +42,12 @@ var coreForms = map[string]bool{
 func Check(lib *Library) []Issue {
 	var issues []Issue
 	for _, f := range lib.Fns {
+		// Security advisory (docs/06 §6): a body that holds a raw secret AND has a
+		// declared network egress could exfiltrate it — redaction is not a guarantee.
+		if secretWithNet(lib, f) {
+			issues = append(issues, Issue{Fn: f.Name, File: f.File, Pos: f.Pos, Warn: true,
+				Msg: "raw secret + network egress — the body could exfiltrate the secret (docs/06 §6); prefer a brokered integration, or drop the net effect"})
+		}
 		if !f.Composite() {
 			continue
 		}
@@ -50,6 +58,27 @@ func Check(lib *Library) []Issue {
 		issues = append(issues, checkNode(lib, f, f.Body, scope)...)
 	}
 	return issues
+}
+
+// secretWithNet reports whether f itself holds a raw `secret` need and can reach
+// the network (a `net` effect anywhere in what it transitively calls).
+func secretWithNet(lib *Library, f *Fn) bool {
+	ownSecret := false
+	for _, n := range f.Needs {
+		if n.Kind == "secret" {
+			ownSecret = true
+		}
+	}
+	if !ownSecret {
+		return false
+	}
+	_, effects := aggregateResources(lib, f, map[string]bool{})
+	for _, e := range effects {
+		if e.Kind == "net" {
+			return true
+		}
+	}
+	return false
 }
 
 // issueAt builds an Issue located at node n's position, within fn.

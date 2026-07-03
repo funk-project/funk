@@ -155,6 +155,9 @@ func fnName(code string) string {
 func issuesFor(all []funk.Issue, name string) []string {
 	var out []string
 	for _, i := range all {
+		if i.Warn {
+			continue // advisories don't block generation
+		}
 		if i.Fn == name || strings.Contains(i.Msg, name) {
 			out = append(out, i.String())
 		}
