@@ -1,0 +1,27 @@
+name: ci
+
+# The automated gate: nothing merges red. Every push and PR must build, pass Go
+# tests, and pass funk's own self-check and inline tests (funk verifying funk).
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 'stable'
+      - name: go vet
+        run: go vet ./...
+      - name: go test
+        run: go test ./...
+      - name: build
+        run: go build -o bin/funk ./cmd/funk
+      - name: funk check (static)
+        run: ./bin/funk check
+      - name: funk test (inline assertions)
+        run: ./bin/funk test

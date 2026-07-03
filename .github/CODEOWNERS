@@ -1,0 +1,7 @@
+# The core is maintainer-held: outsiders (human or AI) propose, maintainers merge.
+# The ecosystem grows in separate packages via the module system — not here.
+
+*            @brunofitas
+/cmd/        @brunofitas
+/internal/   @brunofitas
+/docs/       @brunofitas
