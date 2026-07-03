@@ -154,8 +154,14 @@ the seam that lets "direct value today" become "vault tomorrow" without touching
   (a no-net body gets `ENETUNREACH`; a net-declared one keeps a network stack). And a `check`-time
   **warning for `secret + net`** (advisory, non-fatal). *Remaining:* host-level allowlisting for
   net-declared bodies (reach *only* the declared hosts) needs the proxy from Phase 2.
-- **Phase 2 — broker, explicit API (§5a).** `needs { <integration> … }` becomes a capability; the
-  body calls the broker; credentials come from the Phase-0 providers. Body never holds the token.
+- **Phase 2 — broker, explicit API (§5a).** *Minimal version shipped (I28):* a per-run broker
+  (`internal/funk/broker.go`) started by `funk run`; `needs { <integration> … }` becomes a
+  brokered capability (excluded from `FUNK_NEEDS`), reached via `FUNK_BROKER/call` by alias. The
+  broker injects the credential and enforces the `effects{net}` host allowlist. **Verified live:**
+  the body runs with `body_has_token=False`, the integration receives the injected `Bearer`, and an
+  undeclared host is denied (403). *Limits:* host engine only (routing a `--sandbox docker`
+  container to the broker is future); `Bearer` auth scheme; explicit API, not the transparent
+  proxy (§5b) yet.
 - **Phase 3 — transparent proxy (§5b).** `HTTPS_PROXY` + broker CA, so existing SDK code is
   unmodified.
 - **Phase 4 — lifecycle & trust.** Short-lived/scoped tokens (STS/OAuth exchange); wire package

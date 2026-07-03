@@ -53,10 +53,12 @@ leak by accident. Not "production platform" — "a language you can rely on for 
       first reproducibility step); still to come: `use "<addr>" <semver> as <alias>` driving
       per-package namespaces + a lockfile.
 - [~] **Secret broker + egress control** — the function receives a *capability*, not the token;
-      the sandbox reaches only declared endpoints (docs/05 A–C). Redaction stops being the only
-      line of defense. **Design:** [`docs/06-broker-egress.md`](06-broker-egress.md). **Phase 1
-      partly shipped:** no-`net` bodies run `--network none` (verified) + a `secret+net` check
-      warning. Remaining: host allowlisting (needs the Phase-2 proxy), then the broker itself.
+      the sandbox reaches only declared endpoints (docs/05 A–C). **Design:**
+      [`docs/06-broker-egress.md`](06-broker-egress.md). **Shipped:** Phase 1 — no-`net` bodies run
+      `--network none`; a `secret+net` check warning. Phase 2 (minimal) — a per-run broker holds
+      integration creds, the body reaches them by alias via `FUNK_BROKER`, host allowlist enforced
+      (all verified live). **Remaining:** docker→broker routing, transparent HTTPS proxy (§5b),
+      short-lived tokens, vault provider.
 - [x] **Recovery forms** — `(on-error <body> (e) <handler>)` and `(retry <body> <n> [backoff
       <dur>])`, implemented + tested (Experimental). *Landed early.*
 - [~] **Full `window`** — sliding **count** windows (`every <slide>`) are in + tested;
