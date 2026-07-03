@@ -1,12 +1,21 @@
 # funk
 
-**A language and protocol for defining workflows** — and, at its core, for turning the
-execution plan of an (AI) agent into a first-class artifact: **portable, typed, editable,
-self-observable, and reactive.**
+**A language for the plans AIs make** — turning an agent's execution plan into a first-class
+artifact: **portable, typed, editable, self-observable, reactive.** The machine stops being a
+black box, because there is finally a reader that can hold it — the AI itself.
 
-> Status: **design + a working reference CLI (Go).** The design lives in `docs/`; a real
-> `funk` CLI parses, type-checks, and runs `.funk` — and can **write funk with funk**. Start
-> with [`docs/01-the-idea.md`](docs/01-the-idea.md), or jump to the CLI below.
+> **Teach any AI funk in one paste:** `funk prompt` prints a one-page primer — drop it into any
+> chat (Claude, GPT, …) and that AI can read and write funk. Plans travel **AI to AI**.
+
+```sh
+go install github.com/funk-project/funk/cmd/funk@latest
+funk make "reverse the words in a sentence"   # funk writes funk (architect→…→reflect)
+funk run bump x=3 --trace                      # watch the run as data — the black box, open
+```
+
+> Status: **design + a working reference CLI (Go).** The design lives in `docs/` (start with
+> [`docs/01-the-idea.md`](docs/01-the-idea.md)); the CLI parses, type-checks, runs, streams, and
+> **writes funk with funk**. Details below.
 
 ## The artifact, in five properties
 
