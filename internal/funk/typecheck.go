@@ -7,11 +7,24 @@ import (
 
 // Issue is a static problem found by Check.
 type Issue struct {
-	Fn  string
-	Msg string
+	Fn   string
+	Msg  string
+	File string // source file, if known
+	Pos  Pos    // position of the offending node, if known
 }
 
-func (i Issue) String() string { return fmt.Sprintf("%s: %s", i.Fn, i.Msg) }
+// String formats as "path:line:col: fn: message" when a location is known (a
+// File Watcher / LSP can navigate to it), degrading gracefully otherwise.
+func (i Issue) String() string {
+	switch {
+	case i.File != "" && i.Pos.Line > 0:
+		return fmt.Sprintf("%s:%d:%d: %s: %s", i.File, i.Pos.Line, i.Pos.Col, i.Fn, i.Msg)
+	case i.Pos.Line > 0:
+		return fmt.Sprintf("%d:%d: %s: %s", i.Pos.Line, i.Pos.Col, i.Fn, i.Msg)
+	default:
+		return fmt.Sprintf("%s: %s", i.Fn, i.Msg)
+	}
+}
 
 var coreForms = map[string]bool{
 	"do": true, "let": true, "if": true, "return": true, "exit": true,
@@ -33,12 +46,21 @@ func Check(lib *Library) []Issue {
 		for _, p := range f.In {
 			scope[p.Name] = true
 		}
-		issues = append(issues, checkNode(lib, f.Name, f.Body, scope)...)
+		issues = append(issues, checkNode(lib, f, f.Body, scope)...)
 	}
 	return issues
 }
 
-func checkNode(lib *Library, fn string, n Node, scope map[string]bool) []Issue {
+// issueAt builds an Issue located at node n's position, within fn.
+func issueAt(fn *Fn, p Pos, msg string) Issue {
+	// fall back to the fn's own position if the node lost its location
+	if p.Line == 0 {
+		p = fn.Pos
+	}
+	return Issue{Fn: fn.Name, File: fn.File, Pos: p, Msg: msg}
+}
+
+func checkNode(lib *Library, fn *Fn, n Node, scope map[string]bool) []Issue {
 	switch t := n.(type) {
 	case Atom:
 		if t.Kind == "id" {
@@ -49,7 +71,7 @@ func checkNode(lib *Library, fn string, n Node, scope map[string]bool) []Issue {
 			default:
 				// otherwise it must name a function (a first-class function value)
 				if _, ok := lib.Lookup(t.Value); !ok {
-					return []Issue{{fn, fmt.Sprintf("unknown identifier %q", t.Value)}}
+					return []Issue{issueAt(fn, t.Pos, fmt.Sprintf("unknown identifier %q", t.Value))}
 				}
 			}
 		}
@@ -60,7 +82,7 @@ func checkNode(lib *Library, fn string, n Node, scope map[string]bool) []Issue {
 	return nil
 }
 
-func checkForm(lib *Library, fn string, f Form, scope map[string]bool) []Issue {
+func checkForm(lib *Library, fn *Fn, f Form, scope map[string]bool) []Issue {
 	var issues []Issue
 	child := func() map[string]bool {
 		c := map[string]bool{}
@@ -91,7 +113,7 @@ func checkForm(lib *Library, fn string, f Form, scope map[string]bool) []Issue {
 			issues = append(issues, checkNode(lib, fn, f.Args[0], scope)...)
 			if name, ok := fnRefName(f.Args[1]); ok {
 				if _, ok := lib.Lookup(name); !ok {
-					issues = append(issues, Issue{fn, fmt.Sprintf("scan references unknown function %q", name)})
+					issues = append(issues, issueAt(fn, f.Pos, fmt.Sprintf("scan references unknown function %q", name)))
 				}
 			}
 			issues = append(issues, checkNode(lib, fn, f.Args[2], scope)...)
@@ -140,9 +162,9 @@ func checkForm(lib *Library, fn string, f Form, scope map[string]bool) []Issue {
 		if !scope[f.Head] {
 			callee, ok := lib.Lookup(f.Head)
 			if !ok {
-				issues = append(issues, Issue{fn, fmt.Sprintf("unknown function %q", f.Head)})
+				issues = append(issues, issueAt(fn, f.Pos, fmt.Sprintf("unknown function %q", f.Head)))
 			} else if len(f.Args) != len(callee.In) {
-				issues = append(issues, Issue{fn, fmt.Sprintf("%q expects %d input(s), got %d", f.Head, len(callee.In), len(f.Args))})
+				issues = append(issues, issueAt(fn, f.Pos, fmt.Sprintf("%q expects %d input(s), got %d", f.Head, len(callee.In), len(f.Args))))
 			}
 		}
 		for _, a := range f.Args {

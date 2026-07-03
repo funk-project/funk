@@ -5,6 +5,14 @@
 // forms `(head arg …)`; the graph is *derived* from the code, never drawn.
 package funk
 
+// Pos is a 1-based source position (line and column). The zero value means
+// "unknown". It rides on AST nodes so diagnostics can point at real locations;
+// it is excluded from JSON so the `funk parse` output contract is unchanged.
+type Pos struct {
+	Line int
+	Col  int
+}
+
 // Node is an expression node: either an Atom or a Form.
 type Node interface{ node() }
 
@@ -12,14 +20,17 @@ type Node interface{ node() }
 type Atom struct {
 	Kind  string // "id" | "str" | "num"
 	Value string
+	Pos   Pos `json:"-"`
 }
 
 func (Atom) node() {}
 
 // Form is a prefix form: (Head Args…). An empty form (Head == "") is `()`.
+// Pos points at the head (or the opening `(` for an empty form).
 type Form struct {
 	Head string
 	Args []Node
+	Pos  Pos `json:"-"`
 }
 
 func (Form) node() {}
@@ -30,13 +41,15 @@ type Field struct {
 	Key    string
 	Values []Node
 	Sub    []Field `json:",omitempty"`
+	Pos    Pos     `json:"-"`
 }
 
-// Block is a top-level definition: `head Name { field… }`.
+// Block is a top-level definition: `head Name { field… }`. Pos points at the head.
 type Block struct {
 	Head   string // "fn" | "type" | "package"
 	Name   string
 	Fields []Field
+	Pos    Pos `json:"-"`
 }
 
 // Program is a parsed .funk source: a list of blocks.

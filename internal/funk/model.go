@@ -57,6 +57,8 @@ type Fn struct {
 	Effects  []Effect
 	Tests    []TestCase
 	Body     Node // composite: the single composing expression (nil ⇒ atomic)
+	File     string // source file this fn was loaded from ("" if from a string)
+	Pos      Pos    // position of the `fn` keyword, for diagnostics
 }
 
 // Composite reports whether the function is composed of other functions.
@@ -115,9 +117,9 @@ func nodeTypeString(n Node) string {
 // FnFromBlock builds an Fn from a parsed `fn` block.
 func FnFromBlock(b Block, pkg string) (*Fn, error) {
 	if b.Head != "fn" {
-		return nil, fmt.Errorf("not an fn block: %q", b.Head)
+		return nil, &ParseError{Pos: b.Pos, Msg: fmt.Sprintf("not an fn block: %q", b.Head)}
 	}
-	f := &Fn{Name: b.Name, Package: pkg}
+	f := &Fn{Name: b.Name, Package: pkg, Pos: b.Pos}
 	f.Doc = b.FieldStr("doc")
 	f.Engine = b.FieldStr("engine")
 	if in, ok := b.Field("in"); ok {
@@ -171,7 +173,7 @@ func FnFromBlock(b Block, pkg string) (*Fn, error) {
 		}
 	}
 	if f.Src != "" && f.Body != nil {
-		return nil, fmt.Errorf("fn %q has both src and body (must be exactly one)", f.Name)
+		return nil, &ParseError{Pos: b.Pos, Msg: fmt.Sprintf("fn %q has both src and body (must be exactly one)", f.Name)}
 	}
 	return f, nil
 }
@@ -242,10 +244,21 @@ func (l *Library) Lookup(ref string) (*Fn, bool) {
 }
 
 // LoadString parses .funk source and adds its fn and type blocks.
-func (l *Library) LoadString(src string) error {
+func (l *Library) LoadString(src string) error { return l.loadString(src, "") }
+
+// loadString parses src (from file path, "" if none) and adds its blocks. When a
+// path is known, parse/build errors are prefixed as "path:line:col: message" so a
+// File Watcher / LSP can navigate to them; the position rides on the ParseError.
+func (l *Library) loadString(src, path string) error {
+	withPath := func(err error) error {
+		if err == nil || path == "" {
+			return err
+		}
+		return fmt.Errorf("%s:%s", path, err)
+	}
 	prog, err := Parse(src)
 	if err != nil {
-		return err
+		return withPath(err)
 	}
 	pkg := ""
 	for _, b := range prog {
@@ -258,8 +271,9 @@ func (l *Library) LoadString(src string) error {
 		case "fn":
 			f, err := FnFromBlock(b, pkg)
 			if err != nil {
-				return err
+				return withPath(err)
 			}
+			f.File = path
 			l.Add(f)
 		case "type":
 			td := TypeFromBlock(b, pkg)
@@ -276,10 +290,7 @@ func (l *Library) LoadFile(path string) error {
 	if err != nil {
 		return err
 	}
-	if err := l.LoadString(string(src)); err != nil {
-		return fmt.Errorf("%s: %w", path, err)
-	}
-	return nil
+	return l.loadString(string(src), path)
 }
 
 // LoadDir walks a directory tree and loads every .funk file.

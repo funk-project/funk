@@ -89,6 +89,34 @@ func TestSrcXorBody(t *testing.T) {
 	}
 }
 
+func TestParseErrorPosition(t *testing.T) {
+	// unterminated string — the error points at the opening quote (line 2, col 9)
+	_, err := Parse("fn s {\n    src \"oops }\n")
+	pe, ok := err.(*ParseError)
+	if !ok {
+		t.Fatalf("want *ParseError, got %T (%v)", err, err)
+	}
+	if pe.Pos.Line != 2 || pe.Pos.Col != 9 {
+		t.Fatalf("unterminated string reported at %s, want 2:9", pe.Pos)
+	}
+}
+
+func TestCheckIssuePosition(t *testing.T) {
+	lib := NewLibrary()
+	// the bad call sits on line 4, its head `ghostCall` at column 9
+	src := "fn wrapper {\n  in (a Num)\n  out (r Num)\n  body (ghostCall a)\n}\n"
+	if err := lib.LoadString(src); err != nil {
+		t.Fatal(err)
+	}
+	issues := Check(lib)
+	if len(issues) != 1 {
+		t.Fatalf("want 1 issue, got %d: %v", len(issues), issues)
+	}
+	if issues[0].Pos.Line != 4 || issues[0].Pos.Col != 9 {
+		t.Fatalf("issue reported at %s, want 4:9", issues[0].Pos)
+	}
+}
+
 func TestBuiltins(t *testing.T) {
 	cases := []struct {
 		src  string

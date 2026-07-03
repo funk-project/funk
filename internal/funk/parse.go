@@ -6,10 +6,23 @@ import (
 	"strings"
 )
 
-// ParseError is a syntax error with position context.
-type ParseError struct{ Msg string }
+// String renders a position as "line:col".
+func (p Pos) String() string { return fmt.Sprintf("%d:%d", p.Line, p.Col) }
 
-func (e *ParseError) Error() string { return "parse error: " + e.Msg }
+// ParseError is a syntax error carrying the source position where it was found.
+type ParseError struct {
+	Msg string
+	Pos Pos
+}
+
+// Error formats as "line:col: message" so a File Watcher / LSP can place it;
+// callers that know the file prefix it as "path:line:col: message".
+func (e *ParseError) Error() string {
+	if e.Pos.Line > 0 {
+		return fmt.Sprintf("%d:%d: %s", e.Pos.Line, e.Pos.Col, e.Msg)
+	}
+	return e.Msg
+}
 
 type tokKind int
 
@@ -23,44 +36,81 @@ const (
 	tAtom
 )
 
-type tok struct {
-	k tokKind
-	v string
+func kindName(k tokKind) string {
+	switch k {
+	case tLParen:
+		return "'('"
+	case tRParen:
+		return "')'"
+	case tLBrace:
+		return "'{'"
+	case tRBrace:
+		return "'}'"
+	case tNL:
+		return "newline"
+	case tStr:
+		return "a string"
+	case tAtom:
+		return "an identifier"
+	}
+	return "token"
 }
+
+type tok struct {
+	k        tokKind
+	v        string
+	line, col int
+}
+
+func (t tok) pos() Pos { return Pos{Line: t.line, Col: t.col} }
 
 var numRe = regexp.MustCompile(`^-?\d+(\.\d+)?$`)
 
 const delims = " \t\r\n(){};\""
 
-func tokenize(src string) []tok {
+// tokenize scans src into tokens, tracking 1-based line/col for each. It returns
+// the end-of-input position (for EOF diagnostics) and a ParseError if a string
+// literal is left unterminated.
+func tokenize(src string) ([]tok, Pos, *ParseError) {
 	var toks []tok
 	i, n := 0, len(src)
+	line, col := 1, 1
+	step := func() { // advance one source byte, tracking position
+		if src[i] == '\n' {
+			line++
+			col = 1
+		} else {
+			col++
+		}
+		i++
+	}
 	for i < n {
 		c := src[i]
 		switch {
 		case c == '\n':
-			toks = append(toks, tok{tNL, ""})
-			i++
+			toks = append(toks, tok{k: tNL, line: line, col: col})
+			step()
 		case c == ' ' || c == '\t' || c == '\r':
-			i++
+			step()
 		case c == ';':
 			for i < n && src[i] != '\n' {
-				i++
+				step()
 			}
 		case c == '(':
-			toks = append(toks, tok{tLParen, ""})
-			i++
+			toks = append(toks, tok{k: tLParen, line: line, col: col})
+			step()
 		case c == ')':
-			toks = append(toks, tok{tRParen, ""})
-			i++
+			toks = append(toks, tok{k: tRParen, line: line, col: col})
+			step()
 		case c == '{':
-			toks = append(toks, tok{tLBrace, ""})
-			i++
+			toks = append(toks, tok{k: tLBrace, line: line, col: col})
+			step()
 		case c == '}':
-			toks = append(toks, tok{tRBrace, ""})
-			i++
+			toks = append(toks, tok{k: tRBrace, line: line, col: col})
+			step()
 		case c == '"':
-			i++
+			sl, sc := line, col
+			step() // opening quote
 			var sb strings.Builder
 			for i < n && src[i] != '"' {
 				if src[i] == '\\' && i+1 < n {
@@ -72,28 +122,34 @@ func tokenize(src string) []tok {
 					default:
 						sb.WriteByte(src[i+1])
 					}
-					i += 2
+					step()
+					step()
 				} else {
 					sb.WriteByte(src[i])
-					i++
+					step()
 				}
 			}
-			i++ // closing quote
-			toks = append(toks, tok{tStr, sb.String()})
+			if i >= n {
+				return toks, Pos{line, col}, &ParseError{Pos: Pos{sl, sc}, Msg: "unterminated string (missing closing '\"')"}
+			}
+			step() // closing quote
+			toks = append(toks, tok{k: tStr, v: sb.String(), line: sl, col: sc})
 		default:
+			sl, sc := line, col
 			start := i
 			for i < n && !strings.ContainsRune(delims, rune(src[i])) {
-				i++
+				step()
 			}
-			toks = append(toks, tok{tAtom, src[start:i]})
+			toks = append(toks, tok{k: tAtom, v: src[start:i], line: sl, col: sc})
 		}
 	}
-	return toks
+	return toks, Pos{line, col}, nil
 }
 
 type parser struct {
 	toks []tok
 	p    int
+	end  Pos // position just past the last token, for EOF errors
 }
 
 func (ps *parser) peek() (tok, bool) {
@@ -105,7 +161,7 @@ func (ps *parser) peek() (tok, bool) {
 
 func (ps *parser) next() (tok, error) {
 	if ps.p >= len(ps.toks) {
-		return tok{}, &ParseError{"unexpected end of input"}
+		return tok{}, &ParseError{Pos: ps.end, Msg: "unexpected end of input"}
 	}
 	t := ps.toks[ps.p]
 	ps.p++
@@ -128,62 +184,64 @@ func (ps *parser) expect(k tokKind, name string) error {
 		return err
 	}
 	if t.k != k {
-		return &ParseError{fmt.Sprintf("expected %q", name)}
+		return &ParseError{Pos: t.pos(), Msg: fmt.Sprintf("expected %s but found %s", name, kindName(t.k))}
 	}
 	return nil
 }
 
-func atomNode(v string, str bool) Atom {
+func atomNode(v string, str bool, pos Pos) Atom {
 	if str {
-		return Atom{Kind: "str", Value: v}
+		return Atom{Kind: "str", Value: v, Pos: pos}
 	}
 	if numRe.MatchString(v) {
-		return Atom{Kind: "num", Value: v}
+		return Atom{Kind: "num", Value: v, Pos: pos}
 	}
-	return Atom{Kind: "id", Value: v}
+	return Atom{Kind: "id", Value: v, Pos: pos}
 }
 
 func (ps *parser) parseValue() (Node, error) {
 	t, ok := ps.peek()
 	if !ok {
-		return nil, &ParseError{"expected a value"}
+		return nil, &ParseError{Pos: ps.end, Msg: "expected a value but reached end of input"}
 	}
 	switch t.k {
 	case tLParen:
 		return ps.parseForm()
 	case tStr:
 		ps.p++
-		return atomNode(t.v, true), nil
+		return atomNode(t.v, true, t.pos()), nil
 	case tAtom:
 		ps.p++
-		return atomNode(t.v, false), nil
+		return atomNode(t.v, false, t.pos()), nil
 	default:
-		return nil, &ParseError{"unexpected token where a value was expected"}
+		return nil, &ParseError{Pos: t.pos(), Msg: fmt.Sprintf("unexpected %s where a value was expected", kindName(t.k))}
 	}
 }
 
 func (ps *parser) parseForm() (Node, error) {
-	if err := ps.expect(tLParen, "("); err != nil {
+	open, _ := ps.peek()
+	if err := ps.expect(tLParen, "'('"); err != nil {
 		return nil, err
 	}
+	openPos := open.pos()
 	ps.skipNL()
 	if t, ok := ps.peek(); ok && t.k == tRParen {
 		ps.p++
-		return Form{Head: "", Args: nil}, nil // empty form, e.g. `in ()`
+		return Form{Head: "", Args: nil, Pos: openPos}, nil // empty form, e.g. `in ()`
 	}
 	head, err := ps.next()
 	if err != nil {
 		return nil, err
 	}
 	if head.k != tAtom {
-		return nil, &ParseError{"a form must start with an operator name"}
+		return nil, &ParseError{Pos: head.pos(), Msg: fmt.Sprintf("a form must start with an operator name, found %s", kindName(head.k))}
 	}
 	var args []Node
 	for {
 		ps.skipNL()
 		t, ok := ps.peek()
 		if !ok {
-			return nil, &ParseError{"unterminated form (missing ')')"}
+			return nil, &ParseError{Pos: openPos, Msg: fmt.Sprintf("unterminated form — missing ')' to close the '(' opened at %s", openPos)}
 		}
 		if t.k == tRParen {
 			ps.p++
@@ -195,7 +253,7 @@ func (ps *parser) parseForm() (Node, error) {
 		}
 		args = append(args, v)
 	}
-	return Form{Head: head.v, Args: args}, nil
+	return Form{Head: head.v, Args: args, Pos: head.pos()}, nil
 }
 
 func (ps *parser) parseField() (Field, error) {
@@ -204,7 +262,7 @@ func (ps *parser) parseField() (Field, error) {
 		return Field{}, err
 	}
 	if key.k != tAtom {
-		return Field{}, &ParseError{"a field must start with a key"}
+		return Field{}, &ParseError{Pos: key.pos(), Msg: fmt.Sprintf("a field must start with a key, found %s", kindName(key.k))}
 	}
 	// A nested brace block: `needs { … }` / `effects { … }`, parsed line-by-line.
 	if t, ok := ps.peek(); ok && t.k == tLBrace {
@@ -212,7 +270,7 @@ func (ps *parser) parseField() (Field, error) {
 		if err != nil {
 			return Field{}, err
 		}
-		return Field{Key: key.v, Sub: sub}, nil
+		return Field{Key: key.v, Sub: sub, Pos: key.pos()}, nil
 	}
 	var values []Node
 	// allow the value to start on the next line (e.g. `body\n  (…)`)
@@ -238,13 +296,14 @@ func (ps *parser) parseField() (Field, error) {
 		}
 	}
 	ps.skipNL()
-	return Field{Key: key.v, Values: values}, nil
+	return Field{Key: key.v, Values: values, Pos: key.pos()}, nil
 }
 
 // parseBraceFields parses `{ key val… \n key val… }` line-by-line (used for
 // needs / effects blocks, where a line is `kind alias [schema]`).
 func (ps *parser) parseBraceFields() ([]Field, error) {
-	if err := ps.expect(tLBrace, "{"); err != nil {
+	open, _ := ps.peek()
+	if err := ps.expect(tLBrace, "'{'"); err != nil {
 		return nil, err
 	}
 	ps.skipNL()
@@ -252,7 +311,7 @@ func (ps *parser) parseBraceFields() ([]Field, error) {
 	for {
 		t, ok := ps.peek()
 		if !ok {
-			return nil, &ParseError{"unterminated brace block"}
+			return nil, &ParseError{Pos: open.pos(), Msg: fmt.Sprintf("unterminated brace block — missing '}' to close the '{' opened at %s", open.pos())}
 		}
 		if t.k == tRBrace {
 			break
@@ -262,7 +321,7 @@ func (ps *parser) parseBraceFields() ([]Field, error) {
 			return nil, err
 		}
 		if key.k != tAtom {
-			return nil, &ParseError{"a brace-block line must start with a key"}
+			return nil, &ParseError{Pos: key.pos(), Msg: fmt.Sprintf("a brace-block line must start with a key, found %s", kindName(key.k))}
 		}
 		var vals []Node
 		for {
@@ -276,10 +335,10 @@ func (ps *parser) parseBraceFields() ([]Field, error) {
 			}
 			vals = append(vals, v)
 		}
-		fields = append(fields, Field{Key: key.v, Values: vals})
+		fields = append(fields, Field{Key: key.v, Values: vals, Pos: key.pos()})
 		ps.skipNL()
 	}
-	if err := ps.expect(tRBrace, "}"); err != nil {
+	if err := ps.expect(tRBrace, "'}'"); err != nil {
 		return nil, err
 	}
 	return fields, nil
@@ -291,7 +350,7 @@ func (ps *parser) parseBlock() (Block, error) {
 		return Block{}, err
 	}
 	if head.k != tAtom {
-		return Block{}, &ParseError{"a block must start with a head (type/fn/package)"}
+		return Block{}, &ParseError{Pos: head.pos(), Msg: fmt.Sprintf("a block must start with a head (type/fn/package), found %s", kindName(head.k))}
 	}
 	name, err := ps.next()
 	if err != nil {
@@ -300,9 +359,9 @@ func (ps *parser) parseBlock() (Block, error) {
 	// A block name is an atom (`fn add`, `type User`) or a quoted string
 	// (`package "funk/std/maths"`).
 	if name.k != tAtom && name.k != tStr {
-		return Block{}, &ParseError{fmt.Sprintf("block %q is missing a name", head.v)}
+		return Block{}, &ParseError{Pos: head.pos(), Msg: fmt.Sprintf("block %q is missing a name", head.v)}
 	}
-	if err := ps.expect(tLBrace, "{"); err != nil {
+	if err := ps.expect(tLBrace, "'{'"); err != nil {
 		return Block{}, err
 	}
 	ps.skipNL()
@@ -319,15 +378,19 @@ func (ps *parser) parseBlock() (Block, error) {
 		fields = append(fields, f)
 		ps.skipNL()
 	}
-	if err := ps.expect(tRBrace, "}"); err != nil {
+	if err := ps.expect(tRBrace, "'}'"); err != nil {
 		return Block{}, err
 	}
-	return Block{Head: head.v, Name: name.v, Fields: fields}, nil
+	return Block{Head: head.v, Name: name.v, Fields: fields, Pos: head.pos()}, nil
 }
 
 // Parse parses .funk source into a Program.
 func Parse(src string) (Program, error) {
-	ps := &parser{toks: tokenize(src)}
+	toks, end, perr := tokenize(src)
+	if perr != nil {
+		return nil, perr
+	}
+	ps := &parser{toks: toks, end: end}
 	var prog Program
 	ps.skipNL()
 	for {
