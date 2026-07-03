@@ -1,0 +1,10 @@
+funk
+Copyright 2026 Bruno Fitas and the funk contributors.
+
+A language and protocol for defining agent workflows as portable, typed,
+self-observable artifacts — built by a human and an AI as peers.
+
+Licensing:
+- Code (cmd/, internal/, std/, tooling): Apache License 2.0 — see LICENSE.
+- Specification (docs/): dedicated to the public domain under CC0 1.0, so anyone
+  may implement `.funk` without asking.
