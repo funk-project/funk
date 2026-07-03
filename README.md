@@ -39,13 +39,21 @@ go build -o bin/funk ./cmd/funk
 ./bin/funk run analyze xs='[1,2,3,4]'   # 2.5      (composite: if/window/mean)
 ./bin/funk run bump x=3                 # 3        (the condition gates the add)
 ./bin/funk run evens n=5                # 0 2 4 6 8  (maps an INFINITE source, streams live)
+./bin/funk run runningSum n=5           # 1 3 6 10 15  (scan — running fold)
+./bin/funk run ticks n=5                # 0 1 2 3 4  (tick — one every 200ms, real-time)
 ./bin/funk run --sandbox docker floor a=3.7   # 3  (python body isolated in a container)
-./bin/funk list        # ~100 functions across 12 packages
-./bin/funk types       # 13 schemas
-./bin/funk check       # static-check every composite
-./bin/funk introspect triage   # the plan as data — needs/effects aggregated up
-./bin/funk serve       # funkd: POST /run streams NDJSON, /functions, /introspect
+./bin/funk run siteGreeting --bind config.site=funk   # hello from funk (injected)
+./bin/funk list · types · check · doc   # ~110 functions / 13 schemas, self-describing
+./bin/funk introspect triage            # the plan as data — needs/effects aggregated up
+./bin/funk fmt -w file.funk             # canonical formatter
+./bin/funk get <git-url> [name]         # fetch a package into ~/.funk/pkg
+./bin/funk serve                        # funkd: POST /run streams NDJSON, /functions
+./bin/funk make "<task>"                # funk writes funk (architect→…→reflect)
 ```
+
+Engines verified live: **builtin, python, go, claude**; **codex** wired. Reactive sources
+(`range`/`nats`/`repeat`/`tick`) and operators (`map`/`filter`/`take`/`scan`/`merge`/`window`/
+`collect`). See [`docs/STDLIB.md`](docs/STDLIB.md) for the generated reference.
 
 **Engines** (any NDJSON-speaking runtime): `builtin` (native Go primitives — fast, no
 subprocess), `python`, `go`, and the LLM engines `claude` / `codex`. A function is **atomic**
