@@ -119,6 +119,46 @@ func TestCheckIssuePosition(t *testing.T) {
 	}
 }
 
+func TestEngineMissingBinary(t *testing.T) {
+	res := runCmd("funk-no-such-binary-xyz", nil, nil, 5*1e9)
+	if res.OK {
+		t.Fatal("expected failure for a missing binary")
+	}
+	if !strings.Contains(res.Error, "not found in PATH") {
+		t.Fatalf("unhelpful error for missing binary: %q", res.Error)
+	}
+}
+
+func TestCheckArityAndUnknown(t *testing.T) {
+	lib := NewLibrary()
+	src := `
+fn add2 { in (a Num) (b Num) out (r Num) engine builtin src "num.add" }
+fn bad {
+  in (x Num)
+  out (r Num)
+  body (do (add2 x) (ghost x))
+}`
+	if err := lib.LoadString(src); err != nil {
+		t.Fatal(err)
+	}
+	issues := Check(lib)
+	if len(issues) != 2 {
+		t.Fatalf("want 2 issues, got %d: %v", len(issues), issues)
+	}
+	var arity, unknown bool
+	for _, i := range issues {
+		if strings.Contains(i.Msg, "expects 2 input") {
+			arity = true
+		}
+		if strings.Contains(i.Msg, `unknown function "ghost"`) {
+			unknown = true
+		}
+	}
+	if !arity || !unknown {
+		t.Fatalf("missing expected issues (arity=%v unknown=%v): %v", arity, unknown, issues)
+	}
+}
+
 func TestTraceRedactsSecret(t *testing.T) {
 	lib := NewLibrary()
 	// `flow` touches the secret in an intermediate step (whose call Value the trace

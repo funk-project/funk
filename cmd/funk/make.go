@@ -43,6 +43,16 @@ func cmdMake(args []string) error {
 	}
 	code := cleanFunk(fmt.Sprint(res.Value))
 
+	// Gate: a generated file is only kept if it passes check + tests. Otherwise it
+	// must not linger in std/generated (it would break everyone's `funk check`).
+	var writtenPath string
+	success := false
+	defer func() {
+		if !success && writtenPath != "" {
+			os.Remove(writtenPath)
+		}
+	}()
+
 	const maxAttempts = 3
 	var lastReport string
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
@@ -72,6 +82,7 @@ func cmdMake(args []string) error {
 		if err := os.WriteFile(path, []byte(code+"\n"), 0o644); err != nil {
 			return err
 		}
+		writtenPath = path
 		checkLib, err := loadLibrary(files)
 		if err != nil {
 			lastReport = err.Error()
@@ -80,8 +91,12 @@ func cmdMake(args []string) error {
 			continue
 		}
 		issues := issuesFor(funk.Check(checkLib), name)
+		if fails := testFailures(checkLib, name); len(issues) == 0 && len(fails) > 0 {
+			issues = fails
+		}
 		if len(issues) == 0 {
-			fmt.Fprintf(os.Stderr, "· attempt %d: check OK ✓\n", attempt)
+			success = true
+			fmt.Fprintf(os.Stderr, "· attempt %d: check + tests OK ✓\n", attempt)
 			fmt.Printf("%s\n\n; written to %s — reviewer/tester below\n", code, path)
 			opinion(checkLib, code, llm)
 			return nil
@@ -142,6 +157,23 @@ func issuesFor(all []funk.Issue, name string) []string {
 	for _, i := range all {
 		if i.Fn == name || strings.Contains(i.Msg, name) {
 			out = append(out, i.String())
+		}
+	}
+	return out
+}
+
+// testFailures runs the library's inline tests and returns the failures for the
+// named function — the second half of the make gate (check + test).
+func testFailures(lib *funk.Library, name string) []string {
+	var out []string
+	for _, r := range funk.RunTests(lib) {
+		if r.Fn != name || r.Ok {
+			continue
+		}
+		if r.Err != "" {
+			out = append(out, fmt.Sprintf("test error: %s", r.Err))
+		} else {
+			out = append(out, fmt.Sprintf("test failed: got %v, want %v", r.Got, r.Want))
 		}
 	}
 	return out

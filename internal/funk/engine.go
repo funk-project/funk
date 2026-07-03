@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -124,6 +125,9 @@ func runCmd(name string, args, env []string, timeout time.Duration) ExecResult {
 	err := cmd.Run()
 	if ctx.Err() == context.DeadlineExceeded {
 		return ExecResult{Error: fmt.Sprintf("timeout after %s", timeout)}
+	}
+	if errors.Is(err, exec.ErrNotFound) {
+		return ExecResult{Error: fmt.Sprintf("engine binary %q not found in PATH — install it or pick another engine", name)}
 	}
 	if err != nil {
 		msg := strings.TrimSpace(errb.String())
