@@ -40,3 +40,10 @@ fn batchSums {
   out (r Stream<Num>)
   body (map (window (range 1 n) 3) sum)
 }
+
+fn slidingSums {
+  doc "sum of each SLIDING window of 3 (step 1) over 1..n — overlapping windows"
+  in  (n Num)
+  out (r Stream<Num>)
+  body (map (window (range 1 n) 3 every 1) sum)
+}

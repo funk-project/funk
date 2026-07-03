@@ -279,6 +279,34 @@ func (e *evalEnv) countWindow(in Stream, n int) Stream {
 	return out
 }
 
+// slideCountWindow emits overlapping windows of exactly `size` items, advancing
+// by `slide` each time — `(window s size every slide)`. Only full windows are
+// emitted (no trailing partial), so 1..5 with size 3 every 1 → [1,2,3] [2,3,4]
+// [3,4,5]. slide == size degenerates to tumbling (without the partial tail).
+func (e *evalEnv) slideCountWindow(in Stream, size, slide int) Stream {
+	out := make(Stream)
+	if slide < 1 {
+		slide = 1
+	}
+	go func() {
+		defer close(out)
+		var buf []interface{}
+		start := 0
+		for v := range in {
+			buf = append(buf, v)
+			for size > 0 && len(buf) >= start+size {
+				w := make([]interface{}, size)
+				copy(w, buf[start:start+size])
+				if !e.send(out, w) {
+					return
+				}
+				start += slide
+			}
+		}
+	}()
+	return out
+}
+
 // timeWindow emits a List per event-time bucket of width `dur` (tumbling). The
 // watermark is simple: a later bucket closes all earlier ones (docs/04 §7).
 func (e *evalEnv) timeWindow(in Stream, dur float64, field string) Stream {

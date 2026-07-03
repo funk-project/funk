@@ -30,6 +30,25 @@ func TestCountWindow(t *testing.T) {
 	}
 }
 
+func TestSlidingCountWindow(t *testing.T) {
+	e := testEnv()
+	in := make(Stream)
+	go func() {
+		defer close(in)
+		for i := 1; i <= 5; i++ {
+			in <- float64(i)
+		}
+	}()
+	var got [][]interface{}
+	for w := range e.slideCountWindow(in, 3, 1) {
+		got = append(got, w.([]interface{}))
+	}
+	// 1..5, size 3, slide 1 → [1,2,3] [2,3,4] [3,4,5]
+	if len(got) != 3 || len(got[0]) != 3 || got[0][0] != 1.0 || got[2][2] != 5.0 {
+		t.Fatalf("slideCountWindow(1..5,3,1) = %v, want [[1 2 3][2 3 4][3 4 5]]", got)
+	}
+}
+
 func TestTimeWindow(t *testing.T) {
 	e := testEnv()
 	items := []interface{}{

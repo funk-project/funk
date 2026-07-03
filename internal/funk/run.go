@@ -563,6 +563,9 @@ func (e *evalEnv) evalWindow(args []Node) (interface{}, error) {
 		return nil, err
 	}
 	if s, ok := coll.(Stream); ok {
+		if slide, ok := e.windowEvery(args); ok {
+			return e.slideCountWindow(s, int(n), slide), nil
+		}
 		return e.countWindow(s, int(n)), nil
 	}
 	l := asList(coll)
@@ -570,6 +573,21 @@ func (e *evalEnv) evalWindow(args []Node) (interface{}, error) {
 		l = l[len(l)-k:]
 	}
 	return l, nil
+}
+
+// windowEvery scans a window form's args for `every <slide>` (a sliding count
+// window). Event-time sliding is not yet wired — see docs/04 §6a.
+func (e *evalEnv) windowEvery(args []Node) (int, bool) {
+	for i := 2; i+1 < len(args); i++ {
+		if kw, ok := args[i].(Atom); ok && kw.Value == "every" {
+			if v, err := e.eval(args[i+1]); err == nil {
+				if f, err := toNum(v); err == nil {
+					return int(f), true
+				}
+			}
+		}
+	}
+	return 0, false
 }
 
 // A plain call: (fn arg…). Args map positionally to the callee's `in` ports.
