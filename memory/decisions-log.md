@@ -77,7 +77,15 @@ do cli"). Ported from the TS reference in the `functions` repo; funk is Go from 
 | I8 | **Reactive engine** (`stream.go`): `Stream = chan`; sources `range`/`nats`/`repeat`; operators `map`/`filter`/`take`/`collect` as core forms (higher-order `map`/`filter` take a function name). `take` cancels its source upstream via `context` — an infinite `nats` is bounded and stopped cleanly. `funk run` streams live. **Verified**: evens(5)=0,2,4,6,8 over an infinite source. | Built |
 | I9 | **funkd server** (`serve.go`): `funk serve` runs HTTP — `POST /run` streams NDJSON flushed per item, `GET /functions` / `/introspect` / `/health`. `funk run --server URL` (or `FUNK_SERVER`) is a thin client that streams back. Realizes docs/03 §5. **Verified** over the wire. | Built |
 | I10 | **Resources in the parser** (docs/05): nested `needs {}` / `effects {}` blocks parsed line-by-line into `Fn.Needs`/`Effects`; `introspect` **aggregates them up** a composite (declaration bubbles up). **Verified**: triage inherits createIssue's github/secret/config + net effect. | Built |
-| I11 | **Docker sandbox**: `funk run --sandbox docker` executes python/go bodies in `python:3-slim`/`golang` (isolation, docs/03 §7). **Verified** live. Runtime secret injection (the vault/broker) is **not** built yet. | Built (injection pending) |
+| I11 | **Docker sandbox**: `funk run --sandbox docker` executes python/go bodies in `python:3-slim`/`golang` (isolation, docs/03 §7). **Verified** live. | Built |
+| I12 | **Runtime resource injection**: needs resolve from `--bind kind.alias=value` or env `FUNK_<KIND>_<ALIAS>`, injected into execution — python reads `needs['kind']['alias']`, funk reads `needs.kind.alias`. Closes docs/05 end-to-end; **vault/broker still future**. **Verified**. | Built |
+| I13 | **Loops**: `while (s init) cond step` + `break`/`continue` implemented (were stubbed). **Verified**: powTwoLE(1000)=512. | Built |
+| I14 | **`funk fmt`**: canonical formatter (decompile AST → .funk), idempotent. | Built |
+| I15 | **Module system**: `funk get <git-url\|path> [name]` clones a package (a git repo) into `~/.funk/pkg`; cached packages resolve like std and compose. **Verified** with a local git package. Semver/lockfile/`use`-driven resolution still future. | Built (basic) |
+
+**CLI (11 commands):** `version · parse · fmt · run · list · types · check · introspect · make · serve · get`. ~3100 lines Go, 104 fns / 13 types, tests green.
+
+**Not yet built:** event-time windowing on live streams (window is count/list); `use`-driven per-package resolution + semver lockfile; the vault/broker for secrets; `bind`/`with` at the funk level; hot-mutation.
 
 ## Still genuinely open (need Bruno)
 
