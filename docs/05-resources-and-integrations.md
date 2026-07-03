@@ -98,6 +98,21 @@ printing is *impossible*. The rare code that genuinely needs a raw secret in-pro
 to send it out. Honest limit: hand a raw secret to arbitrary code *with an open network* and
 there is no guarantee — which is why the architecture is **don't (broker) and can't (egress).**
 
+### What the reference CLI does today (v1)
+
+Injection is direct-value (the broker/vault of (A)–(C) is still future), but the two moves that
+cost nothing are in:
+
+- **Secret input stays off the command line.** `--bind kind.alias=value` also accepts
+  `@path` (read a file), `@-` (read stdin), and `env:VAR` (read an env var) — so a credential
+  never sits in `ps` output or shell history. Env fallback (`FUNK_<KIND>_<ALIAS>`) still works.
+- **The trace redacts secrets (D).** Values resolved from a `secret` need are masked to `***`
+  wherever they surface in the `RunReport` / `--trace` (call values, errors) — self-observation
+  (docs/01 #4) does not become credential exposure. The function's *return value* is left intact
+  (it is the result the caller asked for). Docker runs forward `FUNK_NEEDS` via the environment,
+  not the `docker run` command line. As (D) notes, this catches accidental leaks, not an
+  adversary — the real guarantee is broker + egress, still to come.
+
 ## Binding ≠ Injection (the crux)
 
 Secrets are **not** threaded parent-to-child through the call tree. Two separate things:
