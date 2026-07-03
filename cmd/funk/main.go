@@ -50,6 +50,8 @@ func main() {
 		err = cmdDoc(args)
 	case "introspect", "inspect":
 		err = cmdIntrospect(args)
+	case "graph":
+		err = cmdGraph(args)
 	case "make":
 		err = cmdMake(args)
 	case "serve":
@@ -83,6 +85,7 @@ usage:
   funk test [-f path]        run inline 'test (is (call) expected)' assertions
   funk doc [pkg]             generate markdown reference for the stdlib
   funk introspect [-f path] <fn>    print a function's structure (JSON)
+  funk graph [-f path] <fn>         draw the graph the function derives from its code
   funk run [-f path] [--server url] [--sandbox docker] [--bind k.a=v] [--trace] <fn> [k=v …]
                              run a function (streams live; --trace prints the RunReport)
   funk make "<task>" [name]  funk writes a new funk function (architect→

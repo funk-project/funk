@@ -53,14 +53,28 @@ fn fmap {
 funk run fmapSum n=4      # 20  — the funk-defined map matches the Go one
 ```
 
-## 5. Self-observable & resource-aware
+## 5. See the plan — the graph is derived from the code
+
+```sh
+funk graph bump
+# bump(x Num) → r Num
+# └─ if ⟨cond⟩ ⟨then⟩ ⟨else⟩
+#    ├─ gt()  ├─ x  └─ 5
+#    ├─ return ◂ terminal └─ add() ├─ x └─ 100
+#    └─ return ◂ terminal └─ x
+```
+
+You never draw nodes or edges — funk derives the graph. Both branches are visible; the `add`
+lives only under the `then`.
+
+## 6. Self-observable & resource-aware
 
 ```sh
 funk introspect triage    # what it calls + the needs/effects it declares, aggregated up
 funk run siteGreeting --bind config.site=funk   # a config injected at runtime → hello from funk
 ```
 
-## 6. Over the wire
+## 7. Over the wire
 
 ```sh
 funk serve &                                       # funkd
@@ -68,7 +82,7 @@ curl -N localhost:7777/run -d '{"ref":"evens","inputs":{"n":5}}'
 # {"value":0}\n{"value":2}\n…  — the pipeline streams over HTTP
 ```
 
-## 7. Teach any AI
+## 8. Teach any AI
 
 ```sh
 funk prompt | pbcopy    # paste into Claude / GPT / any chat — now it writes funk
