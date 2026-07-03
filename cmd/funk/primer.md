@@ -56,6 +56,8 @@ fn shout { in (a Str) out (r Str) engine python src "return a.upper() + '!'" }
 (while (s init) cond step)   ; stateful loop
 (return v)  (exit s)   ; terminals
 (f x y)                ; call function f (f may be a passed-in Fn value)
+(on-error body (e) handler)  ; run body; on error, bind e and run handler (fallback)
+(retry body n [backoff 1s])  ; re-run body up to n times, optional backoff
 ```
 
 Reactive stream forms: sources `range`/`nats`/`tick`/`repeat`; operators

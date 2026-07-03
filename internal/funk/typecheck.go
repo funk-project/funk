@@ -32,6 +32,7 @@ var coreForms = map[string]bool{
 	"range": true, "nats": true, "repeat": true,
 	"take": true, "collect": true, "tick": true, "scan": true, "merge": true,
 	"each": true, "yield": true, "fold": true,
+	"on-error": true, "retry": true,
 }
 
 // Check statically validates every composite function in the library:
@@ -155,6 +156,22 @@ func checkForm(lib *Library, fn *Fn, f Form, scope map[string]bool) []Issue {
 				issues = append(issues, checkNode(lib, fn, f.Args[1], sc)...) // cond
 				issues = append(issues, checkNode(lib, fn, f.Args[2], sc)...) // step
 			}
+		}
+	case "on-error":
+		// (on-error body (e) handler) — e is bound in the handler scope
+		if len(f.Args) == 3 {
+			issues = append(issues, checkNode(lib, fn, f.Args[0], scope)...)
+			sc := child()
+			if bind, ok := f.Args[1].(Form); ok {
+				sc[bind.Head] = true
+			}
+			issues = append(issues, checkNode(lib, fn, f.Args[2], sc)...)
+		}
+	case "retry":
+		// (retry body n [backoff dur]) — body + n checked; backoff/dur are literals
+		if len(f.Args) >= 2 {
+			issues = append(issues, checkNode(lib, fn, f.Args[0], scope)...)
+			issues = append(issues, checkNode(lib, fn, f.Args[1], scope)...)
 		}
 	default:
 		// a call. If the head is a bound variable it holds a function value —

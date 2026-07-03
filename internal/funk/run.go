@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Loop control signals, propagated as errors and caught by the enclosing loop.
@@ -297,6 +298,10 @@ func (e *evalEnv) evalForm(f Form) (interface{}, error) {
 		return e.evalForEach(f.Args)
 	case "while":
 		return e.evalWhile(f.Args)
+	case "on-error":
+		return e.evalOnError(f.Args)
+	case "retry":
+		return e.evalRetry(f.Args)
 	case "break":
 		return nil, errBreak
 	case "continue":
@@ -446,6 +451,81 @@ func (e *evalEnv) evalWhile(args []Node) (interface{}, error) {
 		c.vars[bind.Head] = nv
 	}
 	return c.vars[bind.Head], nil
+}
+
+// (on-error <body> (e) <handler>) — run body; if it errors, bind the error
+// message to e and run handler (a fallback / substitute value). Loop signals
+// (break/continue) are not caught — they belong to the enclosing loop.
+func (e *evalEnv) evalOnError(args []Node) (interface{}, error) {
+	if len(args) != 3 {
+		return nil, fmt.Errorf("on-error: expected (on-error body (e) handler)")
+	}
+	v, err := e.eval(args[0])
+	if err == nil {
+		return v, nil
+	}
+	if errors.Is(err, errBreak) || errors.Is(err, errContinue) {
+		return nil, err
+	}
+	bind, ok := args[1].(Form)
+	if !ok || bind.Head == "" {
+		return nil, fmt.Errorf("on-error: second arg must be (errName)")
+	}
+	e.emit(TraceEvent{Kind: "recover", Detail: "on-error", Error: err.Error()})
+	c := e.child()
+	c.vars[bind.Head] = err.Error()
+	return c.eval(args[2])
+}
+
+// (retry <body> <n> [backoff <dur>]) — re-run body up to n attempts; optional
+// backoff waits between attempts (cancellable). Returns the last error if every
+// attempt fails; loop signals propagate immediately.
+func (e *evalEnv) evalRetry(args []Node) (interface{}, error) {
+	if len(args) < 2 {
+		return nil, fmt.Errorf("retry: expected (retry body n [backoff dur])")
+	}
+	nv, err := e.eval(args[1])
+	if err != nil {
+		return nil, err
+	}
+	n, err := toNum(nv)
+	if err != nil {
+		return nil, fmt.Errorf("retry: n must be a number: %s", err)
+	}
+	attempts := int(n)
+	if attempts < 1 {
+		attempts = 1
+	}
+	var backoff time.Duration
+	for i := 2; i+1 < len(args); i++ {
+		if kw, ok := args[i].(Atom); ok && kw.Value == "backoff" {
+			if d, ok := args[i+1].(Atom); ok {
+				if sec, ok := parseDuration(d.Value); ok {
+					backoff = time.Duration(sec * float64(time.Second))
+				}
+			}
+		}
+	}
+	var lastErr error
+	for attempt := 1; attempt <= attempts; attempt++ {
+		v, err := e.eval(args[0])
+		if err == nil {
+			return v, nil
+		}
+		if errors.Is(err, errBreak) || errors.Is(err, errContinue) {
+			return nil, err
+		}
+		lastErr = err
+		e.emit(TraceEvent{Kind: "retry", Detail: fmt.Sprintf("attempt %d/%d", attempt, attempts), Error: err.Error()})
+		if attempt < attempts && backoff > 0 {
+			select {
+			case <-e.ctx.Done():
+				return nil, e.ctx.Err()
+			case <-time.After(backoff):
+			}
+		}
+	}
+	return nil, lastErr
 }
 
 // (window stream size [every slide] [by field] …) — windowing (docs/04 §7).

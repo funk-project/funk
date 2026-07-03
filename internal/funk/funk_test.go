@@ -159,6 +159,53 @@ fn bad {
 	}
 }
 
+func TestOnErrorRecovers(t *testing.T) {
+	lib := NewLibrary()
+	src := `
+fn d { in (a Num) (b Num) out (r Num) engine builtin src "num.div" }
+fn safe {
+  in (a Num) (b Num)
+  out (r Num)
+  body (on-error (return (d a b)) (e) (return 0))
+}`
+	if err := lib.LoadString(src); err != nil {
+		t.Fatal(err)
+	}
+	if res := Run(lib, "safe", map[string]interface{}{"a": 10.0, "b": 0.0}, ExecOpts{}); !res.OK || mustNum(t, res.Value) != 0 {
+		t.Fatalf("safe(10,0) = %v (%s), want 0 (recovered)", res.Value, res.Error)
+	}
+	if res := Run(lib, "safe", map[string]interface{}{"a": 10.0, "b": 2.0}, ExecOpts{}); !res.OK || mustNum(t, res.Value) != 5 {
+		t.Fatalf("safe(10,2) = %v (%s), want 5 (no error, no recovery)", res.Value, res.Error)
+	}
+}
+
+func TestRetryAttempts(t *testing.T) {
+	lib := NewLibrary()
+	src := `
+fn boom { in (a Num) (b Num) out (r Num) engine builtin src "num.div" }
+fn tryBoom {
+  in (x Num)
+  out (r Num)
+  body (retry (boom x 0) 3)
+}`
+	if err := lib.LoadString(src); err != nil {
+		t.Fatal(err)
+	}
+	res, rep := RunWithReport(lib, "tryBoom", map[string]interface{}{"x": 10.0}, ExecOpts{})
+	if res.OK {
+		t.Fatal("expected tryBoom to fail after exhausting retries")
+	}
+	retries := 0
+	for _, ev := range rep.Events {
+		if ev.Kind == "retry" {
+			retries++
+		}
+	}
+	if retries != 3 {
+		t.Fatalf("want 3 retry attempts recorded, got %d: %+v", retries, rep.Events)
+	}
+}
+
 func TestTraceRedactsSecret(t *testing.T) {
 	lib := NewLibrary()
 	// `flow` touches the secret in an intermediate step (whose call Value the trace

@@ -64,7 +64,7 @@ func label(head string) string {
 		return head + " ◂ terminal"
 	case "do", "let", "while", "for-each", "each", "yield",
 		"map", "filter", "scan", "merge", "take", "collect", "window",
-		"range", "nats", "tick", "repeat":
+		"range", "nats", "tick", "repeat", "on-error", "retry":
 		return head + " ◂ form"
 	default:
 		return head + "()"
