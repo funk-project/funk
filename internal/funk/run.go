@@ -96,7 +96,7 @@ func registerSecrets(f *Fn, res map[string]map[string]interface{}, set *secretSe
 
 // Run executes a function by reference; a live stream result is drained to a List.
 func Run(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts) ExecResult {
-	v, cancel, err := evalTop(lib, ref, inputs, opts, nil)
+	v, cancel, err := evalTop(lib, ref, inputs, opts, nil, nil)
 	defer cancel()
 	if err != nil {
 		return ExecResult{Error: err.Error()}
@@ -112,7 +112,7 @@ func Run(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts)
 // eager evaluation (finite composites); lazy stream items are not traced.
 func RunWithReport(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts) (ExecResult, *RunReport) {
 	var events []TraceEvent
-	v, cancel, err := evalTop(lib, ref, inputs, opts, &events)
+	v, cancel, err := evalTop(lib, ref, inputs, opts, &events, nil)
 	defer cancel()
 	rep := &RunReport{Ref: ref, Events: events}
 	if err != nil {
@@ -131,7 +131,7 @@ func RunWithReport(lib *Library, ref string, inputs map[string]interface{}, opts
 // RunStreaming executes a function and emits each stream item live (docs/03:
 // a run may be a long-lived pipeline). Atomic/value results emit once.
 func RunStreaming(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts, emit func(interface{})) ExecResult {
-	v, cancel, err := evalTop(lib, ref, inputs, opts, nil)
+	v, cancel, err := evalTop(lib, ref, inputs, opts, nil, nil)
 	defer cancel()
 	if err != nil {
 		return ExecResult{Error: err.Error()}
@@ -146,9 +146,51 @@ func RunStreaming(lib *Library, ref string, inputs map[string]interface{}, opts 
 	return ExecResult{OK: true, Value: v}
 }
 
+// RunLive runs a function and streams trace events (per node — including "enter"
+// glow signals that fire *before* a node executes) and stream values as they
+// happen, then returns the final RunReport. It powers funkd's animated,
+// self-observable trace (docs/01 #4): the plan lights up *as* it runs, not only
+// after. The "enter" events are live-only — they are not recorded in the
+// RunReport, so the batch report keeps its exact shape.
+func RunLive(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts,
+	onEvent func(TraceEvent), onValue func(interface{})) (ExecResult, *RunReport) {
+	var events []TraceEvent
+	var sink func(TraceEvent)
+	if onEvent != nil {
+		sink = onEvent
+	}
+	v, cancel, err := evalTop(lib, ref, inputs, opts, &events, sink)
+	defer cancel()
+	rep := &RunReport{Ref: ref, Events: events}
+	if err != nil {
+		rep.Error = err.Error()
+		return ExecResult{Error: err.Error()}, rep
+	}
+	if s, ok := v.(Stream); ok {
+		for item := range s {
+			if onValue != nil {
+				onValue(item)
+			}
+		}
+		rep.Events = events
+		rep.OK = true
+		return ExecResult{OK: true}, rep
+	}
+	if onValue != nil {
+		onValue(v)
+	}
+	rep.Events = events
+	rep.OK = true
+	rep.Value = v
+	return ExecResult{OK: true, Value: v}, rep
+}
+
 // evalTop resolves and runs a function, returning the raw body value (which may
 // be a live Stream) and a cancel function the caller must invoke when done.
-func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts, trace *[]TraceEvent) (interface{}, context.CancelFunc, error) {
+// A non-nil sink receives every trace event live, as it is produced (funkd's
+// animated trace); trace, if non-nil, additionally accumulates them for the
+// batch RunReport.
+func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts, trace *[]TraceEvent, sink func(TraceEvent)) (interface{}, context.CancelFunc, error) {
 	noop := func() {}
 	f, ok := lib.Lookup(ref)
 	if !ok {
@@ -164,15 +206,23 @@ func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecO
 		}
 	}
 	if !f.Composite() {
+		if sink != nil {
+			sink(TraceEvent{Fn: f.Name, Kind: "enter"})
+		}
 		res := Exec(f, inputs, opts)
 		defer stopBroker()
-		if trace != nil {
+		if trace != nil || sink != nil {
 			ev := TraceEvent{Fn: f.Name, Kind: "call", Value: res.Value, Error: res.Error}
 			s := &secretSet{}
 			registerSecrets(f, resolveResources(f, opts), s)
 			ev.Value = s.redact(ev.Value)
 			ev.Error = s.redactStr(ev.Error)
-			*trace = append(*trace, ev)
+			if trace != nil {
+				*trace = append(*trace, ev)
+			}
+			if sink != nil {
+				sink(ev)
+			}
 		}
 		if !res.OK {
 			return nil, noop, fmt.Errorf("%s", res.Error)
@@ -182,12 +232,12 @@ func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecO
 	ctx, cancel := context.WithCancel(context.Background())
 	res := resolveResources(f, opts)
 	var secrets *secretSet
-	if trace != nil {
+	if trace != nil || sink != nil {
 		secrets = &secretSet{}
 		registerSecrets(f, res, secrets)
 	}
 	e := &evalEnv{lib: lib, opts: opts, vars: map[string]interface{}{}, ctx: ctx, cancel: cancel,
-		resources: res, trace: trace, secrets: secrets}
+		resources: res, trace: trace, secrets: secrets, sink: sink}
 	for k, v := range inputs {
 		e.vars[k] = v
 	}
@@ -209,13 +259,14 @@ type evalEnv struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	resources map[string]map[string]interface{} // needs: kind → alias → value
-	trace     *[]TraceEvent                      // nil ⇒ no tracing
+	trace     *[]TraceEvent                      // nil ⇒ not accumulating the batch report
+	sink      func(TraceEvent)                   // nil ⇒ no live delivery (funkd animated trace)
 	secrets   *secretSet                         // resolved secret values, masked in the trace
 	yieldTo   Stream                             // the enclosing each's output (for yield)
 }
 
 func (e *evalEnv) child() *evalEnv {
-	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{}, ctx: e.ctx, cancel: e.cancel, resources: e.resources, trace: e.trace, secrets: e.secrets, yieldTo: e.yieldTo}
+	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{}, ctx: e.ctx, cancel: e.cancel, resources: e.resources, trace: e.trace, sink: e.sink, secrets: e.secrets, yieldTo: e.yieldTo}
 	for k, v := range e.vars {
 		c.vars[k] = v
 	}
@@ -223,7 +274,7 @@ func (e *evalEnv) child() *evalEnv {
 }
 
 func (e *evalEnv) emit(ev TraceEvent) {
-	if e.trace == nil {
+	if e.trace == nil && e.sink == nil {
 		return
 	}
 	if e.secrets != nil {
@@ -231,7 +282,20 @@ func (e *evalEnv) emit(ev TraceEvent) {
 		ev.Error = e.secrets.redactStr(ev.Error)
 		ev.Detail = e.secrets.redactStr(ev.Detail)
 	}
-	*e.trace = append(*e.trace, ev)
+	if e.trace != nil {
+		*e.trace = append(*e.trace, ev)
+	}
+	if e.sink != nil {
+		e.sink(ev)
+	}
+}
+
+// live delivers an event to the live sink only (never the batch RunReport) —
+// for animation-only signals like a node's "enter" glow.
+func (e *evalEnv) live(ev TraceEvent) {
+	if e.sink != nil {
+		e.sink(ev)
+	}
 }
 
 func (e *evalEnv) eval(n Node) (interface{}, error) {
@@ -618,6 +682,8 @@ func (e *evalEnv) evalCall(f Form) (interface{}, error) {
 	if !ok {
 		return nil, fmt.Errorf("unknown function %q", ref)
 	}
+	// glow: signal the node is about to run, before its inputs resolve.
+	e.live(TraceEvent{Fn: ref, Kind: "enter"})
 	inputs := map[string]interface{}{}
 	for i, arg := range f.Args {
 		v, err := e.eval(arg)
@@ -657,7 +723,7 @@ func (e *evalEnv) runInline(f *Fn, inputs map[string]interface{}) (interface{}, 
 	res := resolveResources(f, e.opts)
 	registerSecrets(f, res, e.secrets)
 	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{},
-		ctx: e.ctx, cancel: e.cancel, resources: res, trace: e.trace, secrets: e.secrets}
+		ctx: e.ctx, cancel: e.cancel, resources: res, trace: e.trace, sink: e.sink, secrets: e.secrets}
 	for k, v := range inputs {
 		c.vars[k] = v
 	}

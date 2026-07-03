@@ -495,6 +495,38 @@ func TestRunReport(t *testing.T) {
 	}
 }
 
+func TestRunLiveStreamsEvents(t *testing.T) {
+	lib := loadStd(t)
+	var live []TraceEvent
+	var values []interface{}
+	res, rep := RunLive(lib, "bump", map[string]interface{}{"x": 3.0}, ExecOpts{},
+		func(ev TraceEvent) { live = append(live, ev) },
+		func(v interface{}) { values = append(values, v) })
+	if !res.OK {
+		t.Fatalf("bump live run failed: %s", rep.Error)
+	}
+	// The live sink must see an "enter" (glow) signal — it fires before a node runs.
+	sawEnter := false
+	for _, ev := range live {
+		if ev.Kind == "enter" {
+			sawEnter = true
+		}
+	}
+	if !sawEnter {
+		t.Fatalf("want a live 'enter' event; got %+v", live)
+	}
+	// The batch RunReport must NOT record 'enter' events — its shape is unchanged.
+	for _, ev := range rep.Events {
+		if ev.Kind == "enter" {
+			t.Fatalf("RunReport should not record 'enter' events: %+v", rep.Events)
+		}
+	}
+	// bump(3) → 3, delivered live via onValue.
+	if len(values) != 1 || mustNum(t, values[0]) != 3 {
+		t.Fatalf("want live value [3], got %v", values)
+	}
+}
+
 func TestIntrospect(t *testing.T) {
 	lib := loadStd(t)
 	in, ok := Introspect(lib, "analyze")
