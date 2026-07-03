@@ -16,7 +16,7 @@ var (
 
 // Run executes a function by reference; a live stream result is drained to a List.
 func Run(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts) ExecResult {
-	v, cancel, err := evalTop(lib, ref, inputs, opts)
+	v, cancel, err := evalTop(lib, ref, inputs, opts, nil)
 	defer cancel()
 	if err != nil {
 		return ExecResult{Error: err.Error()}
@@ -27,10 +27,31 @@ func Run(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts)
 	return ExecResult{OK: true, Value: v}
 }
 
+// RunWithReport runs a function and returns a structured RunReport — the run as
+// data (docs/01 property #4: dynamic self-observability). Tracing captures the
+// eager evaluation (finite composites); lazy stream items are not traced.
+func RunWithReport(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts) (ExecResult, *RunReport) {
+	var events []TraceEvent
+	v, cancel, err := evalTop(lib, ref, inputs, opts, &events)
+	defer cancel()
+	rep := &RunReport{Ref: ref, Events: events}
+	if err != nil {
+		rep.Error = err.Error()
+		return ExecResult{Error: err.Error()}, rep
+	}
+	if s, ok := v.(Stream); ok {
+		v = drain(s)
+	}
+	rep.Events = events
+	rep.OK = true
+	rep.Value = v
+	return ExecResult{OK: true, Value: v}, rep
+}
+
 // RunStreaming executes a function and emits each stream item live (docs/03:
 // a run may be a long-lived pipeline). Atomic/value results emit once.
 func RunStreaming(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts, emit func(interface{})) ExecResult {
-	v, cancel, err := evalTop(lib, ref, inputs, opts)
+	v, cancel, err := evalTop(lib, ref, inputs, opts, nil)
 	defer cancel()
 	if err != nil {
 		return ExecResult{Error: err.Error()}
@@ -47,7 +68,7 @@ func RunStreaming(lib *Library, ref string, inputs map[string]interface{}, opts 
 
 // evalTop resolves and runs a function, returning the raw body value (which may
 // be a live Stream) and a cancel function the caller must invoke when done.
-func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts) (interface{}, context.CancelFunc, error) {
+func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts, trace *[]TraceEvent) (interface{}, context.CancelFunc, error) {
 	noop := func() {}
 	f, ok := lib.Lookup(ref)
 	if !ok {
@@ -55,6 +76,9 @@ func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecO
 	}
 	if !f.Composite() {
 		res := Exec(f, inputs, opts)
+		if trace != nil {
+			*trace = append(*trace, TraceEvent{Fn: f.Name, Kind: "call", Value: res.Value, Error: res.Error})
+		}
 		if !res.OK {
 			return nil, noop, fmt.Errorf("%s", res.Error)
 		}
@@ -62,7 +86,7 @@ func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecO
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	e := &evalEnv{lib: lib, opts: opts, vars: map[string]interface{}{}, ctx: ctx, cancel: cancel,
-		resources: resolveResources(f, opts)}
+		resources: resolveResources(f, opts), trace: trace}
 	for k, v := range inputs {
 		e.vars[k] = v
 	}
@@ -81,14 +105,21 @@ type evalEnv struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	resources map[string]map[string]interface{} // needs: kind → alias → value
+	trace     *[]TraceEvent                      // nil ⇒ no tracing
 }
 
 func (e *evalEnv) child() *evalEnv {
-	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{}, ctx: e.ctx, cancel: e.cancel, resources: e.resources}
+	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{}, ctx: e.ctx, cancel: e.cancel, resources: e.resources, trace: e.trace}
 	for k, v := range e.vars {
 		c.vars[k] = v
 	}
 	return c
+}
+
+func (e *evalEnv) emit(ev TraceEvent) {
+	if e.trace != nil {
+		*e.trace = append(*e.trace, ev)
+	}
 }
 
 func (e *evalEnv) eval(n Node) (interface{}, error) {
@@ -149,11 +180,13 @@ func (e *evalEnv) evalForm(f Form) (interface{}, error) {
 	case "if":
 		return e.evalIf(f.Args)
 	case "return":
+		e.emit(TraceEvent{Kind: "terminal", Detail: "return"})
 		if len(f.Args) == 0 {
 			return nil, nil
 		}
 		return e.eval(f.Args[0])
 	case "exit":
+		e.emit(TraceEvent{Kind: "terminal", Detail: "exit"})
 		if len(f.Args) == 0 {
 			return nil, nil
 		}
@@ -233,11 +266,14 @@ func (e *evalEnv) evalIf(args []Node) (interface{}, error) {
 		return nil, err
 	}
 	if truthy(cond) {
+		e.emit(TraceEvent{Kind: "branch", Detail: "then"})
 		return e.eval(args[1])
 	}
 	if len(args) >= 3 {
+		e.emit(TraceEvent{Kind: "branch", Detail: "else"})
 		return e.eval(args[2])
 	}
+	e.emit(TraceEvent{Kind: "branch", Detail: "else (empty)"})
 	return nil, nil
 }
 
@@ -372,7 +408,9 @@ func (e *evalEnv) evalCall(f Form) (interface{}, error) {
 	}
 	res := Run(e.lib, f.Head, inputs, e.opts)
 	if !res.OK {
+		e.emit(TraceEvent{Fn: f.Head, Kind: "call", Error: res.Error})
 		return nil, fmt.Errorf("%s: %s", f.Head, res.Error)
 	}
+	e.emit(TraceEvent{Fn: f.Head, Kind: "call", Value: res.Value})
 	return res.Value, nil
 }

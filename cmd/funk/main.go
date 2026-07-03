@@ -74,8 +74,8 @@ usage:
   funk test [-f path]        run inline 'test (is (call) expected)' assertions
   funk doc [pkg]             generate markdown reference for the stdlib
   funk introspect [-f path] <fn>    print a function's structure (JSON)
-  funk run [-f path] [--server url] [--sandbox docker] <fn> [k=v …]
-                             run a function with named inputs (streams live)
+  funk run [-f path] [--server url] [--sandbox docker] [--bind k.a=v] [--trace] <fn> [k=v …]
+                             run a function (streams live; --trace prints the RunReport)
   funk make "<task>" [name]  funk writes a new funk function (architect→
                              programmer→check→reflect), adds it to std/generated
   funk serve [--addr :7777]  run funkd (HTTP: /run streams NDJSON, /functions,
@@ -124,6 +124,18 @@ func loadLibrary(extra []string) (*funk.Library, error) {
 		}
 	}
 	return lib, nil
+}
+
+// takeBool extracts a boolean flag (present/absent), returning the rest.
+func takeBool(args []string, name string) (found bool, rest []string) {
+	for _, a := range args {
+		if a == name {
+			found = true
+			continue
+		}
+		rest = append(rest, a)
+	}
+	return
 }
 
 // takeFlag extracts a repeated `-f path` flag, returning the rest.
@@ -288,6 +300,7 @@ func cmdRun(args []string) error {
 	servers, rest := takeFlag(rest, "--server")
 	sandboxes, rest := takeFlag(rest, "--sandbox")
 	binds, rest := takeFlag(rest, "--bind")
+	trace, rest := takeBool(rest, "--trace")
 	server := os.Getenv("FUNK_SERVER")
 	if len(servers) > 0 {
 		server = servers[len(servers)-1]
@@ -346,6 +359,16 @@ func cmdRun(args []string) error {
 		target = lib.Fns[len(lib.Fns)-1].Name
 	}
 
+	if trace {
+		res, rep := funk.RunWithReport(lib, target, inputs, opts)
+		if !res.OK {
+			return fmt.Errorf("%s", res.Error)
+		}
+		printValue(res.Value)
+		out, _ := json.MarshalIndent(rep, "", "  ")
+		fmt.Fprintln(os.Stderr, string(out))
+		return nil
+	}
 	res := funk.RunStreaming(lib, target, inputs, opts, printValue)
 	if !res.OK {
 		return fmt.Errorf("%s", res.Error)

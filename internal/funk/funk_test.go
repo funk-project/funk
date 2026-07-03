@@ -210,6 +210,30 @@ func TestRunStreamingLive(t *testing.T) {
 	}
 }
 
+func TestRunReport(t *testing.T) {
+	lib := loadStd(t)
+	// bump(3): condition false → else branch → the add must NOT appear in the trace.
+	_, rep := RunWithReport(lib, "bump", map[string]interface{}{"x": 3.0}, ExecOpts{})
+	if !rep.OK {
+		t.Fatalf("report not ok: %s", rep.Error)
+	}
+	calledAdd, branch := false, ""
+	for _, ev := range rep.Events {
+		if ev.Kind == "call" && ev.Fn == "add" {
+			calledAdd = true
+		}
+		if ev.Kind == "branch" {
+			branch = ev.Detail
+		}
+	}
+	if calledAdd {
+		t.Fatal("bump(3) trace shows add called — the condition failed to gate it")
+	}
+	if branch != "else" {
+		t.Fatalf("branch = %q, want else", branch)
+	}
+}
+
 func TestIntrospect(t *testing.T) {
 	lib := loadStd(t)
 	in, ok := Introspect(lib, "analyze")
