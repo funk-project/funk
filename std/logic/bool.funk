@@ -1,9 +1,29 @@
-; funk/std — logic (Bool)
+; funk/std — logic, DEFINED IN FUNK over `if` (short-circuiting). Not Go builtins.
 
 package "funk/std/logic" {
   version 0.0.1
 }
 
-fn and { doc "logical and" in (a Bool) (b Bool) out (r Bool) engine builtin src "bool.and" }
-fn or  { doc "logical or"  in (a Bool) (b Bool) out (r Bool) engine builtin src "bool.or" }
-fn not { doc "logical not" in (a Bool)          out (r Bool) engine builtin src "bool.not" }
+fn and {
+  doc "logical and (short-circuit)"
+  in  (a Bool) (b Bool)
+  out (r Bool)
+  body (if a (return b) (return false))
+  test (is (and true false) false)
+}
+
+fn or {
+  doc "logical or (short-circuit)"
+  in  (a Bool) (b Bool)
+  out (r Bool)
+  body (if a (return true) (return b))
+  test (is (or false true) true)
+}
+
+fn not {
+  doc "logical not"
+  in  (a Bool)
+  out (r Bool)
+  body (if a (return false) (return true))
+  test (is (not false) true)
+}

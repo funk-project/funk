@@ -119,16 +119,7 @@ func init() {
 	regBuiltin("num.eq", cmpNum(func(a, b float64) bool { return a == b }))
 	regBuiltin("num.neq", cmpNum(func(a, b float64) bool { return a != b }))
 
-	// booleans
-	regBuiltin("bool.and", func(in map[string]interface{}) (interface{}, error) {
-		return truthy(in["a"]) && truthy(in["b"]), nil
-	})
-	regBuiltin("bool.or", func(in map[string]interface{}) (interface{}, error) {
-		return truthy(in["a"]) || truthy(in["b"]), nil
-	})
-	regBuiltin("bool.not", func(in map[string]interface{}) (interface{}, error) {
-		return !truthy(in["a"]), nil
-	})
+	// booleans (and/or/not now live in funk std over `if`)
 
 	// strings
 	regBuiltin("str.concat", func(in map[string]interface{}) (interface{}, error) {
