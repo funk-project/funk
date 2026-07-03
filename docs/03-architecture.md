@@ -23,7 +23,7 @@ funk/
   cmd/            # Go — the engine, CLI, and local server (the "machine")
   std/            # .funk — the standard library (the "vocabulary")
   docs/           # English docs — the idea, objective, architecture, spec
-  memory/         # the record — decisions, chats, context
+  etc/            # project meta — memory/ (the record: decisions, context)
   go.mod  README.md  LICENSE
 ```
 
