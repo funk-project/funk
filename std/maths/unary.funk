@@ -1,0 +1,10 @@
+; funk/std — unary number functions (used as map/filter arguments)
+
+package "funk/std/maths" {
+  version 0.0.1
+}
+
+fn double { doc "a times two"          in (a Num) out (r Num)  engine builtin src "num.double" }
+fn square { doc "a squared"            in (a Num) out (r Num)  engine builtin src "num.square" }
+fn inc    { doc "a plus one"           in (a Num) out (r Num)  engine builtin src "num.inc" }
+fn even?  { doc "true if a is even"    in (a Num) out (r Bool) engine builtin src "num.even" }

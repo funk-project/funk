@@ -1,0 +1,35 @@
+; funk/std — reactive streaming examples.
+; Sources (range/nats), operators (map/filter/take) and cancellation run live:
+; an infinite source is bounded by `take`, which cancels it upstream.
+
+package "funk/std/examples" {
+  version 0.0.1
+}
+
+fn evens {
+  doc "the first n even numbers, mapped lazily from an infinite source"
+  in  (n Num)
+  out (r Stream<Num>)
+  body (take (map (nats) double) n)
+}
+
+fn squares {
+  doc "squares of 1..n"
+  in  (n Num)
+  out (r Stream<Num>)
+  body (map (range 1 n) square)
+}
+
+fn firstEvens {
+  doc "the first n even naturals, filtered from an infinite source"
+  in  (n Num)
+  out (r Stream<Num>)
+  body (take (filter (nats) even?) n)
+}
+
+fn sumSquares {
+  doc "sum of the squares of 1..n (a windowed aggregate)"
+  in  (n Num)
+  out (r Num)
+  body (return (sum (collect (map (range 1 n) square))))
+}

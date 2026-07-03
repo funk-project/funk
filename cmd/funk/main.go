@@ -240,11 +240,10 @@ func cmdRun(args []string) error {
 		target = lib.Fns[len(lib.Fns)-1].Name
 	}
 
-	res := funk.Run(lib, target, inputs, funk.ExecOpts{})
+	res := funk.RunStreaming(lib, target, inputs, funk.ExecOpts{}, printValue)
 	if !res.OK {
 		return fmt.Errorf("%s", res.Error)
 	}
-	printValue(res.Value)
 	return nil
 }
 

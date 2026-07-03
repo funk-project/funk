@@ -100,6 +100,16 @@ func init() {
 		}
 		return math.Sqrt(a), nil
 	}))
+	regBuiltin("num.double", unNum(func(a float64) (float64, error) { return a * 2, nil }))
+	regBuiltin("num.square", unNum(func(a float64) (float64, error) { return a * a, nil }))
+	regBuiltin("num.inc", unNum(func(a float64) (float64, error) { return a + 1, nil }))
+	regBuiltin("num.even", func(in map[string]interface{}) (interface{}, error) {
+		a, err := arg(in, "a")
+		if err != nil {
+			return nil, err
+		}
+		return math.Mod(a, 2) == 0, nil
+	})
 
 	// comparisons → Bool
 	regBuiltin("num.gt", cmpNum(func(a, b float64) bool { return a > b }))

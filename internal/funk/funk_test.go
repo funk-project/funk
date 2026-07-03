@@ -103,6 +103,51 @@ func TestCompositeAnalyze(t *testing.T) {
 	}
 }
 
+func TestStreamMapInfiniteTake(t *testing.T) {
+	lib := loadStd(t)
+	// evens = (take (map (nats) double) n): maps an INFINITE source, take must
+	// bound it and cancel upstream — if cancellation failed this would hang.
+	res := Run(lib, "evens", map[string]interface{}{"n": 5.0}, ExecOpts{})
+	if !res.OK {
+		t.Fatal(res.Error)
+	}
+	list, ok := res.Value.([]interface{})
+	if !ok || len(list) != 5 {
+		t.Fatalf("evens(5) = %v", res.Value)
+	}
+	for i, want := range []float64{0, 2, 4, 6, 8} {
+		if mustNum(t, list[i]) != want {
+			t.Fatalf("evens[%d] = %v, want %v", i, list[i], want)
+		}
+	}
+}
+
+func TestStreamFilter(t *testing.T) {
+	lib := loadStd(t)
+	res := Run(lib, "firstEvens", map[string]interface{}{"n": 4.0}, ExecOpts{})
+	if !res.OK {
+		t.Fatal(res.Error)
+	}
+	list := res.Value.([]interface{})
+	if len(list) != 4 || mustNum(t, list[3]) != 6 {
+		t.Fatalf("firstEvens(4) = %v, want [0 2 4 6]", res.Value)
+	}
+}
+
+func TestRunStreamingLive(t *testing.T) {
+	lib := loadStd(t)
+	var got []float64
+	res := RunStreaming(lib, "squares", map[string]interface{}{"n": 4.0}, ExecOpts{}, func(v interface{}) {
+		got = append(got, mustNum(t, v))
+	})
+	if !res.OK {
+		t.Fatal(res.Error)
+	}
+	if len(got) != 4 || got[3] != 16 {
+		t.Fatalf("squares(4) streamed %v, want [1 4 9 16]", got)
+	}
+}
+
 func TestIntrospect(t *testing.T) {
 	lib := loadStd(t)
 	in, ok := Introspect(lib, "analyze")

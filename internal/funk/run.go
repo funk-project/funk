@@ -1,38 +1,80 @@
 package funk
 
 import (
+	"context"
 	"fmt"
 	"strconv"
 )
 
-// Run executes a function (atomic or composite) by reference with named inputs.
+// Run executes a function by reference; a live stream result is drained to a List.
 func Run(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts) ExecResult {
+	v, cancel, err := evalTop(lib, ref, inputs, opts)
+	defer cancel()
+	if err != nil {
+		return ExecResult{Error: err.Error()}
+	}
+	if s, ok := v.(Stream); ok {
+		v = drain(s)
+	}
+	return ExecResult{OK: true, Value: v}
+}
+
+// RunStreaming executes a function and emits each stream item live (docs/03:
+// a run may be a long-lived pipeline). Atomic/value results emit once.
+func RunStreaming(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts, emit func(interface{})) ExecResult {
+	v, cancel, err := evalTop(lib, ref, inputs, opts)
+	defer cancel()
+	if err != nil {
+		return ExecResult{Error: err.Error()}
+	}
+	if s, ok := v.(Stream); ok {
+		for item := range s {
+			emit(item)
+		}
+		return ExecResult{OK: true}
+	}
+	emit(v)
+	return ExecResult{OK: true, Value: v}
+}
+
+// evalTop resolves and runs a function, returning the raw body value (which may
+// be a live Stream) and a cancel function the caller must invoke when done.
+func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecOpts) (interface{}, context.CancelFunc, error) {
+	noop := func() {}
 	f, ok := lib.Lookup(ref)
 	if !ok {
-		return ExecResult{Error: fmt.Sprintf("unknown function %q", ref)}
+		return nil, noop, fmt.Errorf("unknown function %q", ref)
 	}
 	if !f.Composite() {
-		return Exec(f, inputs, opts)
+		res := Exec(f, inputs, opts)
+		if !res.OK {
+			return nil, noop, fmt.Errorf("%s", res.Error)
+		}
+		return res.Value, noop, nil
 	}
-	e := &evalEnv{lib: lib, opts: opts, vars: map[string]interface{}{}}
+	ctx, cancel := context.WithCancel(context.Background())
+	e := &evalEnv{lib: lib, opts: opts, vars: map[string]interface{}{}, ctx: ctx, cancel: cancel}
 	for k, v := range inputs {
 		e.vars[k] = v
 	}
 	v, err := e.eval(f.Body)
 	if err != nil {
-		return ExecResult{Error: err.Error()}
+		cancel()
+		return nil, noop, err
 	}
-	return ExecResult{OK: true, Value: v}
+	return v, cancel, nil
 }
 
 type evalEnv struct {
-	lib  *Library
-	opts ExecOpts
-	vars map[string]interface{}
+	lib    *Library
+	opts   ExecOpts
+	vars   map[string]interface{}
+	ctx    context.Context
+	cancel context.CancelFunc
 }
 
 func (e *evalEnv) child() *evalEnv {
-	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{}}
+	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{}, ctx: e.ctx, cancel: e.cancel}
 	for k, v := range e.vars {
 		c.vars[k] = v
 	}
@@ -98,6 +140,20 @@ func (e *evalEnv) evalForm(f Form) (interface{}, error) {
 		return e.evalForEach(f.Args)
 	case "window":
 		return e.evalWindow(f.Args)
+	case "range":
+		return e.evalRange(f.Args)
+	case "nats":
+		return e.evalNats(f.Args)
+	case "repeat":
+		return e.evalRepeat(f.Args)
+	case "map":
+		return e.evalMap(f.Args)
+	case "filter":
+		return e.evalFilter(f.Args)
+	case "take":
+		return e.evalTake(f.Args)
+	case "collect":
+		return e.evalCollect(f.Args)
 	default:
 		return e.evalCall(f)
 	}
