@@ -22,7 +22,7 @@ credential does not leak by accident. What landed since the first public cut:
 Still explicitly deferred to v0.2 (see ROADMAP): the secret **broker/egress**, `use`-driven
 versioned module resolution, recovery forms, and the full sliding/late `window`.
 
-**Tag:** `git tag v0.1 && git push origin main --tags` (left for a human — publishing).
+**Tag:** `git tag v0.1.0 && git push origin main --tags` (full 3-part semver for `go install`).
 
 ## v0.0.1 — first public cut
 
