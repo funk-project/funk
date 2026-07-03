@@ -36,6 +36,8 @@ func main() {
 		err = cmdTypes(args)
 	case "check":
 		err = cmdCheck(args)
+	case "doc", "docs":
+		err = cmdDoc(args)
 	case "introspect", "inspect":
 		err = cmdIntrospect(args)
 	case "make":
@@ -67,6 +69,7 @@ usage:
   funk list [-f path]        list loaded functions
   funk types [-f path]       list loaded types
   funk check [-f path]       static-check every composite function
+  funk doc [pkg]             generate markdown reference for the stdlib
   funk introspect [-f path] <fn>    print a function's structure (JSON)
   funk run [-f path] [--server url] [--sandbox docker] <fn> [k=v …]
                              run a function with named inputs (streams live)
