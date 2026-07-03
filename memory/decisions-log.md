@@ -86,6 +86,8 @@ do cli"). Ported from the TS reference in the `functions` repo; funk is Go from 
 | I16 | **Reactive set completed**: sources `range`/`nats`/`repeat`/`tick` (tick = real-time, verified over ~1s); operators `map`/`filter`/`take`/`collect`/`scan`/`merge`/`window`; **count + event-time windowing** (watermark closes earlier buckets). | Built |
 | I17 | **`funk test`**: inline `test (is (call) expected)` assertions — funk verifies funk (6/6 green). **`funk doc`**: generated `docs/STDLIB.md` (self-describing). | Built |
 | I18 | **`go` engine verified** (goAdd=42); all of builtin/python/go/claude verified live, codex wired. | Built |
+| I19 | **Positional diagnostics** (the v0.1 #1): the tokenizer tracks `line:col`; `ParseError` and `Check` `Issue`s carry a `Pos` (+ source `File`), so parse/type errors print as `path:line:col: message` — specific now ("unterminated string", "expected ')' …", "unknown function"). `Pos` rides on every AST node (`json:"-"`, so `funk parse` output is unchanged). Enables the IntelliJ File Watcher (clickable errors) and is the groundwork for a future `funk lsp`. **Verified**: positions correct on 5 broken files + 2 new Go tests. | Built |
+| I20 | **Editor support** (`editors/vscode/`): a TextMate grammar (+ language-config + manifest) for `.funk`, committed to the repo — drives IntelliJ (TextMate Bundles), VS Code, and later GitHub Linguist. Not in `.idea/`/`.vscode/` (both git-ignored) so it reaches contributors. `editors/README.md` has the IntelliJ setup + the `funk check` File Watcher. | Built |
 
 **CLI (14 commands):** `version · parse · fmt · run · list · types · check · test · doc · introspect · make · serve · get · help`. ~3600 lines Go, 110 fns / 13 types, all tests green.
 
