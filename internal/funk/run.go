@@ -172,6 +172,8 @@ func (e *evalEnv) evalForm(f Form) (interface{}, error) {
 		return e.evalRange(f.Args)
 	case "nats":
 		return e.evalNats(f.Args)
+	case "tick":
+		return e.evalTick(f.Args)
 	case "repeat":
 		return e.evalRepeat(f.Args)
 	case "map":

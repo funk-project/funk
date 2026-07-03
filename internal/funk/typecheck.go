@@ -17,7 +17,7 @@ var coreForms = map[string]bool{
 	"do": true, "let": true, "if": true, "return": true, "exit": true,
 	"for-each": true, "while": true, "window": true, "break": true, "continue": true,
 	"range": true, "nats": true, "repeat": true, "map": true, "filter": true,
-	"take": true, "collect": true,
+	"take": true, "collect": true, "tick": true,
 }
 
 // Check statically validates every composite function in the library:
@@ -65,11 +65,19 @@ func checkForm(lib *Library, fn string, f Form, scope map[string]bool) []Issue {
 		return c
 	}
 	switch f.Head {
-	case "do", "return", "exit", "if", "window", "break", "continue",
+	case "do", "return", "exit", "if", "break", "continue",
 		"range", "nats", "repeat", "take", "collect":
 		for _, a := range f.Args {
 			issues = append(issues, checkNode(lib, fn, a, scope)...)
 		}
+	case "window":
+		// (window stream size [every s] [by field] …) — only the stream is checked;
+		// size/by/field are literals (durations, keywords).
+		if len(f.Args) >= 1 {
+			issues = append(issues, checkNode(lib, fn, f.Args[0], scope)...)
+		}
+	case "tick":
+		// (tick <duration>) — a duration literal, nothing to check.
 	case "map", "filter":
 		if len(f.Args) == 2 {
 			issues = append(issues, checkNode(lib, fn, f.Args[0], scope)...)

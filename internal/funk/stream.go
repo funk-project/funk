@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Stream is a reactive stream: values over time, closed on completion.
@@ -105,6 +106,41 @@ func (e *evalEnv) evalNats(args []Node) (interface{}, error) {
 		for i := 0.0; ; i++ {
 			if !e.send(out, numFmt(i)) {
 				return
+			}
+		}
+	}()
+	return out, nil
+}
+
+// (tick dur) — an infinite live source emitting 0,1,2,… every dur (a real-time
+// pipeline; bound it with take). e.g. (tick 200ms).
+func (e *evalEnv) evalTick(args []Node) (interface{}, error) {
+	if len(args) != 1 {
+		return nil, fmt.Errorf("tick: (tick <duration>)")
+	}
+	a, ok := args[0].(Atom)
+	if !ok {
+		return nil, fmt.Errorf("tick: expected a duration like 200ms")
+	}
+	sec, ok := parseDuration(a.Value)
+	if !ok {
+		return nil, fmt.Errorf("tick: bad duration %q", a.Value)
+	}
+	out := make(Stream)
+	go func() {
+		defer close(out)
+		ticker := time.NewTicker(time.Duration(sec * float64(time.Second)))
+		defer ticker.Stop()
+		i := 0.0
+		for {
+			select {
+			case <-e.ctx.Done():
+				return
+			case <-ticker.C:
+				if !e.send(out, numFmt(i)) {
+					return
+				}
+				i++
 			}
 		}
 	}()

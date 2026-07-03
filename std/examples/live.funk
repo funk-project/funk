@@ -1,0 +1,19 @@
+; funk/std — a live, real-time pipeline (docs/03: runs may be long-lived).
+
+package "funk/std/examples" {
+  version 0.0.1
+}
+
+fn ticks {
+  doc "emit n numbers, one every 200ms — a real-time source, bounded by take"
+  in  (n Num)
+  out (r Stream<Num>)
+  body (take (tick 200ms) n)
+}
+
+fn liveSquares {
+  doc "square of a tick, every 200ms, n times"
+  in  (n Num)
+  out (r Stream<Num>)
+  body (take (map (tick 200ms) square) n)
+}
