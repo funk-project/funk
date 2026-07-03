@@ -13,6 +13,8 @@ type Introspection struct {
 	Requires   []string `json:"requires,omitempty"`
 	Calls      []string `json:"calls,omitempty"`      // functions a composite calls
 	Unresolved []string `json:"unresolved,omitempty"` // calls that do not resolve
+	Needs      []Need   `json:"needs,omitempty"`      // aggregated resources (docs/05)
+	Effects    []Effect `json:"effects,omitempty"`    // aggregated capabilities
 }
 
 // Introspect returns the structure of a function by reference.
@@ -43,7 +45,55 @@ func Introspect(lib *Library, ref string) (*Introspection, bool) {
 		in.Kind = "atomic"
 		in.Engine = f.Engine
 	}
+	// Declaration bubbles up (docs/05): a composite's needs/effects are the
+	// union of its own and everything it (transitively) calls.
+	in.Needs, in.Effects = aggregateResources(lib, f, map[string]bool{})
 	return in, true
+}
+
+func aggregateResources(lib *Library, f *Fn, seen map[string]bool) ([]Need, []Effect) {
+	if seen[f.Address()] {
+		return nil, nil
+	}
+	seen[f.Address()] = true
+	needs := append([]Need{}, f.Needs...)
+	effects := append([]Effect{}, f.Effects...)
+	if f.Composite() {
+		calls := map[string]bool{}
+		collectCalls(f.Body, calls)
+		for name := range calls {
+			if c, ok := lib.Lookup(name); ok {
+				cn, ce := aggregateResources(lib, c, seen)
+				needs = append(needs, cn...)
+				effects = append(effects, ce...)
+			}
+		}
+	}
+	return dedupNeeds(needs), dedupEffects(effects)
+}
+
+func dedupNeeds(ns []Need) []Need {
+	seen := map[string]bool{}
+	var out []Need
+	for _, n := range ns {
+		if k := n.String(); !seen[k] {
+			seen[k] = true
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+func dedupEffects(es []Effect) []Effect {
+	seen := map[string]bool{}
+	var out []Effect
+	for _, e := range es {
+		if k := e.String(); !seen[k] {
+			seen[k] = true
+			out = append(out, e)
+		}
+	}
+	return out
 }
 
 // collectCalls walks a body, recording every non-core call head.

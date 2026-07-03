@@ -13,6 +13,30 @@ type Port struct {
 	Type string `json:"type"` // "Num", "Str", "Stream<Num>", … ("" ⇒ Any)
 }
 
+// Need is one resource a function receives: `<kind> <alias> [schema]` in the
+// `needs {}` block (docs/05). Kind is an integration type or secret|config|volume|env.
+type Need struct {
+	Kind   string `json:"kind"`
+	Alias  string `json:"alias"`
+	Schema string `json:"schema,omitempty"`
+}
+
+func (n Need) String() string {
+	if n.Schema != "" {
+		return n.Kind + " " + n.Alias + " " + n.Schema
+	}
+	return n.Kind + " " + n.Alias
+}
+
+// Effect is one declared capability from the `effects {}` block (docs/04 §10):
+// `net <host>` / `fs read|write <path>`.
+type Effect struct {
+	Kind string   `json:"kind"`
+	Args []string `json:"args"`
+}
+
+func (e Effect) String() string { return e.Kind + " " + strings.Join(e.Args, " ") }
+
 // Fn is a function: atomic (Engine+Src) or composite (Body). Never both.
 type Fn struct {
 	Name     string
@@ -23,6 +47,8 @@ type Fn struct {
 	Engine   string // atomic: "builtin" | "python" | "go" | "claude" | "codex"
 	Src      string // atomic: body code, or a builtin primitive key
 	Requires []string
+	Needs    []Need
+	Effects  []Effect
 	Body     Node // composite: the single composing expression (nil ⇒ atomic)
 }
 
@@ -54,6 +80,13 @@ func portsFromField(f Field) []Port {
 		ports = append(ports, p)
 	}
 	return ports
+}
+
+func atomStr(n Node) string {
+	if a, ok := n.(Atom); ok {
+		return a.Value
+	}
+	return ""
 }
 
 // nodeTypeString renders a type node like `Num` or `Stream<Num>` (a form).
@@ -99,6 +132,27 @@ func FnFromBlock(b Block, pkg string) (*Fn, error) {
 			if form, ok := v.(Form); ok {
 				f.Requires = append(f.Requires, form.Head)
 			}
+		}
+	}
+	if nf, ok := b.Field("needs"); ok {
+		for _, sf := range nf.Sub {
+			n := Need{Kind: sf.Key}
+			if len(sf.Values) > 0 {
+				n.Alias = atomStr(sf.Values[0])
+			}
+			if len(sf.Values) > 1 {
+				n.Schema = atomStr(sf.Values[1])
+			}
+			f.Needs = append(f.Needs, n)
+		}
+	}
+	if ef, ok := b.Field("effects"); ok {
+		for _, sf := range ef.Sub {
+			e := Effect{Kind: sf.Key}
+			for _, v := range sf.Values {
+				e.Args = append(e.Args, atomStr(v))
+			}
+			f.Effects = append(f.Effects, e)
 		}
 	}
 	if f.Src != "" && f.Body != nil {

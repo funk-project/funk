@@ -206,6 +206,14 @@ func (ps *parser) parseField() (Field, error) {
 	if key.k != tAtom {
 		return Field{}, &ParseError{"a field must start with a key"}
 	}
+	// A nested brace block: `needs { … }` / `effects { … }`, parsed line-by-line.
+	if t, ok := ps.peek(); ok && t.k == tLBrace {
+		sub, err := ps.parseBraceFields()
+		if err != nil {
+			return Field{}, err
+		}
+		return Field{Key: key.v, Sub: sub}, nil
+	}
 	var values []Node
 	// allow the value to start on the next line (e.g. `body\n  (…)`)
 	ps.skipNL()
@@ -231,6 +239,50 @@ func (ps *parser) parseField() (Field, error) {
 	}
 	ps.skipNL()
 	return Field{Key: key.v, Values: values}, nil
+}
+
+// parseBraceFields parses `{ key val… \n key val… }` line-by-line (used for
+// needs / effects blocks, where a line is `kind alias [schema]`).
+func (ps *parser) parseBraceFields() ([]Field, error) {
+	if err := ps.expect(tLBrace, "{"); err != nil {
+		return nil, err
+	}
+	ps.skipNL()
+	var fields []Field
+	for {
+		t, ok := ps.peek()
+		if !ok {
+			return nil, &ParseError{"unterminated brace block"}
+		}
+		if t.k == tRBrace {
+			break
+		}
+		key, err := ps.next()
+		if err != nil {
+			return nil, err
+		}
+		if key.k != tAtom {
+			return nil, &ParseError{"a brace-block line must start with a key"}
+		}
+		var vals []Node
+		for {
+			nt, ok := ps.peek()
+			if !ok || nt.k == tNL || nt.k == tRBrace {
+				break
+			}
+			v, err := ps.parseValue()
+			if err != nil {
+				return nil, err
+			}
+			vals = append(vals, v)
+		}
+		fields = append(fields, Field{Key: key.v, Values: vals})
+		ps.skipNL()
+	}
+	if err := ps.expect(tRBrace, "}"); err != nil {
+		return nil, err
+	}
+	return fields, nil
 }
 
 func (ps *parser) parseBlock() (Block, error) {

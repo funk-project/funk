@@ -1,0 +1,30 @@
+; funk/std — a function with resources (needs) and capabilities (effects),
+; and a composite whose declarations bubble up (docs/05).
+
+package "funk/std/examples" {
+  version 0.0.1
+}
+
+fn createIssue {
+  doc "open a GitHub issue (illustrative) — declares what it needs"
+  in  (title Str)
+  out (r Json)
+  engine python
+  needs {
+    github gh
+    secret token
+    config repo Str
+  }
+  effects {
+    net api.github.com
+  }
+  src "return {\"opened\": title}"
+}
+
+fn triage {
+  doc "a composite that calls createIssue — its needs/effects aggregate up"
+  in  (title Str)
+  out (r Json)
+  body
+    (return (createIssue title))
+}

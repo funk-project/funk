@@ -24,10 +24,12 @@ type Form struct {
 
 func (Form) node() {}
 
-// Field is a `key value…` line inside a block.
+// Field is a `key value…` line inside a block. A field may instead hold a nested
+// brace block (`needs { … }` / `effects { … }`), captured line-by-line in Sub.
 type Field struct {
 	Key    string
 	Values []Node
+	Sub    []Field `json:",omitempty"`
 }
 
 // Block is a top-level definition: `head Name { field… }`.

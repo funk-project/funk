@@ -170,6 +170,46 @@ func TestIntrospect(t *testing.T) {
 	}
 }
 
+func TestNeedsParseAndAggregate(t *testing.T) {
+	lib := loadStd(t)
+	ci, ok := Introspect(lib, "createIssue")
+	if !ok || len(ci.Needs) != 3 {
+		t.Fatalf("createIssue needs = %v", ci.Needs)
+	}
+	if len(ci.Effects) != 1 || ci.Effects[0].Kind != "net" {
+		t.Fatalf("createIssue effects = %v", ci.Effects)
+	}
+	// triage calls createIssue; its needs/effects must bubble up (docs/05).
+	tr, _ := Introspect(lib, "triage")
+	kinds := map[string]bool{}
+	for _, n := range tr.Needs {
+		kinds[n.Kind] = true
+	}
+	if !kinds["github"] || !kinds["secret"] || !kinds["config"] {
+		t.Fatalf("triage needs did not aggregate up: %v", tr.Needs)
+	}
+	if len(tr.Effects) != 1 {
+		t.Fatalf("triage effects did not aggregate: %v", tr.Effects)
+	}
+}
+
+func TestParseNeedsBlock(t *testing.T) {
+	prog, err := Parse("fn f {\n in (x Str)\n needs {\n  github gh\n  config repo Str\n }\n engine python\n src \"return x\"\n}")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f, err := FnFromBlock(prog[0], "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(f.Needs) != 2 || f.Needs[0].Kind != "github" || f.Needs[0].Alias != "gh" {
+		t.Fatalf("needs = %v", f.Needs)
+	}
+	if f.Needs[1].Schema != "Str" {
+		t.Fatalf("config schema = %q", f.Needs[1].Schema)
+	}
+}
+
 func mustNum(t *testing.T, v interface{}) float64 {
 	t.Helper()
 	f, err := toNum(v)
