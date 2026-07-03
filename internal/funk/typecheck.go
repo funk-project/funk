@@ -1,6 +1,9 @@
 package funk
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 // Issue is a static problem found by Check.
 type Issue struct {
@@ -38,12 +41,11 @@ func checkNode(lib *Library, fn string, n Node, scope map[string]bool) []Issue {
 	switch t := n.(type) {
 	case Atom:
 		if t.Kind == "id" {
-			switch t.Value {
-			case "true", "false", "null", "nil":
-			default:
-				if !scope[t.Value] {
-					return []Issue{{fn, fmt.Sprintf("unknown identifier %q", t.Value)}}
-				}
+			switch {
+			case t.Value == "true", t.Value == "false", t.Value == "null", t.Value == "nil":
+			case strings.HasPrefix(t.Value, "needs."): // resource access (docs/05)
+			case !scope[t.Value]:
+				return []Issue{{fn, fmt.Sprintf("unknown identifier %q", t.Value)}}
 			}
 		}
 		return nil

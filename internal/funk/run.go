@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 // Run executes a function by reference; a live stream result is drained to a List.
@@ -53,7 +54,8 @@ func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecO
 		return res.Value, noop, nil
 	}
 	ctx, cancel := context.WithCancel(context.Background())
-	e := &evalEnv{lib: lib, opts: opts, vars: map[string]interface{}{}, ctx: ctx, cancel: cancel}
+	e := &evalEnv{lib: lib, opts: opts, vars: map[string]interface{}{}, ctx: ctx, cancel: cancel,
+		resources: resolveResources(f, opts)}
 	for k, v := range inputs {
 		e.vars[k] = v
 	}
@@ -66,15 +68,16 @@ func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecO
 }
 
 type evalEnv struct {
-	lib    *Library
-	opts   ExecOpts
-	vars   map[string]interface{}
-	ctx    context.Context
-	cancel context.CancelFunc
+	lib       *Library
+	opts      ExecOpts
+	vars      map[string]interface{}
+	ctx       context.Context
+	cancel    context.CancelFunc
+	resources map[string]map[string]interface{} // needs: kind → alias → value
 }
 
 func (e *evalEnv) child() *evalEnv {
-	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{}, ctx: e.ctx, cancel: e.cancel}
+	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{}, ctx: e.ctx, cancel: e.cancel, resources: e.resources}
 	for k, v := range e.vars {
 		c.vars[k] = v
 	}
@@ -109,6 +112,18 @@ func (e *evalEnv) evalAtom(a Atom) (interface{}, error) {
 			return false, nil
 		case "null", "nil":
 			return nil, nil
+		}
+		// resource access: needs.<kind>.<alias> (docs/05)
+		if strings.HasPrefix(a.Value, "needs.") {
+			parts := strings.SplitN(a.Value, ".", 3)
+			if len(parts) == 3 {
+				if kind, ok := e.resources[parts[1]]; ok {
+					if v, ok := kind[parts[2]]; ok {
+						return v, nil
+					}
+				}
+				return "", nil
+			}
 		}
 		if v, ok := e.vars[a.Value]; ok {
 			return v, nil

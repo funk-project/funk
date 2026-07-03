@@ -211,6 +211,7 @@ func cmdRun(args []string) error {
 	files, rest := takeFlag(args, "-f")
 	servers, rest := takeFlag(rest, "--server")
 	sandboxes, rest := takeFlag(rest, "--sandbox")
+	binds, rest := takeFlag(rest, "--bind")
 	server := os.Getenv("FUNK_SERVER")
 	if len(servers) > 0 {
 		server = servers[len(servers)-1]
@@ -218,6 +219,14 @@ func cmdRun(args []string) error {
 	opts := funk.ExecOpts{}
 	if len(sandboxes) > 0 {
 		opts.Sandbox = sandboxes[len(sandboxes)-1]
+	}
+	if len(binds) > 0 {
+		opts.Bindings = map[string]string{}
+		for _, b := range binds {
+			if i := strings.IndexByte(b, '='); i > 0 {
+				opts.Bindings[b[:i]] = b[i+1:]
+			}
+		}
 	}
 	if len(rest) < 1 {
 		return fmt.Errorf("run: usage: funk run [-f path] [--server url] <fn> [k=v …]")

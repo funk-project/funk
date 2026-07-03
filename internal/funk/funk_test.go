@@ -193,6 +193,21 @@ func TestNeedsParseAndAggregate(t *testing.T) {
 	}
 }
 
+func TestResourceInjection(t *testing.T) {
+	lib := loadStd(t)
+	// siteGreeting reads needs.config.site in a funk body; bind resolves it.
+	opts := ExecOpts{Bindings: map[string]string{"config.site": "funk"}}
+	res := Run(lib, "siteGreeting", nil, opts)
+	if !res.OK || res.Value != "hello from funk" {
+		t.Fatalf("siteGreeting = %v (%s), want \"hello from funk\"", res.Value, res.Error)
+	}
+	// unbound resource resolves to empty, not an error.
+	res = Run(lib, "siteGreeting", nil, ExecOpts{})
+	if !res.OK {
+		t.Fatalf("unbound siteGreeting errored: %s", res.Error)
+	}
+}
+
 func TestParseNeedsBlock(t *testing.T) {
 	prog, err := Parse("fn f {\n in (x Str)\n needs {\n  github gh\n  config repo Str\n }\n engine python\n src \"return x\"\n}")
 	if err != nil {

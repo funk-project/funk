@@ -1,0 +1,30 @@
+; funk/std — runtime resource injection (docs/05).
+; needs are resolved from --bind (or env FUNK_<KIND>_<ALIAS>) and injected:
+; python bodies read `needs['kind']['alias']`; funk bodies read needs.kind.alias.
+
+package "funk/std/examples" {
+  version 0.0.1
+}
+
+fn secretPeek {
+  doc "show a config value and a masked secret — injected at runtime into python"
+  in  ()
+  out (r Str)
+  engine python
+  needs {
+    config repo Str
+    secret token
+  }
+  src "return needs['config']['repo'] + ' @ ' + needs['secret']['token'][:3] + '***'"
+}
+
+fn siteGreeting {
+  doc "greet using an injected config value — needs.kind.alias in a funk body"
+  in  ()
+  out (r Str)
+  needs {
+    config site Str
+  }
+  body
+    (return (concat "hello from " needs.config.site))
+}

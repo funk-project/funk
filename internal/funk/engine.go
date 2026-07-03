@@ -18,10 +18,49 @@ type ExecResult struct {
 	Error string      `json:"error,omitempty"`
 }
 
-// ExecOpts configures execution (sandbox, timeout).
+// ExecOpts configures execution (sandbox, timeout, resource bindings).
 type ExecOpts struct {
-	Sandbox string // "" (host) | "docker"
-	Timeout time.Duration
+	Sandbox  string            // "" (host) | "docker"
+	Timeout  time.Duration
+	Bindings map[string]string // "kind.alias" → value, for needs resolution
+}
+
+// resolveResources builds the injected `needs` tree (kind → alias → value) from
+// a function's declarations, resolved from --bind bindings then env
+// (FUNK_<KIND>_<ALIAS>). This is the runtime injection of docs/05 (v1: direct
+// values; brokering/vault is future work).
+func resolveResources(f *Fn, opts ExecOpts) map[string]map[string]interface{} {
+	if len(f.Needs) == 0 {
+		return nil
+	}
+	res := map[string]map[string]interface{}{}
+	for _, n := range f.Needs {
+		if res[n.Kind] == nil {
+			res[n.Kind] = map[string]interface{}{}
+		}
+		res[n.Kind][n.Alias] = resolveNeed(n, opts)
+	}
+	return res
+}
+
+func resolveNeed(n Need, opts ExecOpts) interface{} {
+	if v, ok := opts.Bindings[n.Kind+"."+n.Alias]; ok {
+		return v
+	}
+	env := "FUNK_" + strings.ToUpper(n.Kind) + "_" + strings.ToUpper(n.Alias)
+	if v := os.Getenv(env); v != "" {
+		return v
+	}
+	return ""
+}
+
+func needsJSON(f *Fn, opts ExecOpts) string {
+	r := resolveResources(f, opts)
+	if r == nil {
+		return "{}"
+	}
+	b, _ := json.Marshal(r)
+	return string(b)
 }
 
 func (o ExecOpts) timeout(def time.Duration) time.Duration {
@@ -129,8 +168,9 @@ func execPython(f *Fn, in map[string]interface{}, opts ExecOpts) ExecResult {
 	params := strings.Join(mapStr(keys, func(k string) string { return k + "=None" }), ", ")
 	keyList := strings.Join(mapStr(keys, func(k string) string { return "'" + k + "'" }), ", ")
 	indented := indentLines(orDefault(f.Src, "return None"), "    ")
-	wrapper := fmt.Sprintf(`import sys, json
+	wrapper := fmt.Sprintf(`import sys, json, os
 raw = json.loads(sys.argv[1]) if len(sys.argv) > 1 else {}
+needs = json.loads(os.environ.get("FUNK_NEEDS", "{}"))
 def _p(v):
     try:
         return json.loads(v)
@@ -143,13 +183,14 @@ _out = _fn(**_in)
 sys.stdout.write(_out if isinstance(_out, str) else json.dumps(_out))
 `, keyList, params, indented)
 
-	env := baseEnv(inJSON)
+	nJSON := needsJSON(f, opts)
+	env := append(baseEnv(inJSON), "FUNK_NEEDS="+nJSON)
 	if opts.Sandbox == "docker" {
 		image := "python:3-slim"
 		if imageExists("funk-py:latest") {
 			image = "funk-py:latest"
 		}
-		return runCmd("docker", []string{"run", "--rm", image, "python3", "-c", wrapper, inJSON}, env, opts.timeout(180*time.Second))
+		return runCmd("docker", []string{"run", "--rm", "-e", "FUNK_NEEDS=" + nJSON, image, "python3", "-c", wrapper, inJSON}, env, opts.timeout(180*time.Second))
 	}
 	return runCmd("python3", []string{"-c", wrapper, inJSON}, env, opts.timeout(30*time.Second))
 }
