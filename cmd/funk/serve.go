@@ -58,6 +58,7 @@ func cmdServe(args []string) error {
 			Ref    string                 `json:"ref"`
 			Inputs map[string]interface{} `json:"inputs"`
 			Trace  bool                   `json:"trace"`
+			Live   bool                   `json:"live"`
 		}
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
@@ -70,6 +71,26 @@ func cmdServe(args []string) error {
 			if flusher != nil {
 				flusher.Flush()
 			}
+		}
+		// Live: stream per-node trace events (incl. "enter" glow) and values as
+		// they happen, then the final report — the substrate for an animated,
+		// self-observable trace (docs/01 #4). The plan lights up as it runs.
+		if req.Live {
+			onEvent := func(ev funk.TraceEvent) {
+				_ = enc.Encode(map[string]interface{}{"event": ev})
+				flush()
+			}
+			onValue := func(v interface{}) {
+				_ = enc.Encode(map[string]interface{}{"value": v})
+				flush()
+			}
+			_, rep := funk.RunLive(lib, req.Ref, req.Inputs, funk.ExecOpts{}, onEvent, onValue)
+			if rep.Error != "" {
+				_ = enc.Encode(map[string]interface{}{"error": rep.Error})
+			}
+			_ = enc.Encode(map[string]interface{}{"report": rep})
+			flush()
+			return
 		}
 		if req.Trace {
 			res, rep := funk.RunWithReport(lib, req.Ref, req.Inputs, funk.ExecOpts{})
