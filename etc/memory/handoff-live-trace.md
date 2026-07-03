@@ -33,8 +33,22 @@ contract.
 `bump x=3` → `enter gt` → `call gt=false` → `branch else` → `terminal return` → `value 3` → `report`.
 `squares n=3` → per-item `enter`/`call square` interleaved with streamed `value`s.
 
-## Next step (camada 3 — not done)
-Events identify a node only by `fn` name. For the IDE to map an event to the **exact** graph
-node under repeated calls, add a **stable node id shared** between the graph the IDE draws and
-these events. Cleanest path: a `funk graph --json` that emits nodes with ids derived from the
-AST `Pos` (`line:col`, already on every node), and have `TraceEvent` carry that same id.
+## Camera 3 — DONE (I30)
+Stable node ids now link the graph and the trace:
+- `TraceEvent` carries **`node`** — the call site's AST `Pos` (`"line:col"`), set on
+  `enter` / `call` / `branch` / `terminal` events (in `evalCall`, `evalIf`, and the
+  `return`/`exit` cases).
+- `funk graph --json` emits the tree with the **same ids** per node (`id: "line:col"`, from
+  `Pos`), plus `kind`/`head`/`value`/`children`.
+- **Verified:** for `bump`, `funk graph --json` gives `gt`=`24:10`, `if`=`24:6`, else-`return`=
+  `26:8`; the `--trace` events carry exactly those ids. Go test `TestTraceEventCarriesNodeID`
+  asserts the event id equals the call-site `Pos`.
+
+So the IDE can: draw from `graph --json`, then on each live event light the node whose `id`
+matches — the exact node, even under repeated calls (the call site is stable).
+
+## Next step (camera 4 — not done)
+The IDE itself: consume `graph --json` + the `/run {"live":true}` stream and animate. On the
+runtime side, the open question is per-**item** granularity for streams (a `map` firing `square`
+N times reuses one call-site id — fine for "this node is active", but if the IDE wants to show
+*which item*, events would need an item index alongside the node id).
