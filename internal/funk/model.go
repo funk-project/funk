@@ -37,6 +37,12 @@ type Effect struct {
 
 func (e Effect) String() string { return e.Kind + " " + strings.Join(e.Args, " ") }
 
+// TestCase is an inline assertion: `test (call…) expected`.
+type TestCase struct {
+	Call   Node
+	Expect Node
+}
+
 // Fn is a function: atomic (Engine+Src) or composite (Body). Never both.
 type Fn struct {
 	Name     string
@@ -49,6 +55,7 @@ type Fn struct {
 	Requires []string
 	Needs    []Need
 	Effects  []Effect
+	Tests    []TestCase
 	Body     Node // composite: the single composing expression (nil ⇒ atomic)
 }
 
@@ -153,6 +160,14 @@ func FnFromBlock(b Block, pkg string) (*Fn, error) {
 				e.Args = append(e.Args, atomStr(v))
 			}
 			f.Effects = append(f.Effects, e)
+		}
+	}
+	for _, fld := range b.Fields {
+		// test is a single form `(is <call> <expected>)`.
+		if fld.Key == "test" && len(fld.Values) >= 1 {
+			if form, ok := fld.Values[0].(Form); ok && len(form.Args) >= 2 {
+				f.Tests = append(f.Tests, TestCase{Call: form.Args[0], Expect: form.Args[1]})
+			}
 		}
 	}
 	if f.Src != "" && f.Body != nil {

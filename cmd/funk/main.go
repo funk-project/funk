@@ -36,6 +36,8 @@ func main() {
 		err = cmdTypes(args)
 	case "check":
 		err = cmdCheck(args)
+	case "test":
+		err = cmdTest(args)
 	case "doc", "docs":
 		err = cmdDoc(args)
 	case "introspect", "inspect":
@@ -69,6 +71,7 @@ usage:
   funk list [-f path]        list loaded functions
   funk types [-f path]       list loaded types
   funk check [-f path]       static-check every composite function
+  funk test [-f path]        run inline `test (is (call) expected)` assertions
   funk doc [pkg]             generate markdown reference for the stdlib
   funk introspect [-f path] <fn>    print a function's structure (JSON)
   funk run [-f path] [--server url] [--sandbox docker] <fn> [k=v …]
@@ -233,6 +236,33 @@ func cmdIntrospect(args []string) error {
 	}
 	out, _ := json.MarshalIndent(in, "", "  ")
 	fmt.Println(string(out))
+	return nil
+}
+
+func cmdTest(args []string) error {
+	files, _ := takeFlag(args, "-f")
+	lib, err := loadLibrary(files)
+	if err != nil {
+		return err
+	}
+	results := funk.RunTests(lib)
+	pass, fail := 0, 0
+	for _, r := range results {
+		if r.Ok {
+			pass++
+			continue
+		}
+		fail++
+		if r.Err != "" {
+			fmt.Fprintf(os.Stderr, "FAIL %s: error: %s\n", r.Fn, r.Err)
+		} else {
+			fmt.Fprintf(os.Stderr, "FAIL %s: got %v, want %v\n", r.Fn, r.Got, r.Want)
+		}
+	}
+	fmt.Printf("%d passed, %d failed (%d assertions)\n", pass, fail, len(results))
+	if fail > 0 {
+		return fmt.Errorf("%d test(s) failed", fail)
+	}
 	return nil
 }
 

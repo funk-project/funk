@@ -12,6 +12,8 @@ fn powTwoLE {
     (while (s 1)
       (lte (mul s 2) n)
       (mul s 2))
+  test (is (powTwoLE 100) 64)
+  test (is (powTwoLE 1000) 512)
 }
 
 fn countUp {

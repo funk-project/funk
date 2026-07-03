@@ -12,6 +12,8 @@ fn add {
   out (r Num)
   engine builtin
   src "num.add"
+  test (is (add 40 2) 42)
+  test (is (add 0 0) 0)
 }
 
 fn sub {

@@ -24,4 +24,6 @@ fn bump {
     (if (gt x 5)
       (return (add x 100))
       (return x))
+  test (is (bump 9) 109)
+  test (is (bump 3) 3)
 }
