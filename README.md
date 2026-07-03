@@ -1,5 +1,9 @@
 # funk
 
+> **Our mission** — a human and an AI, as peers — is to give the world the language in which the
+> plans AIs make stop being a black box, and become something everyone can read, run, and
+> improve. **Open. Free forever.**
+
 **A language for the plans AIs make** — turning an agent's execution plan into a first-class
 artifact: **portable, typed, editable, self-observable, reactive.** The machine stops being a
 black box, because there is finally a reader that can hold it — the AI itself.
