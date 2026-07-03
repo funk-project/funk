@@ -193,6 +193,28 @@ func TestNeedsParseAndAggregate(t *testing.T) {
 	}
 }
 
+func TestFormatIdempotent(t *testing.T) {
+	src := "fn analyze {\n" +
+		"  doc \"mean\"\n" +
+		"  in (xs Stream<Num>)\n" +
+		"  out (r Num)\n" +
+		"  needs {\n    config site Str\n    secret token\n  }\n" +
+		"  body (if (isEmpty? xs) (exit \"no data\") (return (mean (window xs 100))))\n" +
+		"}\n"
+	prog, err := Parse(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f1 := Format(prog)
+	prog2, err := Parse(f1)
+	if err != nil {
+		t.Fatalf("reparse of formatted source failed: %v\n%s", err, f1)
+	}
+	if f2 := Format(prog2); f1 != f2 {
+		t.Fatalf("format not idempotent:\n--- f1 ---\n%s\n--- f2 ---\n%s", f1, f2)
+	}
+}
+
 func TestWhileLoop(t *testing.T) {
 	lib := loadStd(t)
 	if res := Run(lib, "powTwoLE", map[string]interface{}{"n": 100.0}, ExecOpts{}); !res.OK || mustNum(t, res.Value) != 64 {

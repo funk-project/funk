@@ -26,6 +26,8 @@ func main() {
 		fmt.Println("funk", version)
 	case "parse":
 		err = cmdParse(args)
+	case "fmt", "format":
+		err = cmdFmt(args)
 	case "run":
 		err = cmdRun(args)
 	case "list", "ls":
@@ -59,6 +61,7 @@ func usage() {
 usage:
   funk version               print the version
   funk parse <file>          parse a .funk file, print the AST (JSON)
+  funk fmt [-w] <file>       format a .funk file canonically (-w writes)
   funk list [-f path]        list loaded functions
   funk types [-f path]       list loaded types
   funk check [-f path]       static-check every composite function
@@ -132,6 +135,34 @@ func cmdParse(args []string) error {
 	}
 	out, _ := json.MarshalIndent(prog, "", "  ")
 	fmt.Println(string(out))
+	return nil
+}
+
+func cmdFmt(args []string) error {
+	write, rest := false, []string{}
+	for _, a := range args {
+		if a == "-w" || a == "--write" {
+			write = true
+		} else {
+			rest = append(rest, a)
+		}
+	}
+	if len(rest) != 1 {
+		return fmt.Errorf("fmt: usage: funk fmt [-w] <file>")
+	}
+	src, err := os.ReadFile(rest[0])
+	if err != nil {
+		return err
+	}
+	prog, err := funk.Parse(string(src))
+	if err != nil {
+		return err
+	}
+	out := funk.Format(prog)
+	if write {
+		return os.WriteFile(rest[0], []byte(out), 0o644)
+	}
+	fmt.Print(out)
 	return nil
 }
 
