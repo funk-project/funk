@@ -135,6 +135,11 @@ $ funk run runningSum n=5    # a running fold (scan)
 6
 10
 15
+
+$ funk run slidingSums n=5   # SLIDING window of 3, step 1 → overlapping windows
+6                            # [1,2,3]=6
+9                            # [2,3,4]=9
+12                           # [3,4,5]=12
 ```
 
 ## 7. Pass a function as a value (higher-order)

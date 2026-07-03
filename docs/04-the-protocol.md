@@ -196,11 +196,12 @@ The spec runs ahead of the engine; this table is the contract for the **referenc
 | Sources `range` · `nats` · `tick` · `repeat` | **Stable** |
 | Operators `map` · `filter` · `take` · `scan` · `merge` · `collect` | **Stable** |
 | `window` — count + event-time (`by <field>`) | **Stable** |
+| `window … every <slide>` — sliding **count** windows | **Experimental** |
 | `each` / `yield` (define your own operators) · `fold` | **Experimental** |
 | Recovery — `(on-error …)` · `(retry …)` | **Experimental** |
 | `needs` / `effects` blocks; injection via `--bind` / env; trace redaction | **Experimental** |
 | `funk get` (clone a package by URL, resolve by bare name) | **Experimental** |
-| `window` extras — `every` (sliding) · `lateness` · `on-late` | **Proposal** |
+| `window` extras — `every` on **event-time** · `lateness` · `on-late` | **Proposal** |
 | `use "<addr>" <semver> as <alias>` (namespaced/versioned resolution) | **Proposal** |
 | Secret **broker** / **egress** control; `with { … }` / project `object` | **Proposal** |
 

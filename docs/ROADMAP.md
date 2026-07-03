@@ -56,7 +56,8 @@ leak by accident. Not "production platform" — "a language you can rely on for 
       line of defense.
 - [x] **Recovery forms** — `(on-error <body> (e) <handler>)` and `(retry <body> <n> [backoff
       <dur>])`, implemented + tested (Experimental). *Landed early.*
-- [ ] **Full `window`** — `every` (sliding), `lateness`, `on-late` (docs/04 §7, proposal).
+- [~] **Full `window`** — sliding **count** windows (`every <slide>`) are in + tested;
+      event-time sliding, `lateness`, and `on-late` remain (docs/04 §7, proposal).
 
 ## v0.3+ — "live pipelines & shared state"
 

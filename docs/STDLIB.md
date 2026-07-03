@@ -1,6 +1,6 @@
 # funk — standard library
 
-126 functions across 13 packages.
+127 functions across 13 packages.
 
 ## (local)
 
@@ -118,6 +118,8 @@
   `secretPeek() → r Str` · *atomic · python*
 - **`siteGreeting`** — greet using an injected config value — needs.kind.alias in a funk body  
   `siteGreeting() → r Str` · *composite*
+- **`slidingSums`** — sum of each SLIDING window of 3 (step 1) over 1..n — overlapping windows  
+  `slidingSums(n Num) → r Stream<Num>` · *composite*
 - **`slugify`** — turn a title into a url slug (lowercase, non-alnum → single hyphen)  
   `slugify(s Str) → r Str` · *atomic · python*
 - **`squares`** — squares of 1..n  
