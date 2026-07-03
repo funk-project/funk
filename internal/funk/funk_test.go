@@ -1,6 +1,56 @@
 package funk
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
+
+func testEnv() *evalEnv {
+	ctx, cancel := context.WithCancel(context.Background())
+	return &evalEnv{lib: NewLibrary(), ctx: ctx, cancel: cancel, vars: map[string]interface{}{}}
+}
+
+func TestCountWindow(t *testing.T) {
+	e := testEnv()
+	in := make(Stream)
+	go func() {
+		defer close(in)
+		for i := 1; i <= 7; i++ {
+			in <- float64(i)
+		}
+	}()
+	var got [][]interface{}
+	for w := range e.countWindow(in, 3) {
+		got = append(got, w.([]interface{}))
+	}
+	if len(got) != 3 || len(got[0]) != 3 || len(got[2]) != 1 {
+		t.Fatalf("countWindow(7,3) = %v, want [3][3][1]", got)
+	}
+}
+
+func TestTimeWindow(t *testing.T) {
+	e := testEnv()
+	items := []interface{}{
+		map[string]interface{}{"time": 0.0}, map[string]interface{}{"time": 1.0},
+		map[string]interface{}{"time": 5.0}, map[string]interface{}{"time": 6.0},
+		map[string]interface{}{"time": 12.0},
+	}
+	in := make(Stream)
+	go func() {
+		defer close(in)
+		for _, it := range items {
+			in <- it
+		}
+	}()
+	var got [][]interface{}
+	for w := range e.timeWindow(in, 5.0, "time") {
+		got = append(got, w.([]interface{}))
+	}
+	// 5s event-time buckets: {0,1} {5,6} {12} → three windows sized 2,2,1
+	if len(got) != 3 || len(got[0]) != 2 || len(got[2]) != 1 {
+		t.Fatalf("timeWindow = %v, want sizes 2,2,1", got)
+	}
+}
 
 func TestParseFn(t *testing.T) {
 	prog, err := Parse(`fn add { doc "add" in (a Num) (b Num) out (r Num) engine builtin src "num.add" }`)

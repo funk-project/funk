@@ -1,6 +1,11 @@
 package funk
 
-import "fmt"
+import (
+	"fmt"
+	"sort"
+	"strconv"
+	"strings"
+)
 
 // Stream is a reactive stream: values over time, closed on completion.
 // docs/03: stream = chan; onNext = send; onComplete = close; cancel = ctx.
@@ -226,6 +231,111 @@ func (e *evalEnv) evalTake(args []Node) (interface{}, error) {
 		e.cancel() // enough taken — stop upstream sources
 	}()
 	return out, nil
+}
+
+// countWindow emits a List every n items (tumbling); a trailing partial window
+// is emitted on completion.
+func (e *evalEnv) countWindow(in Stream, n int) Stream {
+	out := make(Stream)
+	go func() {
+		defer close(out)
+		var buf []interface{}
+		for v := range in {
+			buf = append(buf, v)
+			if n > 0 && len(buf) >= n {
+				w := buf
+				buf = nil
+				if !e.send(out, w) {
+					return
+				}
+			}
+		}
+		if len(buf) > 0 {
+			e.send(out, buf)
+		}
+	}()
+	return out
+}
+
+// timeWindow emits a List per event-time bucket of width `dur` (tumbling). The
+// watermark is simple: a later bucket closes all earlier ones (docs/04 §7).
+func (e *evalEnv) timeWindow(in Stream, dur float64, field string) Stream {
+	out := make(Stream)
+	go func() {
+		defer close(out)
+		buckets := map[int64][]interface{}{}
+		emit := func(b int64) bool {
+			if items, ok := buckets[b]; ok {
+				delete(buckets, b)
+				return e.send(out, items)
+			}
+			return true
+		}
+		// close every existing bucket with key < b, in ascending order.
+		closeBefore := func(b int64) bool {
+			var toClose []int64
+			for k := range buckets {
+				if k < b {
+					toClose = append(toClose, k)
+				}
+			}
+			sort.Slice(toClose, func(i, j int) bool { return toClose[i] < toClose[j] })
+			for _, k := range toClose {
+				if !emit(k) {
+					return false
+				}
+			}
+			return true
+		}
+		for v := range in {
+			t := eventTime(v, field)
+			b := int64(t / dur)
+			buckets[b] = append(buckets[b], v)
+			// watermark: a later event closes earlier buckets (default drop late).
+			if !closeBefore(b) {
+				return
+			}
+		}
+		// drain remaining buckets in ascending order
+		keys := make([]int64, 0, len(buckets))
+		for k := range buckets {
+			keys = append(keys, k)
+		}
+		sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+		for _, k := range keys {
+			if !emit(k) {
+				return
+			}
+		}
+	}()
+	return out
+}
+
+func eventTime(v interface{}, field string) float64 {
+	if m, ok := v.(map[string]interface{}); ok {
+		if t, ok := m[field]; ok {
+			if f, err := toNum(t); err == nil {
+				return f
+			}
+		}
+	}
+	f, _ := toNum(v)
+	return f
+}
+
+// parseDuration parses `5s` / `1m` / `100ms` / `2h` / `1d` to seconds.
+func parseDuration(s string) (float64, bool) {
+	for _, u := range []struct {
+		suf string
+		mul float64
+	}{{"ms", 0.001}, {"s", 1}, {"m", 60}, {"h", 3600}, {"d", 86400}} {
+		if strings.HasSuffix(s, u.suf) {
+			if f, err := strconv.ParseFloat(strings.TrimSuffix(s, u.suf), 64); err == nil {
+				return f * u.mul, true
+			}
+		}
+	}
+	return 0, false
 }
 
 // (collect stream) — drain a (bounded) stream to a List.

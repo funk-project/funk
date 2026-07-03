@@ -302,7 +302,10 @@ func (e *evalEnv) evalWhile(args []Node) (interface{}, error) {
 	return c.vars[bind.Head], nil
 }
 
-// (window coll size …) — count window on a finite list: last `size` items.
+// (window stream size [every slide] [by field] …) — windowing (docs/04 §7).
+//   - size a duration (5s) → event-time tumbling window (by <field>, default "time")
+//   - size a number, stream input → tumbling count window (a stream of Lists)
+//   - size a number, list input  → last `size` items (a scoped collect)
 func (e *evalEnv) evalWindow(args []Node) (interface{}, error) {
 	if len(args) < 2 {
 		return nil, fmt.Errorf("window: expected (window stream size …)")
@@ -311,6 +314,20 @@ func (e *evalEnv) evalWindow(args []Node) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
+	// event-time window: size is a duration atom like `5s`.
+	if a, ok := args[1].(Atom); ok {
+		if dur, ok := parseDuration(a.Value); ok {
+			field := "time"
+			for i := 2; i+1 < len(args); i++ {
+				if kw, ok := args[i].(Atom); ok && kw.Value == "by" {
+					if fld, ok := args[i+1].(Atom); ok {
+						field = fld.Value
+					}
+				}
+			}
+			return e.timeWindow(e.asStream(coll), dur, field), nil
+		}
+	}
 	size, err := e.eval(args[1])
 	if err != nil {
 		return nil, err
@@ -318,6 +335,9 @@ func (e *evalEnv) evalWindow(args []Node) (interface{}, error) {
 	n, err := toNum(size)
 	if err != nil {
 		return nil, err
+	}
+	if s, ok := coll.(Stream); ok {
+		return e.countWindow(s, int(n)), nil
 	}
 	l := asList(coll)
 	if k := int(n); k >= 0 && k < len(l) {

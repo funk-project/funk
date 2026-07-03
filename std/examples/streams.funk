@@ -33,3 +33,10 @@ fn sumSquares {
   out (r Num)
   body (return (sum (collect (map (range 1 n) square))))
 }
+
+fn batchSums {
+  doc "sum of each tumbling window of 3 over 1..n (windowed stream aggregate)"
+  in  (n Num)
+  out (r Stream<Num>)
+  body (map (window (range 1 n) 3) sum)
+}
