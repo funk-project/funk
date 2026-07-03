@@ -2,8 +2,9 @@ package funk
 
 // TraceEvent is one step in a run's execution path.
 type TraceEvent struct {
-	Kind   string      `json:"kind"` // "call" | "branch" | "terminal"
+	Kind   string      `json:"kind"` // "call" | "branch" | "terminal" | "enter"
 	Fn     string      `json:"fn,omitempty"`
+	Node   string      `json:"node,omitempty"` // stable graph-node id = the call site's Pos "line:col" (matches `funk graph --json`)
 	Detail string      `json:"detail,omitempty"`
 	Value  interface{} `json:"value,omitempty"`
 	Error  string      `json:"error,omitempty"`

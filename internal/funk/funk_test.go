@@ -271,6 +271,29 @@ func TestHasNetEffect(t *testing.T) {
 	}
 }
 
+func TestTraceEventCarriesNodeID(t *testing.T) {
+	lib := NewLibrary()
+	src := "fn g { in (a Num) (b Num) out (r Bool) engine builtin src \"num.gt\" }\n" +
+		"fn f { in (x Num) out (r Bool) body (g x 5) }"
+	if err := lib.LoadString(src); err != nil {
+		t.Fatal(err)
+	}
+	ff, _ := lib.Lookup("f")
+	// the call-site node id is the (g …) form's AST position — the same id that
+	// `funk graph --json` emits for that node.
+	want := ff.Body.(Form).Pos.String()
+	_, rep := RunWithReport(lib, "f", map[string]interface{}{"x": 9.0}, ExecOpts{})
+	var got string
+	for _, ev := range rep.Events {
+		if ev.Kind == "call" && ev.Fn == "g" {
+			got = ev.Node
+		}
+	}
+	if got == "" || got != want {
+		t.Fatalf("call event node id = %q, want %q (the (g …) call-site Pos)", got, want)
+	}
+}
+
 func TestOnErrorRecovers(t *testing.T) {
 	lib := NewLibrary()
 	src := `

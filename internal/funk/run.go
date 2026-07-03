@@ -358,15 +358,15 @@ func (e *evalEnv) evalForm(f Form) (interface{}, error) {
 	case "let":
 		return e.evalLet(f.Args)
 	case "if":
-		return e.evalIf(f.Args)
+		return e.evalIf(f)
 	case "return":
-		e.emit(TraceEvent{Kind: "terminal", Detail: "return"})
+		e.emit(TraceEvent{Kind: "terminal", Detail: "return", Node: f.Pos.String()})
 		if len(f.Args) == 0 {
 			return nil, nil
 		}
 		return e.eval(f.Args[0])
 	case "exit":
-		e.emit(TraceEvent{Kind: "terminal", Detail: "exit"})
+		e.emit(TraceEvent{Kind: "terminal", Detail: "exit", Node: f.Pos.String()})
 		if len(f.Args) == 0 {
 			return nil, nil
 		}
@@ -443,7 +443,9 @@ func (e *evalEnv) evalLet(args []Node) (interface{}, error) {
 }
 
 // (if cond then else)
-func (e *evalEnv) evalIf(args []Node) (interface{}, error) {
+func (e *evalEnv) evalIf(f Form) (interface{}, error) {
+	args := f.Args
+	id := f.Pos.String()
 	if len(args) < 2 {
 		return nil, fmt.Errorf("if: expected (if cond then [else])")
 	}
@@ -452,14 +454,14 @@ func (e *evalEnv) evalIf(args []Node) (interface{}, error) {
 		return nil, err
 	}
 	if truthy(cond) {
-		e.emit(TraceEvent{Kind: "branch", Detail: "then"})
+		e.emit(TraceEvent{Kind: "branch", Detail: "then", Node: id})
 		return e.eval(args[1])
 	}
 	if len(args) >= 3 {
-		e.emit(TraceEvent{Kind: "branch", Detail: "else"})
+		e.emit(TraceEvent{Kind: "branch", Detail: "else", Node: id})
 		return e.eval(args[2])
 	}
-	e.emit(TraceEvent{Kind: "branch", Detail: "else (empty)"})
+	e.emit(TraceEvent{Kind: "branch", Detail: "else (empty)", Node: id})
 	return nil, nil
 }
 
@@ -682,8 +684,11 @@ func (e *evalEnv) evalCall(f Form) (interface{}, error) {
 	if !ok {
 		return nil, fmt.Errorf("unknown function %q", ref)
 	}
+	// node id = this call site's position (matches `funk graph --json`), so the
+	// IDE maps the event to the exact node even under repeated calls.
+	id := f.Pos.String()
 	// glow: signal the node is about to run, before its inputs resolve.
-	e.live(TraceEvent{Fn: ref, Kind: "enter"})
+	e.live(TraceEvent{Fn: ref, Kind: "enter", Node: id})
 	inputs := map[string]interface{}{}
 	for i, arg := range f.Args {
 		v, err := e.eval(arg)
@@ -702,18 +707,18 @@ func (e *evalEnv) evalCall(f Form) (interface{}, error) {
 	if callee.Composite() {
 		v, err := e.runInline(callee, inputs)
 		if err != nil {
-			e.emit(TraceEvent{Fn: ref, Kind: "call", Error: err.Error()})
+			e.emit(TraceEvent{Fn: ref, Kind: "call", Error: err.Error(), Node: id})
 			return nil, fmt.Errorf("%s: %s", ref, err.Error())
 		}
-		e.emit(TraceEvent{Fn: ref, Kind: "call", Value: v})
+		e.emit(TraceEvent{Fn: ref, Kind: "call", Value: v, Node: id})
 		return v, nil
 	}
 	res := Exec(callee, inputs, e.opts)
 	if !res.OK {
-		e.emit(TraceEvent{Fn: ref, Kind: "call", Error: res.Error})
+		e.emit(TraceEvent{Fn: ref, Kind: "call", Error: res.Error, Node: id})
 		return nil, fmt.Errorf("%s: %s", ref, res.Error)
 	}
-	e.emit(TraceEvent{Fn: ref, Kind: "call", Value: res.Value})
+	e.emit(TraceEvent{Fn: ref, Kind: "call", Value: res.Value, Node: id})
 	return res.Value, nil
 }
 
