@@ -149,9 +149,11 @@ the seam that lets "direct value today" become "vault tomorrow" without touching
 
 - **Phase 0 — shipped (I21).** Direct-value injection; **trace redaction**; `FUNK_NEEDS` off the
   `docker run` command line. Redaction-grade only.
-- **Phase 1 — egress default-deny.** Per-run allowlist from aggregated `effects`; the raw-secret
-  tier gets **no** network. `check`-time warning for `secret + net`. *Biggest single risk-reducer;
-  no protocol change.*
+- **Phase 1 — egress default-deny.** *Partly shipped (I27):* under `--sandbox docker` a body with
+  **no `net` effect runs with `--network none`** — the raw-secret tier's guarantee, verified live
+  (a no-net body gets `ENETUNREACH`; a net-declared one keeps a network stack). And a `check`-time
+  **warning for `secret + net`** (advisory, non-fatal). *Remaining:* host-level allowlisting for
+  net-declared bodies (reach *only* the declared hosts) needs the proxy from Phase 2.
 - **Phase 2 — broker, explicit API (§5a).** `needs { <integration> … }` becomes a capability; the
   body calls the broker; credentials come from the Phase-0 providers. Body never holds the token.
 - **Phase 3 — transparent proxy (§5b).** `HTTPS_PROXY` + broker CA, so existing SDK code is

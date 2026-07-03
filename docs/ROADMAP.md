@@ -52,10 +52,11 @@ leak by accident. Not "production platform" — "a language you can rely on for 
 - [~] **Module resolution for real** — `funk get <url>@<ref>` now pins a tag/branch/commit (a
       first reproducibility step); still to come: `use "<addr>" <semver> as <alias>` driving
       per-package namespaces + a lockfile.
-- [ ] **Secret broker + egress control** — the function receives a *capability*, not the token;
+- [~] **Secret broker + egress control** — the function receives a *capability*, not the token;
       the sandbox reaches only declared endpoints (docs/05 A–C). Redaction stops being the only
-      line of defense. **Design:** [`docs/06-broker-egress.md`](06-broker-egress.md) (threat
-      model + phased plan). Next build step: Phase 1 — egress default-deny from `effects`.
+      line of defense. **Design:** [`docs/06-broker-egress.md`](06-broker-egress.md). **Phase 1
+      partly shipped:** no-`net` bodies run `--network none` (verified) + a `secret+net` check
+      warning. Remaining: host allowlisting (needs the Phase-2 proxy), then the broker itself.
 - [x] **Recovery forms** — `(on-error <body> (e) <handler>)` and `(retry <body> <n> [backoff
       <dur>])`, implemented + tested (Experimental). *Landed early.*
 - [~] **Full `window`** — sliding **count** windows (`every <slide>`) are in + tested;
