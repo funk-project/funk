@@ -225,6 +225,8 @@ func (e *evalEnv) evalForm(f Form) (interface{}, error) {
 		return e.evalTake(f.Args)
 	case "collect":
 		return e.evalCollect(f.Args)
+	case "fold":
+		return e.evalFold(f.Args)
 	case "each":
 		return e.evalEach(f.Args)
 	case "yield":

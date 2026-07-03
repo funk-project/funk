@@ -147,10 +147,7 @@ func init() {
 		return int64(len(str(in["a"]))), nil
 	})
 
-	// lists
-	regBuiltin("list.len", func(in map[string]interface{}) (interface{}, error) {
-		return int64(len(asList(in["a"]))), nil
-	})
+	// lists (len/sum/mean now live in funk std over `fold`)
 	regBuiltin("list.isEmpty", func(in map[string]interface{}) (interface{}, error) {
 		return len(asList(in["a"])) == 0, nil
 	})
@@ -167,32 +164,6 @@ func init() {
 			return nil, nil
 		}
 		return l[len(l)-1], nil
-	})
-	regBuiltin("list.sum", func(in map[string]interface{}) (interface{}, error) {
-		var s float64
-		for _, v := range asList(in["a"]) {
-			n, err := toNum(v)
-			if err != nil {
-				return nil, err
-			}
-			s += n
-		}
-		return numFmt(s), nil
-	})
-	regBuiltin("list.mean", func(in map[string]interface{}) (interface{}, error) {
-		l := asList(in["a"])
-		if len(l) == 0 {
-			return nil, fmt.Errorf("mean of empty list")
-		}
-		var s float64
-		for _, v := range l {
-			n, err := toNum(v)
-			if err != nil {
-				return nil, err
-			}
-			s += n
-		}
-		return numFmt(s / float64(len(l))), nil
 	})
 
 	// identity / debug

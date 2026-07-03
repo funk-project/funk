@@ -100,7 +100,6 @@ func TestBuiltins(t *testing.T) {
 		{"num.mul", map[string]interface{}{"a": 6.0, "b": 7.0}, 42},
 		{"num.sqrt", map[string]interface{}{"a": 25.0}, 5},
 		{"num.pow", map[string]interface{}{"a": 2.0, "b": 10.0}, 1024},
-		{"list.mean", map[string]interface{}{"a": []interface{}{2.0, 4.0, 6.0}}, 4},
 	}
 	for _, c := range cases {
 		res := Exec(&Fn{Engine: "builtin", Src: c.src}, c.in, ExecOpts{})

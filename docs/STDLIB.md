@@ -1,6 +1,6 @@
 # funk — standard library
 
-118 functions across 13 packages.
+120 functions across 13 packages.
 
 ## (local)
 
@@ -12,25 +12,29 @@
 - **`contains?`** — true if the list contains the given item  
   `contains?(a List, item Any) → r Bool` · *atomic · python*
 - **`count`** — number of items  
-  `count(a List) → r Num` · *atomic · builtin*
+  `count(xs List) → r Num` · *composite*
 - **`drop`** — list without its first n items  
   `drop(a List, n Num) → r List` · *atomic · python*
 - **`first`** — first item  
   `first(a List) → r Any` · *atomic · builtin*
 - **`flatten`** — flatten a list of lists by one level  
   `flatten(a List) → r List` · *atomic · python*
+- **`incAcc`** — add one to the accumulator, ignoring the item (used by count via fold)  
+  `incAcc(a Num, b Any) → r Num` · *composite*
 - **`isEmpty?`** — true if the list is empty  
   `isEmpty?(a List) → r Bool` · *atomic · builtin*
 - **`last`** — last item  
   `last(a List) → r Any` · *atomic · builtin*
-- **`mean`** — arithmetic mean  
-  `mean(a List) → r Num` · *atomic · builtin*
+- **`mean`** — arithmetic mean — sum over count, in funk  
+  `mean(xs List) → r Num` · *composite*
+- **`product`** — product of a list/stream of numbers  
+  `product(xs List) → r Num` · *composite*
 - **`reverse`** — reverse the order of a list  
   `reverse(a List) → r List` · *atomic · python*
 - **`sort`** — sort a list in ascending order  
   `sort(a List) → r List` · *atomic · python*
-- **`sum`** — sum of the numbers  
-  `sum(a List) → r Num` · *atomic · builtin*
+- **`sum`** — sum of a list/stream of numbers  
+  `sum(xs List) → r Num` · *composite*
 - **`take`** — first n items of a list  
   `take(a List, n Num) → r List` · *atomic · python*
 - **`unique`** — distinct items of a list, preserving first-seen order  

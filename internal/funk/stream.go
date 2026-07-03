@@ -437,6 +437,40 @@ func (e *evalEnv) evalMerge(args []Node) (interface{}, error) {
 	return out, nil
 }
 
+// (fold stream f init) — reduce a stream to a value: acc = f(acc, item) for each
+// item, starting from init. The minimal stateful consumer; sum/count/mean are
+// defined in funk over it. Synchronous (blocks on a bounded stream).
+func (e *evalEnv) evalFold(args []Node) (interface{}, error) {
+	if len(args) != 3 {
+		return nil, fmt.Errorf("fold: (fold stream f init)")
+	}
+	src, err := e.eval(args[0])
+	if err != nil {
+		return nil, err
+	}
+	fn, ok := fnRefName(args[1])
+	if !ok {
+		return nil, fmt.Errorf("fold: second arg must be a function name")
+	}
+	acc, err := e.eval(args[2])
+	if err != nil {
+		return nil, err
+	}
+	callee, _ := e.lib.Lookup(fn)
+	for v := range e.asStream(src) {
+		m := map[string]interface{}{"a": acc, "b": v}
+		if callee != nil && len(callee.In) >= 2 {
+			m = map[string]interface{}{callee.In[0].Name: acc, callee.In[1].Name: v}
+		}
+		res := Run(e.lib, fn, m, e.opts)
+		if !res.OK {
+			return nil, fmt.Errorf("fold: %s", res.Error)
+		}
+		acc = res.Value
+	}
+	return acc, nil
+}
+
 // (collect stream) — drain a (bounded) stream to a List.
 func (e *evalEnv) evalCollect(args []Node) (interface{}, error) {
 	if len(args) != 1 {

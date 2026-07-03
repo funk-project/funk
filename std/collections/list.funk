@@ -5,8 +5,5 @@ package "funk/std/collections" {
 }
 
 fn isEmpty? { doc "true if the list is empty" in (a List) out (r Bool) engine builtin src "list.isEmpty" }
-fn count    { doc "number of items"           in (a List) out (r Num)  engine builtin src "list.len" }
 fn first    { doc "first item"                in (a List) out (r Any)  engine builtin src "list.first" }
 fn last     { doc "last item"                 in (a List) out (r Any)  engine builtin src "list.last" }
-fn sum      { doc "sum of the numbers"        in (a List) out (r Num)  engine builtin src "list.sum" }
-fn mean     { doc "arithmetic mean"           in (a List) out (r Num)  engine builtin src "list.mean" }

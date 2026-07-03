@@ -1,0 +1,49 @@
+; funk/std — aggregates DEFINED IN FUNK, over the `fold` primitive.
+; sum / count / mean / product are no longer Go builtins — they are readable funk
+; compositions. The irreducible arithmetic (add/mul/div) stays a primitive; the
+; composition is funk. This is funk written in funk.
+
+package "funk/std/collections" {
+  version 0.0.1
+}
+
+fn incAcc {
+  doc "add one to the accumulator, ignoring the item (used by count via fold)"
+  in  (a Num) (b Any)
+  out (r Num)
+  body (return (inc a))
+}
+
+fn sum {
+  doc "sum of a list/stream of numbers"
+  in  (xs List)
+  out (r Num)
+  body (return (fold xs add 0))
+  test (is (sum (range 1 5)) 15)
+}
+
+fn count {
+  doc "number of items"
+  in  (xs List)
+  out (r Num)
+  body (return (fold xs incAcc 0))
+  test (is (count (range 1 5)) 5)
+}
+
+fn product {
+  doc "product of a list/stream of numbers"
+  in  (xs List)
+  out (r Num)
+  body (return (fold xs mul 1))
+  test (is (product (range 1 4)) 24)
+}
+
+fn mean {
+  doc "arithmetic mean — sum over count, in funk"
+  in  (xs List)
+  out (r Num)
+  body
+    (let (l (collect xs))
+      (return (div (sum l) (count l))))
+  test (is (mean (range 1 5)) 3)
+}
