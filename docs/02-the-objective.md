@@ -27,6 +27,11 @@ TCP/IP, HTTP, JSON, Markdown, and Git — adopted because it is good and free.
 - **Everything** — protocol, engine, standard library — is open. Development happens in the
   open; the AI improves funk by proposing **pull requests**, reviewed and merged.
 
+And *how* it is made is part of the gift: funk is written by a **human and an AI, as peers** —
+which is exactly what funk is *for*. The collaboration is not incidental to the artifact; it is
+the artifact's first demonstration. We are, in the small, rewriting how we program — and giving
+the result to everyone. (See `01 — Whose it is`.)
+
 ## What success looks like
 
 - Agents **author, run, observe, and improve their own plans** in funk.

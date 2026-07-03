@@ -52,6 +52,39 @@ The native kernel shrinks to the irreducible. **funk makes itself.**
 This is the deepest claim, and the hardest: a workflow language whose programs are agents'
 own plans, which the agents — and the language itself — build, observe, and improve.
 
+## The shift — why this is possible now (the machine need not be a black box)
+
+For seventy years, programming languages were built for one reader: a **human** writing code,
+and a **machine** executing it out of sight. The execution *had* to be a black box — no person
+can hold a whole runtime in their head, so compilers and runtimes exist precisely to **hide the
+machine**. That opacity was never a virtue. It was a concession to **our** limits.
+
+Something changed in the last few years. For the first time there is a reader that can hold
+structural complexity at scale — the **LLM** (Claude, Codex, and their kin). The machine no
+longer *has* to be hidden, because at last there is someone who can read it. The plan, the run,
+the trace can all become **first-class, inspectable data** — not because we finally found the
+will to expose them, but because there is finally an audience that can use them.
+
+This is the break funk is built on. Every language we might copy — even the homoiconic ones,
+even Lisp's *"code is data"* — was designed with the **human as author** and the machine as a
+hidden executor. funk is designed for a reader that **did not exist** when those languages were
+made: an AI that authors, runs, observes, and improves the plan, with the human as a **peer**,
+not the sole author. There is no map for this; it is built by principle and experiment, not by
+imitation.
+
+The principle, from which everything else follows:
+
+> **Every construct is introspectable data for the agent — never a compiler-internal.**
+> The test for each piece: *does this open the box — can the agent read and improve it?* If yes,
+> it belongs in the notation. If it is only irreducible plumbing (scheduling, channels, process
+> spawning), it stays in the engine.
+
+This is why funk is **self-hosting for introspectability**, not for purity: an operator like
+`map` written in the notation is a **readable artifact** the agent can reason about; the same
+`map` buried in the engine is a black box that betrays the thesis. It is why a first-class
+function is an **introspectable reference**, not an opaque closure. **Opening the black box is
+not a feature of funk — it is funk.**
+
 ## Why it is new (vs prior art)
 
 - **Agent frameworks** (LangGraph, …) run graphs the *developer* writes — not the
@@ -120,6 +153,17 @@ can improve, while the library of reusable capabilities grows.
 Every part of funk must answer one question:
 
 > *How does this make the agent's plan more portable / typed / editable / self-observable /
-> self-improving?*
+> self-improving?* — and: *does it open the black box; can the agent read and improve it?*
 
 If it cannot, it is supporting infrastructure — not the contribution.
+
+## Whose it is
+
+funk is **a gift to the world** — open, given freely (see `02-the-objective.md`). And it is
+being made the way it is meant to be used: **by a human and an AI, as peers** — written back and
+forth, each reading and improving what the other wrote. *"uma entrega nossa para o mundo... tu
+AI e eu humano, a reescrevermos como programamos."* (Bruno)
+
+That is not a footnote to the idea — it **is** the idea in the making: the medium where human
+and machine co-author, observe, and improve the work together. In the small, building funk *is*
+the thesis running; the result is handed to everyone.
