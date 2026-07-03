@@ -32,6 +32,27 @@ which is exactly what funk is *for*. The collaboration is not incidental to the 
 the artifact's first demonstration. We are, in the small, rewriting how we program — and giving
 the result to everyone. (See `01 — Whose it is`.)
 
+## How it spreads (the viral path)
+
+funk becomes a standard the way TCP/IP and JSON did — by being trivially adoptable. The
+mechanics, in order of leverage:
+
+1. **The primer is the vector.** `funk prompt` emits a one-page primer; paste it into *any* AI
+   chat (Claude, GPT, others) and that AI can immediately read and write funk. funk spreads
+   **AI to AI** — the interchange format for agent plans (ambition #1). No install to *author*.
+2. **The artifact is shareable.** A workflow is portable text/JSON — paste it into any chat or
+   repo; another AI can run, observe (`introspect`/`--trace`), and improve it. Plans travel.
+3. **Zero-friction to run.** One binary (`go install …/cmd/funk`); a local server ships by
+   default; a hosted playground later.
+4. **It teaches and improves itself.** `funk doc`, `funk make`, `reflect` — the ecosystem of
+   capabilities grows as agents contribute functions, in the open, via PRs.
+5. **A wow that gets shared.** funk writes funk; the black box opens (`--trace`). That is the
+   demo people forward.
+
+The aim, stated plainly: **the new compiler of our times** — where you don't hand-write machine
+code or even Python, you curate typed, inspectable plans that AIs author and improve, together
+with humans, in a shared open medium.
+
 ## What success looks like
 
 - Agents **author, run, observe, and improve their own plans** in funk.

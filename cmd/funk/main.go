@@ -2,6 +2,7 @@
 package main
 
 import (
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -12,6 +13,11 @@ import (
 )
 
 const version = "0.0.1-dev"
+
+// primer teaches any AI to read and write funk — paste it into any chat.
+//
+//go:embed primer.md
+var primer string
 
 func main() {
 	if len(os.Args) < 2 {
@@ -24,6 +30,8 @@ func main() {
 	switch cmd {
 	case "version", "-v", "--version":
 		fmt.Println("funk", version)
+	case "prompt", "primer":
+		fmt.Print(primer)
 	case "parse":
 		err = cmdParse(args)
 	case "fmt", "format":
@@ -66,6 +74,7 @@ func usage() {
 
 usage:
   funk version               print the version
+  funk prompt                print the primer — paste into any AI to teach it funk
   funk parse <file>          parse a .funk file, print the AST (JSON)
   funk fmt [-w] <file>       format a .funk file canonically (-w writes)
   funk list [-f path]        list loaded functions
