@@ -176,6 +176,32 @@ propagates upward and surfaces in the `RunReport`.
 
 Both are ordinary forms that scope a `context`; without them, errors propagate-and-cancel.
 
+## 6a. Stability (what is stable today)
+
+The spec runs ahead of the engine; this table is the contract for the **reference CLI**. See
+[`docs/ROADMAP.md`](ROADMAP.md) for the milestones.
+
+- **Stable** — tested; will not break without a major bump.
+- **Experimental** — implemented, shape may still change; pin your funk version.
+- **Proposal** — in this spec, **not yet implemented**; writing it will not run.
+
+| Construct | Status |
+|---|---|
+| `fn` (atomic `engine`+`src` / composite `body`), typed `in`/`out` | **Stable** |
+| Engines `builtin` · `python` · `go` · `claude` · `codex` | **Stable** |
+| `do` · `let` · `if` · `return` · `exit` | **Stable** |
+| `while` · `break` · `continue` · `for-each` | **Stable** |
+| Sources `range` · `nats` · `tick` · `repeat` | **Stable** |
+| Operators `map` · `filter` · `take` · `scan` · `merge` · `collect` | **Stable** |
+| `window` — count + event-time (`by <field>`) | **Stable** |
+| `each` / `yield` (define your own operators) · `fold` | **Experimental** |
+| `needs` / `effects` blocks; injection via `--bind` / env; trace redaction | **Experimental** |
+| `funk get` (clone a package by URL, resolve by bare name) | **Experimental** |
+| `window` extras — `every` (sliding) · `lateness` · `on-late` | **Proposal** |
+| Recovery — `(on-error …)` · `(retry …)` | **Proposal** |
+| `use "<addr>" <semver> as <alias>` (namespaced/versioned resolution) | **Proposal** |
+| Secret **broker** / **egress** control; `with { … }` / project `object` | **Proposal** |
+
 ## 7. Streams — the reactive core
 
 - Every edge carries a **stream**: zero or more `onNext`, then `onComplete` or `onError`.
