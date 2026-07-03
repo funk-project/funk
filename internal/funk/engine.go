@@ -21,9 +21,10 @@ type ExecResult struct {
 
 // ExecOpts configures execution (sandbox, timeout, resource bindings).
 type ExecOpts struct {
-	Sandbox  string            // "" (host) | "docker"
-	Timeout  time.Duration
-	Bindings map[string]string // "kind.alias" → value, for needs resolution
+	Sandbox   string            // "" (host) | "docker"
+	Timeout   time.Duration
+	Bindings  map[string]string // "kind.alias" → value, for needs resolution
+	BrokerURL string            // per-run broker base URL (docs/06); "" ⇒ none
 }
 
 // resolveResources builds the injected `needs` tree (kind → alias → value) from
@@ -59,6 +60,13 @@ func needsJSON(f *Fn, opts ExecOpts) string {
 	r := resolveResources(f, opts)
 	if r == nil {
 		return "{}"
+	}
+	// Brokered integration credentials are reached via the broker, never handed
+	// to the body (docs/06 §6): drop non-raw kinds from what the body receives.
+	for kind := range r {
+		if !isRawKind(kind) {
+			delete(r, kind)
+		}
 	}
 	b, _ := json.Marshal(r)
 	return string(b)
@@ -189,6 +197,9 @@ sys.stdout.write(_out if isinstance(_out, str) else json.dumps(_out))
 
 	nJSON := needsJSON(f, opts)
 	env := append(baseEnv(inJSON), "FUNK_NEEDS="+nJSON)
+	if opts.BrokerURL != "" {
+		env = append(env, "FUNK_BROKER="+opts.BrokerURL)
+	}
 	if opts.Sandbox == "docker" {
 		image := "python:3-slim"
 		if imageExists("funk-py:latest") {

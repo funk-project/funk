@@ -3,6 +3,9 @@ package funk
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 )
@@ -175,6 +178,53 @@ fn bad {
 	}
 	if !arity || !unknown {
 		t.Fatalf("missing expected issues (arity=%v unknown=%v): %v", arity, unknown, issues)
+	}
+}
+
+func TestBrokerInjectsAndGuards(t *testing.T) {
+	// a mock integration that records the Authorization header it receives
+	var gotAuth string
+	mock := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		w.Write([]byte(`{"ok":true}`))
+	}))
+	defer mock.Close()
+	u, _ := url.Parse(mock.URL)
+
+	cfg := brokerConfig{
+		creds: map[string]string{"gh": "s3cr3t-token"},
+		hosts: map[string]bool{u.Hostname(): true},
+	}
+	base, stop, err := startBroker(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stop()
+
+	// (1) naming the capability (NOT the token) reaches the integration with the
+	// broker-injected Authorization — the body never holds the secret.
+	call := `{"secret":"gh","url":"` + mock.URL + `/x","method":"GET"}`
+	resp, err := http.Post(base+"/call", "application/json", strings.NewReader(call))
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp.Body.Close()
+	if resp.StatusCode != 200 {
+		t.Fatalf("broker call status = %d, want 200", resp.StatusCode)
+	}
+	if gotAuth != "Bearer s3cr3t-token" {
+		t.Fatalf("integration saw Authorization %q, want the injected Bearer token", gotAuth)
+	}
+
+	// (2) an undeclared host is denied — egress control (docs/06 §7).
+	bad := `{"secret":"gh","url":"http://evil.example.com/x"}`
+	r2, err := http.Post(base+"/call", "application/json", strings.NewReader(bad))
+	if err != nil {
+		t.Fatal(err)
+	}
+	r2.Body.Close()
+	if r2.StatusCode != http.StatusForbidden {
+		t.Fatalf("undeclared host status = %d, want 403", r2.StatusCode)
 	}
 }
 

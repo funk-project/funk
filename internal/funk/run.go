@@ -154,8 +154,18 @@ func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecO
 	if !ok {
 		return nil, noop, fmt.Errorf("unknown function %q", ref)
 	}
+	// Start the per-run broker if the function has brokered integrations
+	// (docs/06): the body reaches them via FUNK_BROKER, never holding the token.
+	stopBroker := func() {}
+	if cfg, ok := brokerConfigFor(lib, f, opts); ok {
+		if base, stop, err := startBroker(cfg); err == nil {
+			opts.BrokerURL = base
+			stopBroker = stop
+		}
+	}
 	if !f.Composite() {
 		res := Exec(f, inputs, opts)
+		defer stopBroker()
 		if trace != nil {
 			ev := TraceEvent{Fn: f.Name, Kind: "call", Value: res.Value, Error: res.Error}
 			s := &secretSet{}
@@ -184,9 +194,12 @@ func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecO
 	v, err := e.eval(f.Body)
 	if err != nil {
 		cancel()
+		stopBroker()
 		return nil, noop, err
 	}
-	return v, cancel, nil
+	// the caller runs cancel when the (possibly live) stream is done — stop the
+	// broker then too.
+	return v, func() { cancel(); stopBroker() }, nil
 }
 
 type evalEnv struct {
