@@ -25,6 +25,17 @@ func cmdServe(args []string) error {
 		return err
 	}
 
+	mux := serveMux(lib)
+
+	fmt.Fprintf(os.Stderr, "funkd listening on %s — %d functions, %d types\n", addr, len(lib.Fns), len(lib.Types)/2)
+	fmt.Fprintf(os.Stderr, "  GET  /health  /functions  /introspect?fn=NAME\n  POST /run {\"ref\":\"add\",\"inputs\":{\"a\":40,\"b\":2}}\n")
+	srv := &http.Server{Addr: addr, Handler: mux}
+	return srv.ListenAndServe()
+}
+
+// serveMux builds the funkd HTTP handlers over a library. Kept separate from
+// cmdServe so the routes are exercisable with httptest (no real socket).
+func serveMux(lib *funk.Library) *http.ServeMux {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "ok")
@@ -115,10 +126,7 @@ func cmdServe(args []string) error {
 		}
 	})
 
-	fmt.Fprintf(os.Stderr, "funkd listening on %s — %d functions, %d types\n", addr, len(lib.Fns), len(lib.Types)/2)
-	fmt.Fprintf(os.Stderr, "  GET  /health  /functions  /introspect?fn=NAME\n  POST /run {\"ref\":\"add\",\"inputs\":{\"a\":40,\"b\":2}}\n")
-	srv := &http.Server{Addr: addr, Handler: mux}
-	return srv.ListenAndServe()
+	return mux
 }
 
 func writeJSON(w http.ResponseWriter, v interface{}) {
