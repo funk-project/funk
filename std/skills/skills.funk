@@ -56,5 +56,5 @@ fn generate {
   in  (task Str)
   out (code Str)
   body
-    (return (programmer (architect task)))
+    (flush (code (programmer (architect task))))
 }

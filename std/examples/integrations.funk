@@ -26,5 +26,5 @@ fn triage {
   in  (title Str)
   out (r Json)
   body
-    (return (createIssue title))
+    (flush (r (createIssue title)))
 }

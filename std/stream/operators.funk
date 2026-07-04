@@ -1,20 +1,19 @@
-; funk/std — stream operators DEFINED IN FUNK, over the minimal each/yield
-; primitive. map and filter are no longer Go core forms — they are readable,
-; introspectable funk artifacts the agent can reason about and improve. The Go
-; kernel shrinks; the notation defines its own vocabulary. (Sources like nats and
-; the cancelling `take` stay in Go — the irreducible reactive plumbing.)
+; funk/std — stream operators DEFINED IN FUNK. With reactive nodes (docs/07) a
+; scalar function applied to a stream fires per item, so `map` is simply `(f xs)`
+; — the lift is the engine's firing, not a hand-written loop. `filter` needs a
+; conditional emit, so it uses the minimal each/yield primitive (the "define your
+; own operator" escape hatch). Sources like nats and the cancelling `take` stay
+; in Go — the irreducible reactive plumbing.
 
 package "funk/std/stream" {
   version 0.0.1
 }
 
 fn map {
-  doc "apply f to each item of a stream (defined in funk)"
+  doc "apply f to each item of a stream — the reactive lift (docs/07 §5)"
   in  (xs Stream) (f Fn)
   out (r Stream)
-  body
-    (each xs (item)
-      (yield (f item)))
+  body (f xs)
 }
 
 fn filter {
@@ -32,7 +31,7 @@ fn mapSum {
   in  (n Num)
   out (r Num)
   body
-    (return (sum (collect (map (range 1 n) double))))
+    (flush (r (sum (collect (map (range 1 n) double)))))
   test (is (mapSum 4) 20)
 }
 
@@ -41,6 +40,6 @@ fn filterCount {
   in  (n Num)
   out (r Num)
   body
-    (return (count (collect (filter (range 1 n) even?))))
+    (flush (r (count (collect (filter (range 1 n) even?)))))
   test (is (filterCount 10) 5)
 }

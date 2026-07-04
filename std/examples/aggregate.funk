@@ -22,5 +22,5 @@ fn mergedCount {
   doc "how many items when two ranges are merged"
   in  (n Num)
   out (r Num)
-  body (return (count (collect (merge (range 1 n) (range 1 n)))))
+  body (flush (r (count (collect (merge (range 1 n) (range 1 n))))))
 }

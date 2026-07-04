@@ -29,7 +29,8 @@ func (i Issue) String() string {
 }
 
 var coreForms = map[string]bool{
-	"do": true, "let": true, "if": true, "return": true, "exit": true,
+	"do": true, "let": true, "if": true, "exit": true,
+	"set": true, "flush": true,
 	"for-each": true, "while": true, "window": true, "break": true, "continue": true,
 	"range": true, "nats": true, "repeat": true,
 	"take": true, "collect": true, "tick": true, "scan": true, "merge": true,
@@ -56,6 +57,7 @@ func Check(lib *Library) []Issue {
 			scope[p.Name] = true
 		}
 		issues = append(issues, checkNode(lib, f, f.Body, scope)...)
+		issues = append(issues, checkTypes(lib, f)...)
 	}
 	return issues
 }
@@ -122,7 +124,13 @@ func checkForm(lib *Library, fn *Fn, f Form, scope map[string]bool) []Issue {
 		return c
 	}
 	switch f.Head {
-	case "do", "return", "exit", "if", "break", "continue",
+	case "return":
+		// Removed (docs/07 §3) — flag it clearly for anyone migrating.
+		issues = append(issues, issueAt(fn, f.Pos, "`return` has been removed — emit a named output with (flush (port value)) (docs/07 §3)"))
+		for _, a := range f.Args {
+			issues = append(issues, checkNode(lib, fn, a, scope)...)
+		}
+	case "do", "exit", "if", "break", "continue",
 		"range", "nats", "repeat", "take", "collect", "merge", "yield":
 		for _, a := range f.Args {
 			issues = append(issues, checkNode(lib, fn, a, scope)...)
@@ -157,14 +165,31 @@ func checkForm(lib *Library, fn *Fn, f Form, scope map[string]bool) []Issue {
 	case "tick":
 		// (tick <duration>) — a duration literal, nothing to check.
 	case "let":
+		// (let (name… expr) body) — bind the head + all-but-last args as names; the
+		// last arg is the expression (a multi-output call, when destructuring).
 		if len(f.Args) == 2 {
-			if bind, ok := f.Args[0].(Form); ok {
-				if len(bind.Args) == 1 {
-					issues = append(issues, checkNode(lib, fn, bind.Args[0], scope)...)
-				}
+			if bind, ok := f.Args[0].(Form); ok && len(bind.Args) >= 1 {
+				issues = append(issues, checkNode(lib, fn, bind.Args[len(bind.Args)-1], scope)...)
 				sc := child()
 				sc[bind.Head] = true
+				for i := 0; i < len(bind.Args)-1; i++ {
+					if a, ok := bind.Args[i].(Atom); ok {
+						sc[a.Value] = true
+					}
+				}
 				issues = append(issues, checkNode(lib, fn, f.Args[1], sc)...)
+			}
+		}
+	case "set":
+		// (set name expr) — name is an output port; only the expr is checked.
+		if len(f.Args) == 2 {
+			issues = append(issues, checkNode(lib, fn, f.Args[1], scope)...)
+		}
+	case "flush":
+		// (flush (port value)…) — heads are output names, not calls; check values.
+		for _, a := range f.Args {
+			if pair, ok := a.(Form); ok && len(pair.Args) == 1 {
+				issues = append(issues, checkNode(lib, fn, pair.Args[0], scope)...)
 			}
 		}
 	case "for-each":
@@ -218,4 +243,131 @@ func checkForm(lib *Library, fn *Fn, f Form, scope map[string]bool) []Issue {
 		}
 	}
 	return issues
+}
+
+// checkTypes verifies the *connections* in a composite body (docs/07): when an
+// output feeds an input port, the types must fit. It is deliberately lenient —
+// it only flags a clear scalar mismatch (e.g. a Str wired into a Num port), and
+// stays silent whenever a stream, list, Json, Any, or unknown type is involved
+// (those are handled at runtime, incl. the reactive per-item lift). So it never
+// cries wolf on valid funk; it catches the wiring mistakes that actually bite.
+func checkTypes(lib *Library, f *Fn) []Issue {
+	env := map[string]string{}
+	for _, p := range f.In {
+		env[p.Name] = p.Type
+	}
+	var issues []Issue
+	inferType(lib, f, f.Body, env, &issues)
+	return issues
+}
+
+// baseScalar returns the type if it is a plain scalar element type, else "".
+// Stream<…>, List, Json, Any, and "" are NOT plain scalars — we don't judge them.
+func baseScalar(t string) string {
+	switch t {
+	case "Num", "Str", "Bool", "Time", "Bytes":
+		return t
+	}
+	return ""
+}
+
+// inferType returns the (best-effort) type a node produces, and appends a
+// connection issue whenever a call receives a scalar arg whose type clearly
+// clashes with the input port. Unknown ("") propagates and disables judgement.
+func inferType(lib *Library, fn *Fn, n Node, env map[string]string, issues *[]Issue) string {
+	switch t := n.(type) {
+	case Atom:
+		switch t.Kind {
+		case "num":
+			return "Num"
+		case "str":
+			return "Str"
+		case "id":
+			if t.Value == "true" || t.Value == "false" {
+				return "Bool"
+			}
+			return env[t.Value] // "" if unknown
+		}
+		return ""
+	case Form:
+		return inferForm(lib, fn, t, env, issues)
+	}
+	return ""
+}
+
+func inferForm(lib *Library, fn *Fn, f Form, env map[string]string, issues *[]Issue) string {
+	switch f.Head {
+	case "range", "nats", "repeat", "tick":
+		return "Stream<Num>"
+	case "collect", "window":
+		for _, a := range f.Args {
+			inferType(lib, fn, a, env, issues)
+		}
+		return "List"
+	case "do":
+		last := ""
+		for _, a := range f.Args {
+			last = inferType(lib, fn, a, env, issues)
+		}
+		return last
+	case "let":
+		if len(f.Args) == 2 {
+			if bind, ok := f.Args[0].(Form); ok && len(bind.Args) >= 1 {
+				expr := bind.Args[len(bind.Args)-1]
+				ct := inferType(lib, fn, expr, env, issues)
+				child := map[string]string{}
+				for k, v := range env {
+					child[k] = v
+				}
+				if len(bind.Args) == 1 { // single bind: the expr's type
+					child[bind.Head] = ct
+				} else { // destructure: element types unknown here
+					child[bind.Head] = ""
+					for i := 0; i < len(bind.Args)-1; i++ {
+						if a, ok := bind.Args[i].(Atom); ok {
+							child[a.Value] = ""
+						}
+					}
+				}
+				return inferType(lib, fn, f.Args[1], child, issues)
+			}
+		}
+		return ""
+	case "if":
+		for _, a := range f.Args {
+			inferType(lib, fn, a, env, issues)
+		}
+		return ""
+	case "flush", "set", "exit", "for-each", "while", "on-error", "retry",
+		"map", "filter", "take", "merge", "scan", "fold", "each", "yield":
+		for _, a := range f.Args {
+			inferType(lib, fn, a, env, issues)
+		}
+		return ""
+	default:
+		// a call: infer args, check each against the callee's input port type.
+		callee, ok := lib.Lookup(f.Head)
+		if !ok || env[f.Head] != "" { // unknown, or head is a passed-in Fn value
+			for _, a := range f.Args {
+				inferType(lib, fn, a, env, issues)
+			}
+			return ""
+		}
+		for i, a := range f.Args {
+			at := inferType(lib, fn, a, env, issues)
+			if i >= len(callee.In) {
+				continue
+			}
+			prod, cons := baseScalar(at), baseScalar(callee.In[i].Type)
+			if prod != "" && cons != "" && prod != cons {
+				*issues = append(*issues, issueAt(fn, f.Pos, fmt.Sprintf(
+					"connection type mismatch: %q input %q wants %s but gets %s",
+					f.Head, callee.In[i].Name, cons, prod)))
+			}
+		}
+		if len(callee.Out) == 1 {
+			return callee.Out[0].Type
+		}
+		return ""
+	}
 }

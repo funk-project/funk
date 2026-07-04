@@ -10,7 +10,7 @@ fn celsiusToF {
   doc "convert a temperature in Celsius to Fahrenheit"
   in  (c Num)
   out (r Num)
-  body (return (add (mul c 1.8) 32))
+  body (flush (r (add (mul c 1.8) 32)))
   test (is (celsiusToF 100) 212)
   test (is (celsiusToF 0) 32)
 }

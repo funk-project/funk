@@ -13,7 +13,7 @@ fn analyze {
   body
     (if (isEmpty? xs)
       (exit "no data")
-      (return (mean (window xs 100))))
+      (flush (r (mean (window xs 100)))))
 }
 
 fn bump {
@@ -22,8 +22,8 @@ fn bump {
   out (r Num)
   body
     (if (gt x 5)
-      (return (add x 100))
-      (return x))
+      (flush (r (add x 100)))
+      (flush (r x)))
   test (is (bump 9) 109)
   test (is (bump 3) 3)
 }

@@ -39,6 +39,40 @@ Dates are absolute.
 | P12 | **Manifest grammar** — `package "<addr>" { version …  use … }`; manifest holds deps only; `object`/`bind` are environment config in a separate overlay (`--env` / `--bind`). | PROPOSAL (assistant) |
 | P13 | **Type/schema language** — nesting by naming types; builtin generics `List<T>`/`Stream<T>`; user-defined generics deferred. | PROPOSAL (assistant) |
 
+## Reactive nodes (`docs/07`) — 2026-07-04
+
+Bruno's direction: close the gap that funk is reactive at the stream layer but **not** at the
+function layer (the evaluator is an eager tree-walk; a function does not fire on input arrival).
+Reframe every function as a **dataflow node** that wakes when its inputs are ready, and replace
+`return` with named multi-outputs + `set`/`flush`. **Breaking**; taken pre-0.1 as a clean break.
+Full design: [`docs/07-reactive-nodes.md`](../../docs/07-reactive-nodes.md).
+
+| # | Decision | Status |
+|---|---|---|
+| RN1 | **Firing groups** — `in` holds policy groups; **`zip` default** (pair 1:1), `latest` (combineLatest); ungrouped ports ⇒ implicit `zip`. Groups compose (`withLatestFrom`). Scalars: zip≡latest. | DECIDED (Bruno) |
+| RN2 | **Port spec = prefix forms** `(name Type (min 0) (max 10) (default 1))` — no `=`, no commas (homoiconic). Specs on inputs validated on arrival; on outputs = post-conditions. | DECIDED (Bruno) |
+| RN3 | **Multi-output selection = `let` destructuring** `(let ((q r) (f a b)) …)`; graph stays derived (composition, not hand-drawn edges). | DECIDED (Bruno) |
+| RN4 | **Emission = `set` (stage) + `flush` (emit)**, `(flush (r v) …)` shorthand; **`return` removed**; `exit`/error stay. `flush` count = source/transform/sink taxonomy. **`yield` KEPT** as `each`'s emit primitive (folding it into flush needs an `each` rework — deferred). | DECIDED (Bruno); yield-removal deferred (assistant) |
+| RN5 | **Drop `required`** — optional ⟺ has `(default)`; zip ports always required, latest ports required unless defaulted. | DECIDED (Bruno, 2026-07-04 — "ok") |
+| RN6 | **`latest` = combineLatest** semantics; **RN7** input-spec violation cancels the scope (propagate-and-cancel, not clamp); **RN8** constraint v1 = `min max default`, (`len one-of pattern` later). | Built |
+
+**I32 — Reactive nodes shipped (2026-07-04).** `model.go`: `Port` gains `Policy`/`Group`/`Min`/
+`Max`/`Default`/`Optional`; `inPortsFromField` parses `(zip …)`/`(latest …)` groups + `(min/max/
+default …)` specs. `run.go`: an `outFrame` (staged map + emitted list/live stream); `set`/`flush`
+forms; `let` destructuring `(let (q r (f …)) …)`; input-spec validation + entry/optional defaults;
+`invoke` dispatches scalar-once vs reactive; **`return` removed** (clear error via `run.go` +
+`typecheck.go`). `firing.go`: `callReactive` + `fireZip`/`fireLatest` — a Stream bound to a scalar
+port (`Num/Str/Bool/Time/Bytes`) drives per-item firing; other args sampled as constants.
+`std/` migrated (31 `return`→`flush`, paren-aware); `map` is now `(f xs)` (the reactive lift);
+`each`/`yield` kept for `filter`. Primer + `docs/07` updated. Plus **RN9 output post-conditions**
+(`min`/`max` on out-ports enforced on `flush`) and **RN10 connection type-check** (`checkTypes` in
+`typecheck.go` flags a scalar out→in mismatch, e.g. Str→Num; lenient on stream/list/Json/Any so no
+false positives on std). **Verified**: go test / vet / `funk check` (127 fns, 0 false positives) /
+`funk test` (26/26) green; live — `divmod`/`useboth`(multi-out wiring)/`pipe`(3-stage per-item
+wiring)/`clamped`+`pos`(in/out min-max)/`scale`(default)/`zipAdd`(zip); `bad` (Str→Num) flagged.
+**Remaining:** full goroutine-per-node scheduling (graph-level P2), fold `yield` into `flush`,
+`docs/04` prose + artifact schema for specs/groups. See [`docs/07`](../../docs/07-reactive-nodes.md).
+
 ## Resources & integrations (`docs/05`)
 
 | # | Decision | Status |

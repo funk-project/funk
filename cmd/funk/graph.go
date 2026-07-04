@@ -103,9 +103,9 @@ func label(head string) string {
 	switch head {
 	case "if":
 		return "if ⟨cond⟩ ⟨then⟩ ⟨else⟩"
-	case "return", "exit", "break", "continue":
+	case "flush", "exit", "break", "continue":
 		return head + " ◂ terminal"
-	case "do", "let", "while", "for-each", "each", "yield",
+	case "set", "do", "let", "while", "for-each", "each", "yield",
 		"map", "filter", "scan", "merge", "take", "collect", "window",
 		"range", "nats", "tick", "repeat", "on-error", "retry":
 		return head + " ◂ form"

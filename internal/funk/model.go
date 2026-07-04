@@ -4,13 +4,24 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
-// Port is a typed input/output of a function: `(name Type)`.
+// Port is a typed input/output of a function: `(name Type spec…)`.
+// Input ports carry a firing Policy + Group (docs/07 §2): ports in the same group
+// fire together — "zip" (paired 1:1) or "latest" (combineLatest). Specs (min/max/
+// default) are the per-port contract (docs/07 §2.2), checked on arrival (inputs)
+// or as post-conditions (outputs). Presence of a default ⇒ the port is optional.
 type Port struct {
-	Name string `json:"name"`
-	Type string `json:"type"` // "Num", "Str", "Stream<Num>", … ("" ⇒ Any)
+	Name     string   `json:"name"`
+	Type     string   `json:"type"` // "Num", "Str", "Stream<Num>", … ("" ⇒ Any)
+	Policy   string   `json:"policy,omitempty"`   // in-ports: "zip" | "latest"
+	Group    int      `json:"group,omitempty"`    // in-ports: firing group index
+	Min      *float64 `json:"min,omitempty"`      // (min n) refinement
+	Max      *float64 `json:"max,omitempty"`      // (max n) refinement
+	Default  Node     `json:"-"`                  // (default v) value expr; nil ⇒ required
+	Optional bool     `json:"optional,omitempty"` // has a default ⇒ optional
 }
 
 // Need is one resource a function receives: `<kind> <alias> [schema]` in the
@@ -72,21 +83,93 @@ func (f *Fn) Address() string {
 	return f.Package + "/" + f.Name
 }
 
-func portsFromField(f Field) []Port {
-	var ports []Port
-	for _, v := range f.Values {
-		form, ok := v.(Form)
+// portFromForm builds one port from a `(name Type spec…)` form, tagging it with
+// the given firing policy/group. Returns false for `()` / non-forms.
+func portFromForm(n Node, policy string, group int) (Port, bool) {
+	form, ok := n.(Form)
+	if !ok || form.Head == "" {
+		return Port{}, false
+	}
+	p := Port{Name: form.Head, Policy: policy, Group: group}
+	if len(form.Args) > 0 {
+		p.Type = nodeTypeString(form.Args[0])
+	}
+	for i := 1; i < len(form.Args); i++ {
+		sf, ok := form.Args[i].(Form)
 		if !ok {
 			continue
 		}
-		if form.Head == "" { // `in ()` — no ports
+		switch sf.Head {
+		case "min":
+			if v, ok := numArg(sf); ok {
+				p.Min = &v
+			}
+		case "max":
+			if v, ok := numArg(sf); ok {
+				p.Max = &v
+			}
+		case "default":
+			if len(sf.Args) > 0 {
+				p.Default = sf.Args[0]
+				p.Optional = true
+			}
+		}
+	}
+	return p, true
+}
+
+func numArg(f Form) (float64, bool) {
+	if len(f.Args) == 0 {
+		return 0, false
+	}
+	a, ok := f.Args[0].(Atom)
+	if !ok {
+		return 0, false
+	}
+	v, err := strconv.ParseFloat(a.Value, 64)
+	return v, err == nil
+}
+
+// portsFromField reads out-ports: bare `(name Type spec…)` forms, no groups.
+func portsFromField(f Field) []Port {
+	var ports []Port
+	for _, v := range f.Values {
+		if p, ok := portFromForm(v, "", 0); ok {
+			ports = append(ports, p)
+		}
+	}
+	return ports
+}
+
+// inPortsFromField reads input ports with firing groups (docs/07 §2): a value
+// whose head is `zip`/`latest` is a group of ports; bare port forms collapse into
+// a single implicit `zip` group. `zip` is the default policy.
+func inPortsFromField(f Field) []Port {
+	var ports []Port
+	next, implicit := 0, -1
+	for _, v := range f.Values {
+		form, ok := v.(Form)
+		if !ok || form.Head == "" {
 			continue
 		}
-		p := Port{Name: form.Head}
-		if len(form.Args) > 0 {
-			p.Type = nodeTypeString(form.Args[0])
+		if form.Head == "zip" || form.Head == "latest" {
+			gi := next
+			next++
+			for _, a := range form.Args {
+				if p, ok := portFromForm(a, form.Head, gi); ok {
+					ports = append(ports, p)
+				}
+			}
+			continue
 		}
-		ports = append(ports, p)
+		// a bare port → the implicit zip group
+		if implicit < 0 {
+			implicit = next
+			next++
+		}
+		if p, ok := portFromForm(v, "zip", implicit); ok {
+			ports = append(ports, p)
+		}
 	}
 	return ports
 }
@@ -123,7 +206,7 @@ func FnFromBlock(b Block, pkg string) (*Fn, error) {
 	f.Doc = b.FieldStr("doc")
 	f.Engine = b.FieldStr("engine")
 	if in, ok := b.Field("in"); ok {
-		f.In = portsFromField(in)
+		f.In = inPortsFromField(in)
 	}
 	if out, ok := b.Field("out"); ok {
 		f.Out = portsFromField(out)

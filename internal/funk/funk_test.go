@@ -107,7 +107,7 @@ func TestParsePackageManifest(t *testing.T) {
 }
 
 func TestSrcXorBody(t *testing.T) {
-	prog, _ := Parse(`fn bad { in (x Num) out (r Num) engine builtin src "id" body (return x) }`)
+	prog, _ := Parse(`fn bad { in (x Num) out (r Num) engine builtin src "id" body (flush (r x)) }`)
 	if _, err := FnFromBlock(prog[0], ""); err == nil {
 		t.Fatal("expected error for src+body")
 	}
@@ -301,7 +301,7 @@ fn d { in (a Num) (b Num) out (r Num) engine builtin src "num.div" }
 fn safe {
   in (a Num) (b Num)
   out (r Num)
-  body (on-error (return (d a b)) (e) (return 0))
+  body (on-error (flush (r (d a b))) (e) (flush (r 0)))
 }`
 	if err := lib.LoadString(src); err != nil {
 		t.Fatal(err)
@@ -352,7 +352,7 @@ fn flow {
   in (x Num)
   out (r Str)
   needs { secret token }
-  body (do (echo needs.secret.token) (return "done"))
+  body (do (echo needs.secret.token) (flush (r "done")))
 }`
 	if err := lib.LoadString(src); err != nil {
 		t.Fatal(err)
@@ -601,7 +601,7 @@ func TestFormatIdempotent(t *testing.T) {
 		"  in (xs Stream<Num>)\n" +
 		"  out (r Num)\n" +
 		"  needs {\n    config site Str\n    secret token\n  }\n" +
-		"  body (if (isEmpty? xs) (exit \"no data\") (return (mean (window xs 100))))\n" +
+		"  body (if (isEmpty? xs) (exit \"no data\") (flush (r (mean (window xs 100)))))\n" +
 		"}\n"
 	prog, err := Parse(src)
 	if err != nil {

@@ -196,6 +196,11 @@ func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecO
 	if !ok {
 		return nil, noop, fmt.Errorf("unknown function %q", ref)
 	}
+	// fill defaults for optional entry ports, then validate the specs (docs/07 §2.2)
+	fillEntryDefaults(f, inputs)
+	if err := validateInputs(f, inputs); err != nil {
+		return nil, noop, err
+	}
 	// Start the per-run broker if the function has brokered integrations
 	// (docs/06): the body reaches them via FUNK_BROKER, never holding the token.
 	stopBroker := func() {}
@@ -236,8 +241,10 @@ func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecO
 		secrets = &secretSet{}
 		registerSecrets(f, res, secrets)
 	}
+	frame := &outFrame{staged: map[string]interface{}{}, outs: f.Out}
 	e := &evalEnv{lib: lib, opts: opts, vars: map[string]interface{}{}, ctx: ctx, cancel: cancel,
-		resources: res, trace: trace, secrets: secrets, sink: sink}
+		resources: res, trace: trace, secrets: secrets, sink: sink, out: frame}
+	frame.e = e
 	for k, v := range inputs {
 		e.vars[k] = v
 	}
@@ -246,6 +253,17 @@ func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecO
 		cancel()
 		stopBroker()
 		return nil, noop, err
+	}
+	// Derive the returned value from flushes (docs/07 §3): 1 ⇒ that tuple, N ⇒ a
+	// finite stream; 0 ⇒ the body value (a legacy `return`, or a stream a body
+	// operator produced directly).
+	switch len(frame.emitted) {
+	case 1:
+		v = frame.emitted[0]
+	default:
+		if len(frame.emitted) > 1 {
+			v = e.asStream(frame.emitted)
+		}
 	}
 	// the caller runs cancel when the (possibly live) stream is done — stop the
 	// broker then too.
@@ -262,11 +280,48 @@ type evalEnv struct {
 	trace     *[]TraceEvent                      // nil ⇒ not accumulating the batch report
 	sink      func(TraceEvent)                   // nil ⇒ no live delivery (funkd animated trace)
 	secrets   *secretSet                         // resolved secret values, masked in the trace
-	yieldTo   Stream                             // the enclosing each's output (for yield)
+	yieldTo   Stream                             // the enclosing each's output (for yield, legacy)
+	out       *outFrame                          // the current body's named-output frame (set/flush)
+}
+
+// outFrame is a function body's output staging (docs/07 §3). `set` stages a named
+// output; `flush` emits a tuple of the staged values — either appended to a finite
+// list (scalar call) or sent live to a stream (reactive call). Staged values
+// persist across flushes so a source can vary only some ports between emits.
+type outFrame struct {
+	staged  map[string]interface{}
+	outs    []Port        // the function's out-ports (for unwrapping)
+	live    Stream        // non-nil ⇒ flush sends here; nil ⇒ collect in emitted
+	e       *evalEnv      // for cancellable send
+	emitted []interface{} // finite collection (scalar/finite call)
+}
+
+// unwrap turns the staged map into the emitted value: a single out-port yields its
+// scalar; multiple out-ports yield the map (destructured by `let` at the caller).
+func (o *outFrame) unwrap() interface{} {
+	if len(o.outs) == 1 {
+		return o.staged[o.outs[0].Name]
+	}
+	m := make(map[string]interface{}, len(o.outs))
+	for _, p := range o.outs {
+		m[p.Name] = o.staged[p.Name]
+	}
+	return m
+}
+
+// doFlush emits the current staged tuple; returns false if a live send was
+// cancelled (scope done).
+func (o *outFrame) doFlush() bool {
+	v := o.unwrap()
+	if o.live != nil {
+		return o.e.send(o.live, v)
+	}
+	o.emitted = append(o.emitted, v)
+	return true
 }
 
 func (e *evalEnv) child() *evalEnv {
-	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{}, ctx: e.ctx, cancel: e.cancel, resources: e.resources, trace: e.trace, sink: e.sink, secrets: e.secrets, yieldTo: e.yieldTo}
+	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{}, ctx: e.ctx, cancel: e.cancel, resources: e.resources, trace: e.trace, sink: e.sink, secrets: e.secrets, yieldTo: e.yieldTo, out: e.out}
 	for k, v := range e.vars {
 		c.vars[k] = v
 	}
@@ -360,17 +415,8 @@ func (e *evalEnv) evalForm(f Form) (interface{}, error) {
 	case "if":
 		return e.evalIf(f)
 	case "return":
-		// Emit the terminal AFTER computing the returned value, so the trace reads
-		// in execution order (compute the value, then return it) — not the reverse.
-		if len(f.Args) == 0 {
-			e.emit(TraceEvent{Kind: "terminal", Detail: "return", Node: f.Pos.String()})
-			return nil, nil
-		}
-		v, err := e.eval(f.Args[0])
-		if err == nil {
-			e.emit(TraceEvent{Kind: "terminal", Detail: "return", Node: f.Pos.String()})
-		}
-		return v, err
+		// Removed (docs/07 §3): functions emit named outputs via flush, not return.
+		return nil, fmt.Errorf("`return` has been removed — emit a named output with (flush (%s value)) (docs/07 §3)", firstOutName(e))
 	case "exit":
 		if len(f.Args) == 0 {
 			e.emit(TraceEvent{Kind: "terminal", Detail: "exit", Node: f.Pos.String()})
@@ -381,6 +427,10 @@ func (e *evalEnv) evalForm(f Form) (interface{}, error) {
 			e.emit(TraceEvent{Kind: "terminal", Detail: "exit", Node: f.Pos.String()})
 		}
 		return v, err
+	case "set":
+		return e.evalSet(f.Args)
+	case "flush":
+		return e.evalFlush(f)
 	case "for-each":
 		return e.evalForEach(f.Args)
 	case "while":
@@ -434,22 +484,129 @@ func (e *evalEnv) evalDo(args []Node) (interface{}, error) {
 	return last, nil
 }
 
-// (let (name expr) body)
+// (let (name expr) body) — bind a name; or (let (n1 n2 … expr) body) to
+// destructure a multi-output call's named outputs positionally (docs/07 §4).
 func (e *evalEnv) evalLet(args []Node) (interface{}, error) {
 	if len(args) != 2 {
-		return nil, fmt.Errorf("let: expected (let (name expr) body)")
+		return nil, fmt.Errorf("let: expected (let (name… expr) body)")
 	}
 	bind, ok := args[0].(Form)
-	if !ok || len(bind.Args) != 1 {
-		return nil, fmt.Errorf("let: first arg must be (name expr)")
+	if !ok || len(bind.Args) < 1 {
+		return nil, fmt.Errorf("let: first arg must be (name… expr)")
 	}
-	val, err := e.eval(bind.Args[0])
+	// names = the head + every arg except the last; the last arg is the expression.
+	names := []string{bind.Head}
+	for i := 0; i < len(bind.Args)-1; i++ {
+		a, ok := bind.Args[i].(Atom)
+		if !ok {
+			return nil, fmt.Errorf("let: binding names must be identifiers")
+		}
+		names = append(names, a.Value)
+	}
+	val, err := e.eval(bind.Args[len(bind.Args)-1])
 	if err != nil {
 		return nil, err
 	}
 	c := e.child()
-	c.vars[bind.Head] = val
+	if len(names) == 1 {
+		c.vars[names[0]] = val
+	} else {
+		m, ok := val.(map[string]interface{})
+		if !ok {
+			return nil, fmt.Errorf("let: cannot destructure %d names from a single value (call must have named outputs)", len(names))
+		}
+		for _, n := range names {
+			c.vars[n] = m[n]
+		}
+	}
 	return c.eval(args[1])
+}
+
+// fillEntryDefaults injects literal defaults for optional entry ports the caller
+// omitted (docs/07 §2.3). Entry inputs bypass bindInputs, so an omitted optional
+// like `(y Num (default 1))` would otherwise be an unbound identifier.
+func fillEntryDefaults(f *Fn, inputs map[string]interface{}) {
+	for _, p := range f.In {
+		if _, ok := inputs[p.Name]; ok || !p.Optional || p.Default == nil {
+			continue
+		}
+		a, ok := p.Default.(Atom)
+		if !ok {
+			continue
+		}
+		switch a.Kind {
+		case "num":
+			if v, err := strconv.ParseFloat(a.Value, 64); err == nil {
+				inputs[p.Name] = numFmt(v)
+			}
+		case "str":
+			inputs[p.Name] = a.Value
+		case "id":
+			switch a.Value {
+			case "true":
+				inputs[p.Name] = true
+			case "false":
+				inputs[p.Name] = false
+			}
+		}
+	}
+}
+
+// firstOutName is the first output port name of the current frame (for a helpful
+// message when someone writes the removed `return`); "r" when unknown.
+func firstOutName(e *evalEnv) string {
+	if e.out != nil && len(e.out.outs) > 0 {
+		return e.out.outs[0].Name
+	}
+	return "r"
+}
+
+// (set name expr) — stage a named output in the current frame (docs/07 §3).
+func (e *evalEnv) evalSet(args []Node) (interface{}, error) {
+	if len(args) != 2 {
+		return nil, fmt.Errorf("set: expected (set name expr)")
+	}
+	name, ok := args[0].(Atom)
+	if !ok {
+		return nil, fmt.Errorf("set: first arg must be an output name")
+	}
+	v, err := e.eval(args[1])
+	if err != nil {
+		return nil, err
+	}
+	if e.out == nil {
+		return nil, fmt.Errorf("set %q: no output frame (set is only valid inside a function body)", name.Value)
+	}
+	e.out.staged[name.Value] = v
+	return nil, nil
+}
+
+// (flush) — emit a tuple of the staged outputs; (flush (r v) (q w) …) stages
+// those ports first, then emits (docs/07 §3). Replaces return/yield.
+func (e *evalEnv) evalFlush(f Form) (interface{}, error) {
+	if e.out == nil {
+		return nil, fmt.Errorf("flush: no output frame (flush is only valid inside a function body)")
+	}
+	for _, a := range f.Args {
+		pair, ok := a.(Form)
+		if !ok || pair.Head == "" || len(pair.Args) != 1 {
+			return nil, fmt.Errorf("flush: each arg must be (port value)")
+		}
+		v, err := e.eval(pair.Args[0])
+		if err != nil {
+			return nil, err
+		}
+		e.out.staged[pair.Head] = v
+	}
+	// enforce output specs (post-conditions, docs/07 §3) before emitting
+	if err := validatePorts(e.out.outs, e.out.staged, "output"); err != nil {
+		return nil, err
+	}
+	if !e.out.doFlush() {
+		return nil, e.ctx.Err()
+	}
+	e.emit(TraceEvent{Kind: "terminal", Detail: "flush", Node: f.Pos.String()})
+	return nil, nil
 }
 
 // (if cond then else)
@@ -699,28 +856,83 @@ func (e *evalEnv) evalCall(f Form) (interface{}, error) {
 	id := f.Pos.String()
 	// glow: signal the node is about to run, before its inputs resolve.
 	e.live(TraceEvent{Fn: ref, Kind: "enter", Node: id})
-	inputs := map[string]interface{}{}
+	vals := make([]interface{}, len(f.Args))
 	for i, arg := range f.Args {
 		v, err := e.eval(arg)
 		if err != nil {
 			return nil, err
 		}
+		vals[i] = v
+	}
+	return e.invoke(callee, ref, id, vals)
+}
+
+// invoke dispatches a resolved call. If any argument is a live Stream bound to a
+// *scalar* input port, the call fires **per item** (docs/07 §5 — the function
+// wakes on each input). Otherwise it runs once (the scalar/length-1 case, which
+// includes passing a whole Stream to a Stream-typed port, e.g. map/window).
+func (e *evalEnv) invoke(callee *Fn, ref, id string, vals []interface{}) (interface{}, error) {
+	driving := false
+	for i, v := range vals {
+		if _, ok := v.(Stream); ok && scalarPort(callee, i) {
+			driving = true
+			break
+		}
+	}
+	if driving {
+		return e.callReactive(callee, ref, id, vals)
+	}
+	inputs, err := e.bindInputs(callee, vals)
+	if err != nil {
+		e.emit(TraceEvent{Fn: ref, Kind: "call", Error: err.Error(), Node: id})
+		return nil, fmt.Errorf("%s: %s", ref, err)
+	}
+	return e.callOnce(callee, ref, id, inputs)
+}
+
+// scalarPort reports whether the callee's i-th input port expects a single scalar
+// element (Num/Str/Bool/Time/Bytes) — the case where a Stream argument drives
+// per-item firing (the reactive lift, docs/07 §5). Stream/List/Json/Any and
+// untyped ports consume the whole argument, so a Stream flows in as-is.
+func scalarPort(callee *Fn, i int) bool {
+	if i >= len(callee.In) {
+		return false
+	}
+	switch callee.In[i].Type {
+	case "Num", "Str", "Bool", "Time", "Bytes":
+		return true
+	}
+	return false
+}
+
+// bindInputs maps positional args to port names, fills defaults for optional
+// ports not supplied, and validates the per-port specs (docs/07 §2.2).
+func (e *evalEnv) bindInputs(callee *Fn, vals []interface{}) (map[string]interface{}, error) {
+	inputs := map[string]interface{}{}
+	for i, v := range vals {
 		name := fmt.Sprintf("_%d", i)
 		if i < len(callee.In) {
 			name = callee.In[i].Name
 		}
 		inputs[name] = v
 	}
-	// Composite calls run INLINE — sharing this scope's context (so cancellation
-	// propagates through funk-defined stream operators) and returning a live
-	// stream (not drained). Atomic calls execute directly.
+	e.fillDefaults(callee, inputs)
+	if err := validateInputs(callee, inputs); err != nil {
+		return nil, err
+	}
+	return inputs, nil
+}
+
+// callOnce runs the body once for a materialized (scalar) input set and returns
+// its value (derived from flushes, or a legacy `return`).
+func (e *evalEnv) callOnce(callee *Fn, ref, id string, inputs map[string]interface{}) (interface{}, error) {
 	if callee.Composite() {
-		v, err := e.runInline(callee, inputs)
+		v, err := e.runComposite(callee, inputs, nil)
 		if err != nil {
 			e.emit(TraceEvent{Fn: ref, Kind: "call", Error: err.Error(), Node: id})
 			return nil, fmt.Errorf("%s: %s", ref, err.Error())
 		}
-		e.emit(TraceEvent{Fn: ref, Kind: "call", Value: v, Node: id})
+		e.emit(TraceEvent{Fn: ref, Kind: "call", Value: traceVal(v), Node: id})
 		return v, nil
 	}
 	res := Exec(callee, inputs, e.opts)
@@ -732,15 +944,74 @@ func (e *evalEnv) evalCall(f Form) (interface{}, error) {
 	return res.Value, nil
 }
 
-// runInline evaluates a composite in a child scope that SHARES this env's
-// context, cancel, and trace (isolating only variables to the callee's inputs).
-func (e *evalEnv) runInline(f *Fn, inputs map[string]interface{}) (interface{}, error) {
+// runComposite evaluates a composite body in a child scope that SHARES this env's
+// context/cancel/trace (isolating variables to the callee's inputs) but gets its
+// OWN output frame. With live != nil, flushes stream there (reactive per-item)
+// and it returns nil; otherwise the value is derived from the collected flushes:
+// 0 ⇒ the body value (legacy return / sink), 1 ⇒ that tuple, N ⇒ a finite stream.
+func (e *evalEnv) runComposite(f *Fn, inputs map[string]interface{}, live Stream) (interface{}, error) {
 	res := resolveResources(f, e.opts)
 	registerSecrets(f, res, e.secrets)
+	frame := &outFrame{staged: map[string]interface{}{}, outs: f.Out, live: live}
 	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{},
-		ctx: e.ctx, cancel: e.cancel, resources: res, trace: e.trace, sink: e.sink, secrets: e.secrets}
+		ctx: e.ctx, cancel: e.cancel, resources: res, trace: e.trace, sink: e.sink, secrets: e.secrets, out: frame}
+	frame.e = c
 	for k, v := range inputs {
 		c.vars[k] = v
 	}
-	return c.eval(f.Body)
+	bodyVal, err := c.eval(f.Body)
+	if err != nil {
+		return nil, err
+	}
+	if live != nil {
+		if len(frame.emitted) == 0 && bodyVal != nil { // legacy return, no flush
+			c.send(live, bodyVal)
+		}
+		return nil, nil
+	}
+	switch len(frame.emitted) {
+	case 0:
+		return bodyVal, nil
+	case 1:
+		return frame.emitted[0], nil
+	default:
+		return e.asStream(frame.emitted), nil
+	}
+}
+
+// traceVal keeps a live Stream out of the trace (a channel is not JSON-encodable).
+func traceVal(v interface{}) interface{} {
+	if _, ok := v.(Stream); ok {
+		return nil
+	}
+	return v
+}
+
+// validateInputs enforces (min n)/(max n) refinements on numeric input ports
+// (docs/07 §2.2): a violation cancels the scope (propagate-and-cancel).
+func validateInputs(callee *Fn, inputs map[string]interface{}) error {
+	return validatePorts(callee.In, inputs, "input")
+}
+
+// validatePorts checks (min)/(max) on the given ports against the supplied values
+// — used for both input ports (on arrival) and output ports (post-conditions on
+// flush). Non-numeric / absent values are skipped.
+func validatePorts(ports []Port, vals map[string]interface{}, what string) error {
+	for _, p := range ports {
+		v, ok := vals[p.Name]
+		if !ok || (p.Min == nil && p.Max == nil) {
+			continue
+		}
+		n, err := toNum(v)
+		if err != nil {
+			continue
+		}
+		if p.Min != nil && n < *p.Min {
+			return fmt.Errorf("%s %q = %v is below min %v", what, p.Name, n, *p.Min)
+		}
+		if p.Max != nil && n > *p.Max {
+			return fmt.Errorf("%s %q = %v is above max %v", what, p.Name, n, *p.Max)
+		}
+	}
+	return nil
 }

@@ -8,7 +8,7 @@ fn and {
   doc "logical and (short-circuit)"
   in  (a Bool) (b Bool)
   out (r Bool)
-  body (if a (return b) (return false))
+  body (if a (flush (r b)) (flush (r false)))
   test (is (and true false) false)
 }
 
@@ -16,7 +16,7 @@ fn or {
   doc "logical or (short-circuit)"
   in  (a Bool) (b Bool)
   out (r Bool)
-  body (if a (return true) (return b))
+  body (if a (flush (r true)) (flush (r b)))
   test (is (or false true) true)
 }
 
@@ -24,6 +24,6 @@ fn not {
   doc "logical not"
   in  (a Bool)
   out (r Bool)
-  body (if a (return false) (return true))
+  body (if a (flush (r false)) (flush (r true)))
   test (is (not false) true)
 }

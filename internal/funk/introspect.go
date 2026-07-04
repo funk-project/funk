@@ -105,6 +105,16 @@ func collectCalls(n Node, seen map[string]bool) {
 	if f.Head != "" && !coreForms[f.Head] {
 		seen[f.Head] = true
 	}
+	// a flush's args are (port value) pairs — the head is an output name, not a
+	// call; only the value is a sub-expression.
+	if f.Head == "flush" {
+		for _, a := range f.Args {
+			if pair, ok := a.(Form); ok && len(pair.Args) == 1 {
+				collectCalls(pair.Args[0], seen)
+			}
+		}
+		return
+	}
 	// skip a let/for-each binder form (it is not a call)
 	for i, a := range f.Args {
 		if (f.Head == "let" || f.Head == "for-each") && i == 0 {

@@ -31,7 +31,7 @@ fn sumSquares {
   doc "sum of the squares of 1..n (a windowed aggregate)"
   in  (n Num)
   out (r Num)
-  body (return (sum (collect (map (range 1 n) square))))
+  body (flush (r (sum (collect (map (range 1 n) square)))))
 }
 
 fn batchSums {

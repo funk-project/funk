@@ -26,5 +26,5 @@ fn siteGreeting {
     config site Str
   }
   body
-    (return (concat "hello from " needs.config.site))
+    (flush (r (concat "hello from " needs.config.site)))
 }

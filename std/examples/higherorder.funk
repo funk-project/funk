@@ -10,7 +10,7 @@ fn applyTwice {
   in  (f Fn) (x Num)
   out (r Num)
   body
-    (return (f (f x)))
+    (flush (r (f (f x))))
 }
 
 fn quadruple {
@@ -18,7 +18,7 @@ fn quadruple {
   in  (x Num)
   out (r Num)
   body
-    (return (applyTwice double x))
+    (flush (r (applyTwice double x)))
   test (is (quadruple 5) 20)
 }
 
@@ -27,7 +27,7 @@ fn compose2 {
   in  (f Fn) (g Fn) (x Num)
   out (r Num)
   body
-    (return (f (g x)))
+    (flush (r (f (g x))))
 }
 
 fn incThenSquare {
@@ -35,6 +35,6 @@ fn incThenSquare {
   in  (x Num)
   out (r Num)
   body
-    (return (compose2 square inc x))
+    (flush (r (compose2 square inc x)))
   test (is (incThenSquare 4) 25)
 }
