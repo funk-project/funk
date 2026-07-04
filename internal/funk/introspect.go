@@ -37,7 +37,7 @@ func Introspect(lib *Library, ref string) (*Introspection, bool) {
 		collectCalls(f.Body, seen)
 		for name := range seen {
 			in.Calls = append(in.Calls, name)
-			if _, ok := lib.Lookup(name); !ok {
+			if _, ok := lib.ResolveIn(f, name); !ok {
 				in.Unresolved = append(in.Unresolved, name)
 			}
 		}
@@ -62,7 +62,7 @@ func aggregateResources(lib *Library, f *Fn, seen map[string]bool) ([]Need, []Ef
 		calls := map[string]bool{}
 		collectCalls(f.Body, calls)
 		for name := range calls {
-			if c, ok := lib.Lookup(name); ok {
+			if c, ok := lib.ResolveIn(f, name); ok {
 				cn, ce := aggregateResources(lib, c, seen)
 				needs = append(needs, cn...)
 				effects = append(effects, ce...)

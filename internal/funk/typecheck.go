@@ -42,6 +42,20 @@ var coreForms = map[string]bool{
 // unresolved calls, arity mismatches, and unknown identifiers.
 func Check(lib *Library) []Issue {
 	var issues []Issue
+	// every `use` must declare an alias (docs/03): a plain import would ask for an
+	// implicit global namespace, which no longer exists. Report once per file.
+	usesReported := map[string]bool{}
+	for _, f := range lib.Fns {
+		if usesReported[f.File] {
+			continue
+		}
+		for _, u := range f.Uses {
+			if u.Alias == "" {
+				usesReported[f.File] = true
+				issues = append(issues, issueAt(f, u.Pos, fmt.Sprintf("`use %q` must declare an alias: `use %q as <name>` (then call it as <name>.fn)", u.Pkg, u.Pkg)))
+			}
+		}
+	}
 	for _, f := range lib.Fns {
 		// Security advisory (docs/06 §6): a body that holds a raw secret AND has a
 		// declared network egress could exfiltrate it — redaction is not a guarantee.
@@ -102,7 +116,7 @@ func checkNode(lib *Library, fn *Fn, n Node, scope map[string]bool) []Issue {
 			case scope[t.Value]: // a bound variable
 			default:
 				// otherwise it must name a function (a first-class function value)
-				if _, ok := lib.Lookup(t.Value); !ok {
+				if _, ok := lib.ResolveIn(fn, t.Value); !ok {
 					return []Issue{issueAt(fn, t.Pos, fmt.Sprintf("unknown identifier %q", t.Value))}
 				}
 			}
@@ -150,7 +164,7 @@ func checkForm(lib *Library, fn *Fn, f Form, scope map[string]bool) []Issue {
 		if len(f.Args) == 3 {
 			issues = append(issues, checkNode(lib, fn, f.Args[0], scope)...)
 			if name, ok := fnRefName(f.Args[1]); ok {
-				if _, ok := lib.Lookup(name); !ok {
+				if _, ok := lib.ResolveIn(fn, name); !ok {
 					issues = append(issues, issueAt(fn, f.Pos, fmt.Sprintf("scan references unknown function %q", name)))
 				}
 			}
@@ -231,7 +245,7 @@ func checkForm(lib *Library, fn *Fn, f Form, scope map[string]bool) []Issue {
 		// a call. If the head is a bound variable it holds a function value —
 		// its target and arity are known only at runtime, so skip that check.
 		if !scope[f.Head] {
-			callee, ok := lib.Lookup(f.Head)
+			callee, ok := lib.ResolveIn(fn, f.Head)
 			if !ok {
 				issues = append(issues, issueAt(fn, f.Pos, fmt.Sprintf("unknown function %q", f.Head)))
 			} else if len(f.Args) != len(callee.In) {
@@ -346,7 +360,7 @@ func inferForm(lib *Library, fn *Fn, f Form, env map[string]string, issues *[]Is
 		return ""
 	default:
 		// a call: infer args, check each against the callee's input port type.
-		callee, ok := lib.Lookup(f.Head)
+		callee, ok := lib.ResolveIn(fn, f.Head)
 		if !ok || env[f.Head] != "" { // unknown, or head is a passed-in Fn value
 			for _, a := range f.Args {
 				inferType(lib, fn, a, env, issues)

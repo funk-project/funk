@@ -2,8 +2,8 @@
 
 package "funk/std/examples" {
   version 0.0.1
-  use "funk/std/collections"
-  use "funk/std/maths"
+  use "funk/std/collections" as collections
+  use "funk/std/maths" as maths
 }
 
 fn analyze {
@@ -11,9 +11,9 @@ fn analyze {
   in  (xs Stream<Num>)
   out (r Num)
   body
-    (if (isEmpty? xs)
+    (if (collections.isEmpty? xs)
       (exit "no data")
-      (flush (r (mean (window xs 100)))))
+      (flush (r (collections.mean (window xs 100)))))
 }
 
 fn bump {
@@ -21,8 +21,8 @@ fn bump {
   in  (x Num)
   out (r Num)
   body
-    (if (gt x 5)
-      (flush (r (add x 100)))
+    (if (maths.gt x 5)
+      (flush (r (maths.add x 100)))
       (flush (r x)))
   test (is (bump 9) 109)
   test (is (bump 3) 3)

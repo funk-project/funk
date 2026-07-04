@@ -243,7 +243,7 @@ func evalTop(lib *Library, ref string, inputs map[string]interface{}, opts ExecO
 	}
 	frame := &outFrame{staged: map[string]interface{}{}, outs: f.Out}
 	e := &evalEnv{lib: lib, opts: opts, vars: map[string]interface{}{}, ctx: ctx, cancel: cancel,
-		resources: res, trace: trace, secrets: secrets, sink: sink, out: frame}
+		resources: res, trace: trace, secrets: secrets, sink: sink, out: frame, curFn: f}
 	frame.e = e
 	for k, v := range inputs {
 		e.vars[k] = v
@@ -277,11 +277,12 @@ type evalEnv struct {
 	ctx       context.Context
 	cancel    context.CancelFunc
 	resources map[string]map[string]interface{} // needs: kind → alias → value
-	trace     *[]TraceEvent                      // nil ⇒ not accumulating the batch report
-	sink      func(TraceEvent)                   // nil ⇒ no live delivery (funkd animated trace)
-	secrets   *secretSet                         // resolved secret values, masked in the trace
-	yieldTo   Stream                             // the enclosing each's output (for yield, legacy)
-	out       *outFrame                          // the current body's named-output frame (set/flush)
+	trace     *[]TraceEvent                     // nil ⇒ not accumulating the batch report
+	sink      func(TraceEvent)                  // nil ⇒ no live delivery (funkd animated trace)
+	secrets   *secretSet                        // resolved secret values, masked in the trace
+	yieldTo   Stream                            // the enclosing each's output (for yield, legacy)
+	out       *outFrame                         // the current body's named-output frame (set/flush)
+	curFn     *Fn                               // the function whose body is running (scopes `use … as` resolution)
 }
 
 // outFrame is a function body's output staging (docs/07 §3). `set` stages a named
@@ -321,7 +322,7 @@ func (o *outFrame) doFlush() bool {
 }
 
 func (e *evalEnv) child() *evalEnv {
-	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{}, ctx: e.ctx, cancel: e.cancel, resources: e.resources, trace: e.trace, sink: e.sink, secrets: e.secrets, yieldTo: e.yieldTo, out: e.out}
+	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{}, ctx: e.ctx, cancel: e.cancel, resources: e.resources, trace: e.trace, sink: e.sink, secrets: e.secrets, yieldTo: e.yieldTo, out: e.out, curFn: e.curFn}
 	for k, v := range e.vars {
 		c.vars[k] = v
 	}
@@ -397,9 +398,11 @@ func (e *evalEnv) evalAtom(a Atom) (interface{}, error) {
 		if v, ok := e.vars[a.Value]; ok {
 			return v, nil
 		}
-		// a bare function name in value position → a first-class function value
-		if _, ok := e.lib.Lookup(a.Value); ok {
-			return FnValue{Ref: a.Value}, nil
+		// a function name in value position → a first-class function value. Resolve
+		// through the current scope (so `alias.fn` works and hidden bare names fail),
+		// but store the fully-qualified address so it invokes from any scope.
+		if fn, ok := e.lib.ResolveIn(e.curFn, a.Value); ok {
+			return FnValue{Ref: fn.Address()}, nil
 		}
 		return nil, fmt.Errorf("unknown identifier %q", a.Value)
 	}
@@ -847,7 +850,7 @@ func (e *evalEnv) evalCall(f Form) (interface{}, error) {
 		}
 		ref = fv.Ref
 	}
-	callee, ok := e.lib.Lookup(ref)
+	callee, ok := e.lib.ResolveIn(e.curFn, ref)
 	if !ok {
 		return nil, fmt.Errorf("unknown function %q", ref)
 	}
@@ -954,7 +957,7 @@ func (e *evalEnv) runComposite(f *Fn, inputs map[string]interface{}, live Stream
 	registerSecrets(f, res, e.secrets)
 	frame := &outFrame{staged: map[string]interface{}{}, outs: f.Out, live: live}
 	c := &evalEnv{lib: e.lib, opts: e.opts, vars: map[string]interface{}{},
-		ctx: e.ctx, cancel: e.cancel, resources: res, trace: e.trace, sink: e.sink, secrets: e.secrets, out: frame}
+		ctx: e.ctx, cancel: e.cancel, resources: res, trace: e.trace, sink: e.sink, secrets: e.secrets, out: frame, curFn: f}
 	frame.e = c
 	for k, v := range inputs {
 		c.vars[k] = v

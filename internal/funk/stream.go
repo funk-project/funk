@@ -402,6 +402,9 @@ func (e *evalEnv) evalScan(args []Node) (interface{}, error) {
 	if !ok {
 		return nil, fmt.Errorf("scan: second arg must be a function name")
 	}
+	if rf, ok := e.lib.ResolveIn(e.curFn, fn); ok { // canonicalize `alias.fn` → address
+		fn = rf.Address()
+	}
 	init, err := e.eval(args[2])
 	if err != nil {
 		return nil, err
@@ -479,6 +482,9 @@ func (e *evalEnv) evalFold(args []Node) (interface{}, error) {
 	fn, ok := fnRefName(args[1])
 	if !ok {
 		return nil, fmt.Errorf("fold: second arg must be a function name")
+	}
+	if rf, ok := e.lib.ResolveIn(e.curFn, fn); ok { // canonicalize `alias.fn` → address
+		fn = rf.Address()
 	}
 	acc, err := e.eval(args[2])
 	if err != nil {

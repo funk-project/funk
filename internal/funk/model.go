@@ -15,7 +15,7 @@ import (
 // or as post-conditions (outputs). Presence of a default ⇒ the port is optional.
 type Port struct {
 	Name     string   `json:"name"`
-	Type     string   `json:"type"` // "Num", "Str", "Stream<Num>", … ("" ⇒ Any)
+	Type     string   `json:"type"`               // "Num", "Str", "Stream<Num>", … ("" ⇒ Any)
 	Policy   string   `json:"policy,omitempty"`   // in-ports: "zip" | "latest"
 	Group    int      `json:"group,omitempty"`    // in-ports: firing group index
 	Min      *float64 `json:"min,omitempty"`      // (min n) refinement
@@ -68,9 +68,20 @@ type Fn struct {
 	Needs    []Need
 	Effects  []Effect
 	Tests    []TestCase
-	Body     Node // composite: the single composing expression (nil ⇒ atomic)
-	File     string // source file this fn was loaded from ("" if from a string)
-	Pos      Pos    // position of the `fn` keyword, for diagnostics
+	Body     Node      // composite: the single composing expression (nil ⇒ atomic)
+	File     string    // source file this fn was loaded from ("" if from a string)
+	Uses     []UseSpec // the `use` imports of this fn's file (scopes call resolution)
+	Pos      Pos       // position of the `fn` keyword, for diagnostics
+}
+
+// UseSpec is one `use "pkg" [as alias]` import declared in a file's package block.
+// A plain import (Alias == "") exposes the package's functions by bare name; an
+// aliased import requires callers to qualify them as `alias.fn` and hides the bare
+// name (docs/03 — a reference is an address; `as` gives it a local handle).
+type UseSpec struct {
+	Pkg   string // e.g. "funk/std/maths"
+	Alias string // "" ⇒ plain import (an error — every `use` must be aliased); else the qualifier, e.g. "maths"
+	Pos   Pos    // position of the `use` field, for diagnostics
 }
 
 // Composite reports whether the function is composed of other functions.
@@ -321,6 +332,45 @@ func (l *Library) Add(f *Fn) {
 	l.Fns = append(l.Fns, f)
 }
 
+// ResolveIn resolves a call reference from within the function `cur` (docs/03).
+// The rules, for a *packaged* caller:
+//   - `alias.fn` resolves against that file's `use … as alias` import;
+//   - a fully-qualified address ("pkg/fn") always resolves;
+//   - a bare name resolves ONLY within the caller's own package.
+//
+// There is no implicit global cross-package namespace: to call another package's
+// function you must import it `as` and qualify the call. When cur is nil (a
+// top-level entry ref or a first-class Fn value's address) or unpackaged (ad-hoc /
+// REPL code with no package block), it degrades to the flat global Lookup.
+func (l *Library) ResolveIn(cur *Fn, ref string) (*Fn, bool) {
+	if cur != nil {
+		if i := strings.IndexByte(ref, '.'); i > 0 {
+			alias, member := ref[:i], ref[i+1:]
+			for _, u := range cur.Uses {
+				if u.Alias != "" && u.Alias == alias {
+					if f, ok := l.byAddr[u.Pkg+"/"+member]; ok {
+						return f, true
+					}
+					return nil, false // known alias, unknown member — do not fall through
+				}
+			}
+		}
+	}
+	// a fully-qualified address is always allowed
+	if f, ok := l.byAddr[ref]; ok {
+		return f, true
+	}
+	// within a package, a bare name resolves only to that same package
+	if cur != nil && cur.Package != "" && !strings.ContainsAny(ref, "./") {
+		if f, ok := l.byAddr[cur.Package+"/"+ref]; ok {
+			return f, true
+		}
+		return nil, false
+	}
+	// unpackaged / top-level code keeps the flat global namespace
+	return l.Lookup(ref)
+}
+
 // Lookup resolves a reference by address, then by bare name.
 func (l *Library) Lookup(ref string) (*Fn, bool) {
 	if f, ok := l.byAddr[ref]; ok {
@@ -336,6 +386,27 @@ func (l *Library) Lookup(ref string) (*Fn, bool) {
 		}
 	}
 	return nil, false
+}
+
+// parseUses reads the `use "pkg" [as alias]` imports from a package block. The
+// parser splits `use "pkg" as alias` into two ordered fields (`use` then `as`,
+// since a bare atom starts a new field), so an `as` field immediately following a
+// `use` binds the alias to it.
+func parseUses(pkg Block) []UseSpec {
+	var out []UseSpec
+	fields := pkg.Fields
+	for i := 0; i < len(fields); i++ {
+		if fields[i].Key != "use" || len(fields[i].Values) == 0 {
+			continue
+		}
+		spec := UseSpec{Pkg: atomStr(fields[i].Values[0]), Pos: fields[i].Pos}
+		if i+1 < len(fields) && fields[i+1].Key == "as" && len(fields[i+1].Values) == 1 {
+			spec.Alias = atomStr(fields[i+1].Values[0])
+			i++
+		}
+		out = append(out, spec)
+	}
+	return out
 }
 
 // LoadString parses .funk source and adds its fn and type blocks.
@@ -356,9 +427,11 @@ func (l *Library) loadString(src, path string) error {
 		return withPath(err)
 	}
 	pkg := ""
-	for _, b := range prog {
-		if b.Head == "package" {
-			pkg = b.Name
+	var uses []UseSpec
+	for i := range prog {
+		if prog[i].Head == "package" {
+			pkg = prog[i].Name
+			uses = parseUses(prog[i])
 		}
 	}
 	for _, b := range prog {
@@ -369,6 +442,7 @@ func (l *Library) loadString(src, path string) error {
 				return withPath(err)
 			}
 			f.File = path
+			f.Uses = uses
 			l.Add(f)
 		case "type":
 			td := TypeFromBlock(b, pkg)

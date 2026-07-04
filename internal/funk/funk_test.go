@@ -560,8 +560,8 @@ func TestIntrospect(t *testing.T) {
 	for _, c := range in.Calls {
 		got[c] = true
 	}
-	if !got["isEmpty?"] || !got["mean"] {
-		t.Fatalf("analyze should call isEmpty? and mean, got %v", in.Calls)
+	if !got["collections.isEmpty?"] || !got["collections.mean"] {
+		t.Fatalf("analyze should call collections.isEmpty? and collections.mean, got %v", in.Calls)
 	}
 	if len(in.Unresolved) != 0 {
 		t.Fatalf("analyze has unresolved calls: %v", in.Unresolved)

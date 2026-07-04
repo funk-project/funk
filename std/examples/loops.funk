@@ -2,6 +2,7 @@
 
 package "funk/std/examples" {
   version 0.0.1
+  use "funk/std/maths" as maths
 }
 
 fn powTwoLE {
@@ -10,8 +11,8 @@ fn powTwoLE {
   out (r Num)
   body
     (while (s 1)
-      (lte (mul s 2) n)
-      (mul s 2))
+      (maths.lte (maths.mul s 2) n)
+      (maths.mul s 2))
   test (is (powTwoLE 100) 64)
   test (is (powTwoLE 1000) 512)
 }
@@ -22,6 +23,6 @@ fn countUp {
   out (r Num)
   body
     (while (s 0)
-      (lt s n)
-      (inc s))
+      (maths.lt s n)
+      (maths.inc s))
 }

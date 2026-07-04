@@ -2,6 +2,8 @@
 
 package "funk/std/examples" {
   version 0.0.1
+  use "funk/std/stream" as stream
+  use "funk/std/maths" as maths
 }
 
 fn ticks {
@@ -15,5 +17,5 @@ fn liveSquares {
   doc "square of a tick, every 200ms, n times"
   in  (n Num)
   out (r Stream<Num>)
-  body (take (map (tick 200ms) square) n)
+  body (take (stream.map (tick 200ms) maths.square) n)
 }

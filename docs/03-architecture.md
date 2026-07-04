@@ -112,12 +112,17 @@ Go-like: **a package is a git repo; a reference is an address.**
 
 - **Addresses are `/`-paths, local or web.** `funk/std/map`, `github.com/user/lib/fn1`,
   `./localFn`. A function *is* an address. A workflow is a composition of addresses.
-- **Import with alias:** `use "github.com/user/lib" v1.2.0 as ml` → `(ml/fn …)`.
+- **Every import is aliased (implemented).** `use "pkg" as ml` binds a local qualifier; calls to
+  that package are written `(ml.fn …)`. There is **no implicit global cross-package namespace**:
+  a bare name resolves only within the caller's own package, so to reach another package you must
+  `use … as` it and qualify. A plain `use "pkg"` (no `as`) is a `check` error. A fully-qualified
+  address (`funk/std/maths/add`) always resolves. The alias is file-local and display-only for
+  addressing — the underlying reference is still the address.
 - **The manifest is `.funk`** — funk describes its own package (self-hosting):
   ```
   package "github.com/user/myproject" {
     version 0.1.0
-    use "funk/std" v2.1.0
+    use "funk/std/maths" as maths
     use "github.com/user/lib" v1.2.0 as ml
   }
   ```

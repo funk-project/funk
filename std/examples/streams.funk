@@ -4,46 +4,49 @@
 
 package "funk/std/examples" {
   version 0.0.1
+  use "funk/std/stream" as stream
+  use "funk/std/maths" as maths
+  use "funk/std/collections" as collections
 }
 
 fn evens {
   doc "the first n even numbers, mapped lazily from an infinite source"
   in  (n Num)
   out (r Stream<Num>)
-  body (take (map (nats) double) n)
+  body (take (stream.map (nats) maths.double) n)
 }
 
 fn squares {
   doc "squares of 1..n"
   in  (n Num)
   out (r Stream<Num>)
-  body (map (range 1 n) square)
+  body (stream.map (range 1 n) maths.square)
 }
 
 fn firstEvens {
   doc "the first n even naturals, filtered from an infinite source"
   in  (n Num)
   out (r Stream<Num>)
-  body (take (filter (nats) even?) n)
+  body (take (stream.filter (nats) maths.even?) n)
 }
 
 fn sumSquares {
   doc "sum of the squares of 1..n (a windowed aggregate)"
   in  (n Num)
   out (r Num)
-  body (flush (r (sum (collect (map (range 1 n) square)))))
+  body (flush (r (collections.sum (collect (stream.map (range 1 n) maths.square)))))
 }
 
 fn batchSums {
   doc "sum of each tumbling window of 3 over 1..n (windowed stream aggregate)"
   in  (n Num)
   out (r Stream<Num>)
-  body (map (window (range 1 n) 3) sum)
+  body (stream.map (window (range 1 n) 3) collections.sum)
 }
 
 fn slidingSums {
   doc "sum of each SLIDING window of 3 (step 1) over 1..n — overlapping windows"
   in  (n Num)
   out (r Stream<Num>)
-  body (map (window (range 1 n) 3 every 1) sum)
+  body (stream.map (window (range 1 n) 3 every 1) collections.sum)
 }

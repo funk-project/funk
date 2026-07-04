@@ -30,6 +30,25 @@ A function is **atomic** (`engine` + `src`) or **composite** (`body` = a composi
 functions). Never both. The execution graph is **derived** from the code — you never draw nodes
 or edges.
 
+## Using other packages
+
+A bare name resolves only **within your own package**. To call another package's function,
+import it with an alias and qualify the call — there is no global cross-package namespace:
+
+```
+package "your/pkg" {
+  version 0.1.0
+  use "funk/std/maths" as maths        ; every `use` MUST have an `as` alias
+}
+
+fn bump {
+  in (x Num) out (r Num)
+  body (flush (r (maths.add x 100)))   ; qualified: alias.fn
+}
+```
+
+A plain `use "pkg"` without `as` is an error. A full address (`funk/std/maths/add`) always works.
+
 ## Expressions are prefix forms
 
 `(head arg arg…)` — no infix. e.g. `(add x 100)`, `(if cond then else)`. Comments start with `;`.

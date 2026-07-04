@@ -7,6 +7,8 @@
 
 package "funk/std/stream" {
   version 0.0.1
+  use "funk/std/collections" as collections
+  use "funk/std/maths" as maths
 }
 
 fn map {
@@ -31,7 +33,7 @@ fn mapSum {
   in  (n Num)
   out (r Num)
   body
-    (flush (r (sum (collect (map (range 1 n) double)))))
+    (flush (r (collections.sum (collect (map (range 1 n) maths.double)))))
   test (is (mapSum 4) 20)
 }
 
@@ -40,6 +42,6 @@ fn filterCount {
   in  (n Num)
   out (r Num)
   body
-    (flush (r (count (collect (filter (range 1 n) even?)))))
+    (flush (r (collections.count (collect (filter (range 1 n) maths.even?)))))
   test (is (filterCount 10) 5)
 }

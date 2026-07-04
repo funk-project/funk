@@ -2,25 +2,27 @@
 
 package "funk/std/examples" {
   version 0.0.1
+  use "funk/std/maths" as maths
+  use "funk/std/collections" as collections
 }
 
 fn runningSum {
   doc "running sum of 1..n — a stateful stream fold"
   in  (n Num)
   out (r Stream<Num>)
-  body (scan (range 1 n) add 0)
+  body (scan (range 1 n) maths.add 0)
 }
 
 fn runningMax {
   doc "running maximum of 1..n"
   in  (n Num)
   out (r Stream<Num>)
-  body (scan (range 1 n) max 0)
+  body (scan (range 1 n) maths.max 0)
 }
 
 fn mergedCount {
   doc "how many items when two ranges are merged"
   in  (n Num)
   out (r Num)
-  body (flush (r (count (collect (merge (range 1 n) (range 1 n))))))
+  body (flush (r (collections.count (collect (merge (range 1 n) (range 1 n))))))
 }

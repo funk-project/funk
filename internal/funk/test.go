@@ -21,7 +21,7 @@ func RunTests(lib *Library) []TestResult {
 	for _, f := range lib.Fns {
 		for _, tc := range f.Tests {
 			ctx, cancel := context.WithCancel(context.Background())
-			e := &evalEnv{lib: lib, vars: map[string]interface{}{}, ctx: ctx, cancel: cancel}
+			e := &evalEnv{lib: lib, vars: map[string]interface{}{}, ctx: ctx, cancel: cancel, curFn: f}
 			r := TestResult{Fn: f.Name}
 			got, err := e.eval(tc.Call)
 			if s, ok := got.(Stream); ok {

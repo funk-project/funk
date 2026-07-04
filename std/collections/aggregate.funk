@@ -5,20 +5,21 @@
 
 package "funk/std/collections" {
   version 0.0.1
+  use "funk/std/maths" as maths
 }
 
 fn incAcc {
   doc "add one to the accumulator, ignoring the item (used by count via fold)"
   in  (a Num) (b Any)
   out (r Num)
-  body (flush (r (inc a)))
+  body (flush (r (maths.inc a)))
 }
 
 fn sum {
   doc "sum of a list/stream of numbers"
   in  (xs List)
   out (r Num)
-  body (flush (r (fold xs add 0)))
+  body (flush (r (fold xs maths.add 0)))
   test (is (sum (range 1 5)) 15)
 }
 
@@ -34,7 +35,7 @@ fn product {
   doc "product of a list/stream of numbers"
   in  (xs List)
   out (r Num)
-  body (flush (r (fold xs mul 1)))
+  body (flush (r (fold xs maths.mul 1)))
   test (is (product (range 1 4)) 24)
 }
 
@@ -44,6 +45,6 @@ fn mean {
   out (r Num)
   body
     (let (l (collect xs))
-      (flush (r (div (sum l) (count l)))))
+      (flush (r (maths.div (sum l) (count l)))))
   test (is (mean (range 1 5)) 3)
 }

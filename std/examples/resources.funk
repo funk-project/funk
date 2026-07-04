@@ -4,6 +4,7 @@
 
 package "funk/std/examples" {
   version 0.0.1
+  use "funk/std/strings" as strings
 }
 
 fn secretPeek {
@@ -26,5 +27,5 @@ fn siteGreeting {
     config site Str
   }
   body
-    (flush (r (concat "hello from " needs.config.site)))
+    (flush (r (strings.concat "hello from " needs.config.site)))
 }

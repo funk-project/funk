@@ -3,6 +3,7 @@
 
 package "funk/std/examples" {
   version 0.0.1
+  use "funk/std/maths" as maths
 }
 
 fn applyTwice {
@@ -18,7 +19,7 @@ fn quadruple {
   in  (x Num)
   out (r Num)
   body
-    (flush (r (applyTwice double x)))
+    (flush (r (applyTwice maths.double x)))
   test (is (quadruple 5) 20)
 }
 
@@ -35,6 +36,6 @@ fn incThenSquare {
   in  (x Num)
   out (r Num)
   body
-    (flush (r (compose2 square inc x)))
+    (flush (r (compose2 maths.square maths.inc x)))
   test (is (incThenSquare 4) 25)
 }
