@@ -32,6 +32,7 @@ func cmdServe(args []string) error {
 	mux.HandleFunc("/functions", func(w http.ResponseWriter, r *http.Request) {
 		type info struct {
 			Address string `json:"address"`
+			Display string `json:"display"`
 			Kind    string `json:"kind"`
 			Doc     string `json:"doc"`
 		}
@@ -41,7 +42,7 @@ func cmdServe(args []string) error {
 			if f.Composite() {
 				kind = "composite"
 			}
-			out = append(out, info{f.Address(), kind, f.Doc})
+			out = append(out, info{f.Address(), f.DisplayName(), kind, f.Doc})
 		}
 		writeJSON(w, out)
 	})

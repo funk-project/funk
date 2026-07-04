@@ -57,6 +57,7 @@ type TestCase struct {
 // Fn is a function: atomic (Engine+Src) or composite (Body). Never both.
 type Fn struct {
 	Name     string
+	Display  string // optional `name` field — a human label for display only
 	Package  string // e.g. "funk/std/maths"
 	Doc      string
 	In       []Port
@@ -74,6 +75,16 @@ type Fn struct {
 
 // Composite reports whether the function is composed of other functions.
 func (f *Fn) Composite() bool { return f.Body != nil }
+
+// DisplayName is the human label for the function: the optional `name` field, or
+// the function's identifier when none is given. For display only (never used for
+// resolution/addressing).
+func (f *Fn) DisplayName() string {
+	if f.Display != "" {
+		return f.Display
+	}
+	return f.Name
+}
 
 // Address returns the fully-qualified address, e.g. "funk/std/maths/add".
 func (f *Fn) Address() string {
@@ -203,6 +214,7 @@ func FnFromBlock(b Block, pkg string) (*Fn, error) {
 		return nil, &ParseError{Pos: b.Pos, Msg: fmt.Sprintf("not an fn block: %q", b.Head)}
 	}
 	f := &Fn{Name: b.Name, Package: pkg, Pos: b.Pos}
+	f.Display = b.FieldStr("name") // optional display label; defaults to Name via DisplayName()
 	f.Doc = b.FieldStr("doc")
 	f.Engine = b.FieldStr("engine")
 	if in, ok := b.Field("in"); ok {

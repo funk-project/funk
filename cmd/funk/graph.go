@@ -26,7 +26,7 @@ func cmdGraph(args []string) error {
 		return fmt.Errorf("unknown function %q", rest[0])
 	}
 	if asJSON {
-		g := graphJSON{Fn: f.Name, Address: f.Address(), Atomic: !f.Composite()}
+		g := graphJSON{Fn: f.Name, Display: f.DisplayName(), Address: f.Address(), Atomic: !f.Composite()}
 		if f.Composite() {
 			n := jsonNode(f.Body)
 			g.Body = &n
@@ -47,6 +47,7 @@ func cmdGraph(args []string) error {
 // graphJSON is the machine-readable graph an IDE consumes (matches TraceEvent.Node).
 type graphJSON struct {
 	Fn      string     `json:"fn"`
+	Display string     `json:"display"` // human label (the `name` field, or fn id)
 	Address string     `json:"address"`
 	Atomic  bool       `json:"atomic"`
 	Body    *graphNode `json:"body,omitempty"`

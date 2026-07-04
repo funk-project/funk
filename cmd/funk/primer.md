@@ -22,7 +22,9 @@ fn add {
 }
 ```
 
-The only definition is `fn`. Everything else is expressions inside it.
+The only definition is `fn`. Everything else is expressions inside it. An optional `name "…"`
+field gives a function a human display label (defaults to its identifier); it is for display
+only, never for addressing.
 
 A function is **atomic** (`engine` + `src`) or **composite** (`body` = a composition of other
 functions). Never both. The execution graph is **derived** from the code — you never draw nodes

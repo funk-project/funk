@@ -131,6 +131,19 @@ fn bad { in (s Str) out (r Num) body (flush (r (g s))) }`)
 	}
 }
 
+// The optional `name` field is a display label; it defaults to the fn identifier.
+func TestDisplayName(t *testing.T) {
+	lib := loadRx(t, `
+fn add2  { name "Add Two" in (a Num) (b Num) out (r Num) engine builtin src "num.add" }
+fn plain { in (a Num) out (r Num) engine builtin src "num.double" }`)
+	if f, _ := lib.Lookup("add2"); f.DisplayName() != "Add Two" {
+		t.Fatalf("add2 display = %q, want \"Add Two\"", f.DisplayName())
+	}
+	if f, _ := lib.Lookup("plain"); f.DisplayName() != "plain" {
+		t.Fatalf("plain display = %q, want fallback \"plain\"", f.DisplayName())
+	}
+}
+
 // return is gone: using it is a clear error, not a silent no-op.
 func TestReturnRemoved(t *testing.T) {
 	lib := loadRx(t, `fn t { in (x Num) out (r Num) body (return x) }`)

@@ -222,7 +222,11 @@ func cmdList(args []string) error {
 		if f.Composite() {
 			kind = "composite"
 		}
-		fmt.Printf("%-28s %-12s %s\n", f.Address(), kind, f.Doc)
+		label := f.Doc
+		if f.Display != "" && f.Display != f.Name {
+			label = "“" + f.Display + "” — " + f.Doc
+		}
+		fmt.Printf("%-28s %-12s %s\n", f.Address(), kind, label)
 	}
 	return nil
 }
