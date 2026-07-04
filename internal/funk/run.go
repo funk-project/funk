@@ -360,17 +360,27 @@ func (e *evalEnv) evalForm(f Form) (interface{}, error) {
 	case "if":
 		return e.evalIf(f)
 	case "return":
-		e.emit(TraceEvent{Kind: "terminal", Detail: "return", Node: f.Pos.String()})
+		// Emit the terminal AFTER computing the returned value, so the trace reads
+		// in execution order (compute the value, then return it) — not the reverse.
 		if len(f.Args) == 0 {
+			e.emit(TraceEvent{Kind: "terminal", Detail: "return", Node: f.Pos.String()})
 			return nil, nil
 		}
-		return e.eval(f.Args[0])
+		v, err := e.eval(f.Args[0])
+		if err == nil {
+			e.emit(TraceEvent{Kind: "terminal", Detail: "return", Node: f.Pos.String()})
+		}
+		return v, err
 	case "exit":
-		e.emit(TraceEvent{Kind: "terminal", Detail: "exit", Node: f.Pos.String()})
 		if len(f.Args) == 0 {
+			e.emit(TraceEvent{Kind: "terminal", Detail: "exit", Node: f.Pos.String()})
 			return nil, nil
 		}
-		return e.eval(f.Args[0]) // v1: exit yields its value (a terminal)
+		v, err := e.eval(f.Args[0]) // v1: exit yields its value (a terminal)
+		if err == nil {
+			e.emit(TraceEvent{Kind: "terminal", Detail: "exit", Node: f.Pos.String()})
+		}
+		return v, err
 	case "for-each":
 		return e.evalForEach(f.Args)
 	case "while":
