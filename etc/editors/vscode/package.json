@@ -2,7 +2,7 @@
   "name": "funk-lang",
   "displayName": "funk",
   "description": "Syntax highlighting for the funk language (.funk) — a language for the plans AIs make.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "funk-project",
   "license": "Apache-2.0",
   "repository": {

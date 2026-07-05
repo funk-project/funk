@@ -4,12 +4,15 @@
   "scopeName": "source.funk",
   "patterns": [
     { "include": "#comment" },
+    { "include": "#string-triple" },
     { "include": "#string" },
     { "include": "#block-head" },
     { "include": "#number" },
     { "include": "#field" },
     { "include": "#control" },
     { "include": "#reactive" },
+    { "include": "#spec" },
+    { "include": "#qualified" },
     { "include": "#type" },
     { "include": "#engine" },
     { "include": "#boolean" }
@@ -18,6 +21,16 @@
     "comment": {
       "match": ";.*$",
       "name": "comment.line.semicolon.funk"
+    },
+    "string-triple": {
+      "comment": "triple-quoted multi-line string (markdown docs); content is raw",
+      "name": "string.quoted.triple.funk",
+      "begin": "\"\"\"",
+      "end": "\"\"\"",
+      "contentName": "meta.embedded.block.markdown",
+      "patterns": [
+        { "include": "text.html.markdown" }
+      ]
     },
     "string": {
       "name": "string.quoted.double.funk",
@@ -40,21 +53,31 @@
     },
     "field": {
       "comment": "field heads inside an fn / type / package block",
-      "match": "\\b(package|version|doc|in|out|engine|src|body|test|needs|effects|import|use)\\b",
+      "match": "\\b(package|version|name|doc|examples|in|out|engine|src|body|test|needs|effects|requires|import|use|as)\\b",
       "name": "keyword.other.funk"
     },
     "control": {
       "comment": "the composite core forms",
-      "match": "\\b(do|let|if|while|return|exit|break|continue|is)\\b",
+      "match": "\\b(do|let|if|while|for-each|on-error|retry|set|flush|return|exit|break|continue|is)\\b",
       "name": "keyword.control.funk"
     },
     "reactive": {
       "comment": "stream sources, operators and the each/yield primitive",
-      "match": "\\b(range|nats|tick|repeat|map|filter|scan|merge|take|collect|window|each|yield)\\b",
+      "match": "\\b(range|nats|tick|repeat|map|filter|scan|fold|merge|take|collect|window|each|yield)\\b",
       "name": "support.function.builtin.funk"
     },
+    "spec": {
+      "comment": "port specs inside (name Type spec…)",
+      "match": "(?<=\\()(min|max|default|zip|latest)\\b",
+      "name": "support.function.builtin.funk"
+    },
+    "qualified": {
+      "comment": "the alias in a qualified cross-package call (use … as): (alias.fn …)",
+      "match": "(?<=\\()([A-Za-z_][\\w-]*)(?=\\.)",
+      "name": "entity.name.namespace.funk"
+    },
     "type": {
-      "match": "\\b(Num|Str|Bool|List|Json|Time|Any|Stream|Fn)\\b",
+      "match": "\\b(Num|Str|Bool|List|Json|Time|Bytes|Any|Stream|Fn)\\b",
       "name": "support.type.funk"
     },
     "engine": {
@@ -62,7 +85,7 @@
       "name": "support.constant.funk"
     },
     "boolean": {
-      "match": "\\b(true|false)\\b",
+      "match": "\\b(true|false|null|nil)\\b",
       "name": "constant.language.funk"
     }
   }
