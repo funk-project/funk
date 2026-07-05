@@ -7,7 +7,8 @@ type Introspection struct {
 	Address    string   `json:"address"`
 	Doc        string   `json:"doc,omitempty"`
 	Examples   string   `json:"examples,omitempty"`
-	Kind       string   `json:"kind"` // "atomic" | "composite"
+	Main       bool     `json:"main,omitempty"` // a runnable entry point
+	Kind       string   `json:"kind"`           // "atomic" | "composite"
 	Engine     string   `json:"engine,omitempty"`
 	In         []Port   `json:"in"`
 	Out        []Port   `json:"out"`
@@ -29,6 +30,7 @@ func Introspect(lib *Library, ref string) (*Introspection, bool) {
 		Address:  f.Address(),
 		Doc:      f.Doc,
 		Examples: f.Examples,
+		Main:     f.Main,
 		In:       f.In,
 		Out:      f.Out,
 		Requires: f.Requires,

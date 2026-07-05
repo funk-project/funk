@@ -358,8 +358,16 @@ func cmdRun(args []string) error {
 		return fmt.Errorf("run: usage: funk run [-f path] [--server url] <fn> [k=v …]")
 	}
 	ref := rest[0]
+	isFile := strings.HasSuffix(ref, ".funk")
+	rest = rest[1:]
+	// For a file, an optional entry-point name may follow: `funk run x.funk deploy k=v`.
+	entryName := ""
+	if isFile && len(rest) > 0 && !strings.Contains(rest[0], "=") {
+		entryName = rest[0]
+		rest = rest[1:]
+	}
 	inputs := map[string]interface{}{}
-	for _, kv := range rest[1:] {
+	for _, kv := range rest {
 		i := strings.IndexByte(kv, '=')
 		if i < 0 {
 			return fmt.Errorf("run: bad input %q (want k=v)", kv)
@@ -379,7 +387,7 @@ func cmdRun(args []string) error {
 	}
 
 	// A bare .funk file may be passed as the ref target's source.
-	if strings.HasSuffix(ref, ".funk") {
+	if isFile {
 		files = append(files, ref)
 	}
 	lib, err := loadLibrary(files)
@@ -387,13 +395,15 @@ func cmdRun(args []string) error {
 		return err
 	}
 
-	// If ref was a file, run its single/last fn unless a name follows.
+	// A file is run through its `main` entry point(s); a file with no main can be
+	// imported (use "…") but not run directly.
 	target := ref
-	if strings.HasSuffix(ref, ".funk") {
-		if len(lib.Fns) == 0 {
-			return fmt.Errorf("run: %s has no functions", ref)
+	if isFile {
+		t, err := fileEntry(lib, ref, entryName)
+		if err != nil {
+			return err
 		}
-		target = lib.Fns[len(lib.Fns)-1].Name
+		target = t
 	}
 
 	if trace {
@@ -411,6 +421,42 @@ func cmdRun(args []string) error {
 		return fmt.Errorf("%s", res.Error)
 	}
 	return nil
+}
+
+// fileEntry picks the runnable entry point for `funk run <path> [name]`: a fn in
+// that file marked `main`. With a name, that fn must exist and be a main; with no
+// name, the sole main is chosen. Zero or several mains (with no name) are a clear
+// error — a file without a main can be imported but not run.
+func fileEntry(lib *funk.Library, path, name string) (string, error) {
+	var mains []string
+	byName := map[string]*funk.Fn{}
+	for _, f := range lib.Fns {
+		if f.File != path {
+			continue
+		}
+		byName[f.Name] = f
+		if f.Main {
+			mains = append(mains, f.Name)
+		}
+	}
+	if name != "" {
+		f, ok := byName[name]
+		if !ok {
+			return "", fmt.Errorf("run: %s has no function %q", path, name)
+		}
+		if !f.Main {
+			return "", fmt.Errorf("run: %q is not a runnable entry point — add `main` to run it", name)
+		}
+		return name, nil
+	}
+	switch len(mains) {
+	case 1:
+		return mains[0], nil
+	case 0:
+		return "", fmt.Errorf("run: %s has no `main` — it can be imported (use \"…\") but not run directly", path)
+	default:
+		return "", fmt.Errorf("run: %s has multiple entry points: %s — pick one: funk run %s <name>", path, strings.Join(mains, ", "), path)
+	}
 }
 
 // expandBinding resolves a --bind value from a source, keeping secrets off the

@@ -49,6 +49,24 @@ fn bump {
 
 A plain `use "pkg"` without `as` is an error. A full address (`funk/std/maths/add`) always works.
 
+## Entry points — `main`
+
+A file is **run** through a function marked `main` — a bare flag field, on its own line:
+
+```
+fn deploy {
+  main
+  in () out (r Str)
+  body ...
+}
+```
+
+- `funk run file.funk` runs the file's `main`.
+- A file may mark **several** functions `main` (they keep their names); run one by name:
+  `funk run file.funk deploy`. With more than one and no name, funk lists them.
+- A file with **no** `main` can be imported (`use "…"`) but not run directly.
+- A non-`main` function is an internal helper — importable, not runnable.
+
 ## Expressions are prefix forms
 
 `(head arg arg…)` — no infix. e.g. `(add x 100)`, `(if cond then else)`. Comments start with `;`.
@@ -57,6 +75,11 @@ A plain `use "pkg"` without `as` is an error. A full address (`funk/std/maths/ad
 
 `Num Str Bool List Json Time Any`. `Stream<T>` = values over time (can be infinite). A value is
 a stream of length 1. `Fn` = a function value (pass a function by name).
+
+**Parameterized types** are written homoiconically as a prefix form and render as `List<T>`:
+`(List Num)`, `(Stream Num)`, `(List (List Num))`. A union is a bare atom: `(List Num|Str)`.
+Bare `List`/`Stream` mean "of `Any`". The checker verifies element types on connections (honouring
+the reactive lift: a `Stream<Num>` may drive a scalar `Num` port).
 
 ## Inputs — firing & specs
 

@@ -323,14 +323,30 @@ func (ps *parser) parseField() (Field, error) {
 		return Field{Key: key.v, Sub: sub, Pos: key.pos()}, nil
 	}
 	var values []Node
-	// allow the value to start on the next line (e.g. `body\n  (…)`)
-	ps.skipNL()
-	if first, ok := ps.peek(); ok && first.k != tRBrace && first.k != tNL {
+	// A value on the SAME line as the key is read directly (doc "x", engine builtin).
+	if t, ok := ps.peek(); ok && t.k != tNL && t.k != tRBrace {
 		v, err := ps.parseValue()
 		if err != nil {
 			return Field{}, err
 		}
 		values = append(values, v)
+	} else {
+		// No same-line value: a value may still start on a FOLLOWING line, but only
+		// a form or string (e.g. `body\n  (…)`). A bare atom on the next line is the
+		// next field's key, so the current field is value-less — this is what lets a
+		// bare flag field like `main` stand alone.
+		j := ps.p
+		for j < len(ps.toks) && ps.toks[j].k == tNL {
+			j++
+		}
+		if j < len(ps.toks) && (ps.toks[j].k == tLParen || ps.toks[j].k == tStr) {
+			ps.p = j
+			v, err := ps.parseValue()
+			if err != nil {
+				return Field{}, err
+			}
+			values = append(values, v)
+		}
 	}
 	// Extra values continue the field. A form on a FOLLOWING line also continues
 	// it: a field always begins with an atom key, so a leading '(' is never a new

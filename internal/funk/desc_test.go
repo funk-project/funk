@@ -138,6 +138,29 @@ fn g {
 	}
 }
 
+// A bare `main` field marks a fn as a runnable entry point; its absence leaves
+// the fn as an importable-only helper.
+func TestMainFieldParsed(t *testing.T) {
+	lib := NewLibrary()
+	if err := lib.LoadString(`package "t/m" {
+  version 0.0.1
+}
+fn go {
+  main
+  in () out (r Str)
+  body (flush (r "ok"))
+}
+fn helper { in (x Num) out (r Num) engine builtin src "num.inc" }`); err != nil {
+		t.Fatal(err)
+	}
+	if g, _ := lib.Lookup("go"); !g.Main {
+		t.Fatal("go should be marked main")
+	}
+	if h, _ := lib.Lookup("helper"); h.Main {
+		t.Fatal("helper should not be main")
+	}
+}
+
 func TestUnterminatedTripleQuote(t *testing.T) {
 	_, err := Parse(`fn g { doc """never closed`)
 	if err == nil || !strings.Contains(err.Error(), "unterminated") {

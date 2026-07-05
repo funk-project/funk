@@ -73,6 +73,7 @@ type Fn struct {
 	Body     Node      // composite: the single composing expression (nil ⇒ atomic)
 	File     string    // source file this fn was loaded from ("" if from a string)
 	Uses     []UseSpec // the `use` imports of this fn's file (scopes call resolution)
+	Main     bool      // marked `main` — a runnable entry point (`funk run file.funk`)
 	Pos      Pos       // position of the `fn` keyword, for diagnostics
 }
 
@@ -209,13 +210,19 @@ func atomStr(n Node) string {
 	return ""
 }
 
-// nodeTypeString renders a type node like `Num` or `Stream<Num>` (a form).
+// nodeTypeString renders a type node. A parameterized type is written homoiconically
+// as a prefix form — `(List Num)`, `(Stream Num)`, `(Map Str Num)` — and renders in
+// the familiar angle-bracket form `List<Num>`. A no-arg form (e.g. a bare `(Num|Str)`
+// union) renders as just its head; an already-atomic `List<Num>`/`Num|Str` passes
+// through verbatim.
 func nodeTypeString(n Node) string {
 	switch t := n.(type) {
 	case Atom:
 		return t.Value
 	case Form:
-		// e.g. (Stream Num) or already-atomic "Stream<Num>"
+		if len(t.Args) == 0 {
+			return t.Head
+		}
 		var parts []string
 		for _, a := range t.Args {
 			parts = append(parts, nodeTypeString(a))
@@ -234,6 +241,7 @@ func FnFromBlock(b Block, pkg string) (*Fn, error) {
 	f.Display = b.FieldStr("name") // optional display label; defaults to Name via DisplayName()
 	f.Doc = b.FieldStr("doc")
 	f.Examples = b.FieldStr("examples")
+	_, f.Main = b.Field("main") // presence of a bare `main` field ⇒ runnable entry point
 	f.Engine = b.FieldStr("engine")
 	if in, ok := b.Field("in"); ok {
 		f.In = inPortsFromField(in)
