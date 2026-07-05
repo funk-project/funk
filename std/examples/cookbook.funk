@@ -36,9 +36,7 @@ fn slugify {
     - `(slugify "The Machine Is No Longer a Black Box!")` → `"the-machine-is-no-longer-a-black-box"`
   """
   engine python
-  src """
-    import re; return re.sub(r'[^a-z0-9]+', '-', s.lower()).strip('-')
-  """
+  src "import re; return re.sub(r'[^a-z0-9]+', '-', s.lower()).strip('-')"
   test (is (slugify "The Machine Is No Longer a Black Box!") "the-machine-is-no-longer-a-black-box")
 }
 
@@ -55,9 +53,7 @@ fn initials {
     - `(initials "north by northwest")` → `"NBN"`
   """
   engine python
-  src """
-    return ''.join(w[0] for w in s.split()).upper()
-  """
+  src "return ''.join(w[0] for w in s.split()).upper()"
   test (is (initials "funk over fear") "FOF")
 }
 
@@ -74,8 +70,6 @@ fn wordCount {
     - `(wordCount "a language for the plans AIs make")` → `7`
   """
   engine python
-  src """
-    return len(s.split())
-  """
+  src "return len(s.split())"
   test (is (wordCount "a language for the plans AIs make") 7)
 }

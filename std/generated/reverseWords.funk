@@ -11,9 +11,5 @@ fn reverse_words {
     - `(reverse_words "a b c")` → `"c b a"`
   """
   engine python
-  src """
-    words = s.split()
-    words.reverse()
-    return " ".join(words)
-  """
+  src "words = s.split()\nwords.reverse()\nreturn \" \".join(words)"
 }

@@ -20,9 +20,7 @@ fn add {
     - `(add -1 1)` → `0`
   """
   engine builtin
-  src """
-    num.add
-  """
+  src "num.add"
   test (is (add 40 2) 42)
   test (is (add 0 0) 0)
 }
@@ -41,9 +39,7 @@ fn sub {
     - `(sub 0 4)` → `-4`
   """
   engine builtin
-  src """
-    num.sub
-  """
+  src "num.sub"
 }
 
 fn mul {
@@ -60,9 +56,7 @@ fn mul {
     - `(mul -2 3)` → `-6`
   """
   engine builtin
-  src """
-    num.mul
-  """
+  src "num.mul"
 }
 
 fn div {
@@ -79,9 +73,7 @@ fn div {
     - `(div 7 2)` → `3.5`
   """
   engine builtin
-  src """
-    num.div
-  """
+  src "num.div"
 }
 
 fn mod {
@@ -98,9 +90,7 @@ fn mod {
     - `(mod 8 4)` → `0`
   """
   engine builtin
-  src """
-    num.mod
-  """
+  src "num.mod"
 }
 
 fn neg {
@@ -116,9 +106,7 @@ fn neg {
     - `(neg -3)` → `3`
   """
   engine builtin
-  src """
-    num.neg
-  """
+  src "num.neg"
 }
 
 fn abs {
@@ -134,9 +122,7 @@ fn abs {
     - `(abs 4)` → `4`
   """
   engine builtin
-  src """
-    num.abs
-  """
+  src "num.abs"
 }
 
 fn sqrt {
@@ -152,9 +138,7 @@ fn sqrt {
     - `(sqrt 2)` → `1.414…`
   """
   engine builtin
-  src """
-    num.sqrt
-  """
+  src "num.sqrt"
 }
 
 fn pow {
@@ -171,9 +155,7 @@ fn pow {
     - `(pow 9 0.5)` → `3`
   """
   engine builtin
-  src """
-    num.pow
-  """
+  src "num.pow"
 }
 
 fn min {
@@ -190,9 +172,7 @@ fn min {
     - `(min -1 -4)` → `-4`
   """
   engine builtin
-  src """
-    num.min
-  """
+  src "num.min"
 }
 
 fn max {
@@ -209,7 +189,5 @@ fn max {
     - `(max -1 -4)` → `-1`
   """
   engine builtin
-  src """
-    num.max
-  """
+  src "num.max"
 }

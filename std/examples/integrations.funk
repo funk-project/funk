@@ -26,9 +26,7 @@ fn createIssue {
   effects {
     net api.github.com
   }
-  src """
-    return {"opened": title}
-  """
+  src "return {\"opened\": title}"
 }
 
 fn triage {

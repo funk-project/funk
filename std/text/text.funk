@@ -18,9 +18,7 @@ fn split {
     - `(split "hello" "l")` → `["he","","o"]`
   """
   engine python
-  src """
-    return a.split(sep)
-  """
+  src "return a.split(sep)"
 }
 
 fn join {
@@ -37,9 +35,7 @@ fn join {
     - `(join ["x","y"] ", ")` → `"x, y"`
   """
   engine python
-  src """
-    return sep.join(str(x) for x in xs)
-  """
+  src "return sep.join(str(x) for x in xs)"
 }
 
 fn replace {
@@ -57,9 +53,7 @@ fn replace {
     - `(replace "a-b-c" "-" "+")` → `"a+b+c"`
   """
   engine python
-  src """
-    return a.replace(old, new)
-  """
+  src "return a.replace(old, new)"
 }
 
 fn contains? {
@@ -76,9 +70,7 @@ fn contains? {
     - `(contains? "hello" "xyz")` → `false`
   """
   engine python
-  src """
-    return sub in a
-  """
+  src "return sub in a"
 }
 
 fn startsWith? {
@@ -95,9 +87,7 @@ fn startsWith? {
     - `(startsWith? "hello" "lo")` → `false`
   """
   engine python
-  src """
-    return a.startswith(prefix)
-  """
+  src "return a.startswith(prefix)"
 }
 
 fn endsWith? {
@@ -114,9 +104,7 @@ fn endsWith? {
     - `(endsWith? "hello" "he")` → `false`
   """
   engine python
-  src """
-    return a.endswith(suffix)
-  """
+  src "return a.endswith(suffix)"
 }
 
 fn reverse {
@@ -132,9 +120,7 @@ fn reverse {
     - `(reverse "abc")` → `"cba"`
   """
   engine python
-  src """
-    return a[::-1]
-  """
+  src "return a[::-1]"
 }
 
 fn words {
@@ -150,9 +136,7 @@ fn words {
     - `(words "  a   b ")` → `["a","b"]`
   """
   engine python
-  src """
-    return a.split()
-  """
+  src "return a.split()"
 }
 
 fn capitalize {
@@ -168,9 +152,7 @@ fn capitalize {
     - `(capitalize "ABC")` → `"Abc"`
   """
   engine python
-  src """
-    return a.capitalize()
-  """
+  src "return a.capitalize()"
 }
 
 fn repeat {
@@ -187,7 +169,5 @@ fn repeat {
     - `(repeat "x" 0)` → `""`
   """
   engine python
-  src """
-    return a * int(n)
-  """
+  src "return a * int(n)"
 }

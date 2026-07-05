@@ -24,9 +24,7 @@ fn secretPeek {
     config repo Str
     secret token
   }
-  src """
-    return needs['config']['repo'] + ' @ ' + needs['secret']['token'][:3] + '***'
-  """
+  src "return needs['config']['repo'] + ' @ ' + needs['secret']['token'][:3] + '***'"
 }
 
 fn siteGreeting {

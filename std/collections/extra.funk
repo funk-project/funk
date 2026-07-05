@@ -18,9 +18,7 @@ fn reverse {
     - `(reverse [])` → `[]`
   """
   engine python
-  src """
-    return list(reversed(a))
-  """
+  src "return list(reversed(a))"
 }
 
 fn sort {
@@ -36,9 +34,7 @@ fn sort {
     - `(sort [5])` → `[5]`
   """
   engine python
-  src """
-    return sorted(a)
-  """
+  src "return sorted(a)"
 }
 
 fn unique {
@@ -54,13 +50,7 @@ fn unique {
     - `(unique [3, 1, 3, 2])` → `[3, 1, 2]`
   """
   engine python
-  src """
-    seen = []
-    for x in a:
-        if x not in seen:
-            seen.append(x)
-    return seen
-  """
+  src "seen = []\nfor x in a:\n    if x not in seen:\n        seen.append(x)\nreturn seen"
 }
 
 fn take {
@@ -77,9 +67,7 @@ fn take {
     - `(take [1, 2] 5)` → `[1, 2]`
   """
   engine python
-  src """
-    return a[:int(n)]
-  """
+  src "return a[:int(n)]"
 }
 
 fn drop {
@@ -96,9 +84,7 @@ fn drop {
     - `(drop [1, 2] 5)` → `[]`
   """
   engine python
-  src """
-    return a[int(n):]
-  """
+  src "return a[int(n):]"
 }
 
 fn flatten {
@@ -114,15 +100,7 @@ fn flatten {
     - `(flatten [[1], [2, 3]])` → `[1, 2, 3]`
   """
   engine python
-  src """
-    out = []
-    for x in a:
-        if isinstance(x, list):
-            out.extend(x)
-        else:
-            out.append(x)
-    return out
-  """
+  src "out = []\nfor x in a:\n    if isinstance(x, list):\n        out.extend(x)\n    else:\n        out.append(x)\nreturn out"
 }
 
 fn zip2 {
@@ -139,9 +117,7 @@ fn zip2 {
     - `(zip2 [1, 2, 3] [4])` → `[[1, 4]]`
   """
   engine python
-  src """
-    return [[x, y] for x, y in zip(a, b)]
-  """
+  src "return [[x, y] for x, y in zip(a, b)]"
 }
 
 fn contains? {
@@ -158,7 +134,5 @@ fn contains? {
     - `(contains? [1, 2, 3] 9)` → `false`
   """
   engine python
-  src """
-    return item in a
-  """
+  src "return item in a"
 }

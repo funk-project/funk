@@ -17,10 +17,7 @@ fn median {
     - `(median [1, 2, 3, 4])` → `2.5`
   """
   engine python
-  src """
-    import statistics
-    return statistics.median(xs)
-  """
+  src "import statistics\nreturn statistics.median(xs)"
 }
 
 fn mode {
@@ -36,10 +33,7 @@ fn mode {
     - `(mode [4, 4, 1, 2])` → `4`
   """
   engine python
-  src """
-    import statistics
-    return statistics.mode(xs)
-  """
+  src "import statistics\nreturn statistics.mode(xs)"
 }
 
 fn variance {
@@ -55,10 +49,7 @@ fn variance {
     - `(variance [1, 2, 3, 4, 5])` → `2.5`
   """
   engine python
-  src """
-    import statistics
-    return statistics.variance(xs)
-  """
+  src "import statistics\nreturn statistics.variance(xs)"
 }
 
 fn stdev {
@@ -74,10 +65,7 @@ fn stdev {
     - `(stdev [1, 2, 3, 4, 5])` → `1.581…`
   """
   engine python
-  src """
-    import statistics
-    return statistics.stdev(xs)
-  """
+  src "import statistics\nreturn statistics.stdev(xs)"
 }
 
 fn pmin {
@@ -93,9 +81,7 @@ fn pmin {
     - `(pmin [5, 9, 2, 7])` → `2`
   """
   engine python
-  src """
-    return min(xs)
-  """
+  src "return min(xs)"
 }
 
 fn pmax {
@@ -111,9 +97,7 @@ fn pmax {
     - `(pmax [5, 9, 2, 7])` → `9`
   """
   engine python
-  src """
-    return max(xs)
-  """
+  src "return max(xs)"
 }
 
 fn range {
@@ -129,9 +113,7 @@ fn range {
     - `(range [5, 5])` → `0`
   """
   engine python
-  src """
-    return max(xs) - min(xs)
-  """
+  src "return max(xs) - min(xs)"
 }
 
 fn percentile {
@@ -148,15 +130,5 @@ fn percentile {
     - `(percentile 25 [1, 2, 3, 4, 5])` → `2`
   """
   engine python
-  src """
-    s = sorted(xs)
-    if not s:
-        return 0
-    if len(s) == 1:
-        return s[0]
-    k = (len(s) - 1) * (p / 100.0)
-    lo = int(k)
-    hi = min(lo + 1, len(s) - 1)
-    return s[lo] + (s[hi] - s[lo]) * (k - lo)
-  """
+  src "s = sorted(xs)\nif not s:\n    return 0\nif len(s) == 1:\n    return s[0]\nk = (len(s) - 1) * (p / 100.0)\nlo = int(k)\nhi = min(lo + 1, len(s) - 1)\nreturn s[lo] + (s[hi] - s[lo]) * (k - lo)"
 }

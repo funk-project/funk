@@ -17,9 +17,7 @@ fn double {
     - `(double -3)` → `-6`
   """
   engine builtin
-  src """
-    num.double
-  """
+  src "num.double"
 }
 
 fn square {
@@ -35,9 +33,7 @@ fn square {
     - `(square -4)` → `16`
   """
   engine builtin
-  src """
-    num.square
-  """
+  src "num.square"
 }
 
 fn inc {
@@ -53,9 +49,7 @@ fn inc {
     - `(inc -1)` → `0`
   """
   engine builtin
-  src """
-    num.inc
-  """
+  src "num.inc"
 }
 
 fn even? {
@@ -71,7 +65,5 @@ fn even? {
     - `(even? 7)` → `false`
   """
   engine builtin
-  src """
-    num.even
-  """
+  src "num.even"
 }

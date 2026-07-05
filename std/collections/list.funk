@@ -17,9 +17,7 @@ fn isEmpty? {
     - `(isEmpty? [1])` → `false`
   """
   engine builtin
-  src """
-    list.isEmpty
-  """
+  src "list.isEmpty"
 }
 
 fn first {
@@ -35,9 +33,7 @@ fn first {
     - `(first ["a", "b"])` → `"a"`
   """
   engine builtin
-  src """
-    list.first
-  """
+  src "list.first"
 }
 
 fn last {
@@ -53,7 +49,5 @@ fn last {
     - `(last ["a", "b"])` → `"b"`
   """
   engine builtin
-  src """
-    list.last
-  """
+  src "list.last"
 }

@@ -17,10 +17,7 @@ fn floor {
     - `(floor -2.5)` → `-3`
   """
   engine python
-  src """
-    import math
-    return math.floor(a)
-  """
+  src "import math\nreturn math.floor(a)"
 }
 
 fn ceil {
@@ -36,10 +33,7 @@ fn ceil {
     - `(ceil -2.5)` → `-2`
   """
   engine python
-  src """
-    import math
-    return math.ceil(a)
-  """
+  src "import math\nreturn math.ceil(a)"
 }
 
 fn round {
@@ -56,9 +50,7 @@ fn round {
     - `(round 2.71828 0)` → `3`
   """
   engine python
-  src """
-    return round(a, int(n))
-  """
+  src "return round(a, int(n))"
 }
 
 fn log {
@@ -74,10 +66,7 @@ fn log {
     - `(log 2.718281828)` → `0.999…`
   """
   engine python
-  src """
-    import math
-    return math.log(a)
-  """
+  src "import math\nreturn math.log(a)"
 }
 
 fn log10 {
@@ -93,10 +82,7 @@ fn log10 {
     - `(log10 1)` → `0`
   """
   engine python
-  src """
-    import math
-    return math.log10(a)
-  """
+  src "import math\nreturn math.log10(a)"
 }
 
 fn exp {
@@ -112,10 +98,7 @@ fn exp {
     - `(exp 1)` → `2.718…`
   """
   engine python
-  src """
-    import math
-    return math.exp(a)
-  """
+  src "import math\nreturn math.exp(a)"
 }
 
 fn sin {
@@ -131,10 +114,7 @@ fn sin {
     - `(sin 1)` → `0.841…`
   """
   engine python
-  src """
-    import math
-    return math.sin(a)
-  """
+  src "import math\nreturn math.sin(a)"
 }
 
 fn cos {
@@ -150,10 +130,7 @@ fn cos {
     - `(cos 1)` → `0.540…`
   """
   engine python
-  src """
-    import math
-    return math.cos(a)
-  """
+  src "import math\nreturn math.cos(a)"
 }
 
 fn tan {
@@ -169,10 +146,7 @@ fn tan {
     - `(tan 1)` → `1.557…`
   """
   engine python
-  src """
-    import math
-    return math.tan(a)
-  """
+  src "import math\nreturn math.tan(a)"
 }
 
 fn factorial {
@@ -188,10 +162,7 @@ fn factorial {
     - `(factorial 0)` → `1`
   """
   engine python
-  src """
-    import math
-    return math.factorial(int(a))
-  """
+  src "import math\nreturn math.factorial(int(a))"
 }
 
 fn gcd {
@@ -208,10 +179,7 @@ fn gcd {
     - `(gcd 17 5)` → `1`
   """
   engine python
-  src """
-    import math
-    return math.gcd(int(a), int(b))
-  """
+  src "import math\nreturn math.gcd(int(a), int(b))"
 }
 
 fn clamp {
@@ -229,7 +197,5 @@ fn clamp {
     - `(clamp 15 0 10)` → `10`
   """
   engine python
-  src """
-    return max(lo, min(hi, x))
-  """
+  src "return max(lo, min(hi, x))"
 }

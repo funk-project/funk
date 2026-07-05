@@ -18,9 +18,7 @@ fn gt {
     - `(gt 3 3)` → `false`
   """
   engine builtin
-  src """
-    num.gt
-  """
+  src "num.gt"
 }
 
 fn lt {
@@ -37,9 +35,7 @@ fn lt {
     - `(lt 5 3)` → `false`
   """
   engine builtin
-  src """
-    num.lt
-  """
+  src "num.lt"
 }
 
 fn gte {
@@ -56,9 +52,7 @@ fn gte {
     - `(gte 2 3)` → `false`
   """
   engine builtin
-  src """
-    num.gte
-  """
+  src "num.gte"
 }
 
 fn lte {
@@ -75,9 +69,7 @@ fn lte {
     - `(lte 4 3)` → `false`
   """
   engine builtin
-  src """
-    num.lte
-  """
+  src "num.lte"
 }
 
 fn eq {
@@ -94,9 +86,7 @@ fn eq {
     - `(eq 4 5)` → `false`
   """
   engine builtin
-  src """
-    num.eq
-  """
+  src "num.eq"
 }
 
 fn neq {
@@ -113,7 +103,5 @@ fn neq {
     - `(neq 2 2)` → `false`
   """
   engine builtin
-  src """
-    num.neq
-  """
+  src "num.neq"
 }

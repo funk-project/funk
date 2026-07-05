@@ -18,9 +18,7 @@ fn concat {
     - `(concat "a" "")` → `"a"`
   """
   engine builtin
-  src """
-    str.concat
-  """
+  src "str.concat"
 }
 
 fn upper {
@@ -36,9 +34,7 @@ fn upper {
     - `(upper "aB")` → `"AB"`
   """
   engine builtin
-  src """
-    str.upper
-  """
+  src "str.upper"
 }
 
 fn lower {
@@ -54,9 +50,7 @@ fn lower {
     - `(lower "aB")` → `"ab"`
   """
   engine builtin
-  src """
-    str.lower
-  """
+  src "str.lower"
 }
 
 fn trim {
@@ -72,9 +66,7 @@ fn trim {
     - `(trim "x ")` → `"x"`
   """
   engine builtin
-  src """
-    str.trim
-  """
+  src "str.trim"
 }
 
 fn length {
@@ -90,7 +82,5 @@ fn length {
     - `(length "")` → `0`
   """
   engine builtin
-  src """
-    str.len
-  """
+  src "str.len"
 }

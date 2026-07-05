@@ -17,10 +17,7 @@ fn jsonParse {
     - `(jsonParse "{\"a\": 1}")` → `{"a": 1}`
   """
   engine python
-  src """
-    import json
-    return json.loads(a)
-  """
+  src "import json\nreturn json.loads(a)"
 }
 
 fn jsonStringify {
@@ -36,10 +33,7 @@ fn jsonStringify {
     - `(jsonStringify {"a": 1})` → `"{\"a\":1}"`
   """
   engine python
-  src """
-    import json
-    return json.dumps(a)
-  """
+  src "import json\nreturn json.dumps(a)"
 }
 
 fn base64Encode {
@@ -55,10 +49,7 @@ fn base64Encode {
     - `(base64Encode "funk")` → `"ZnVuaw=="`
   """
   engine python
-  src """
-    import base64
-    return base64.b64encode(a.encode('utf-8')).decode('ascii')
-  """
+  src "import base64\nreturn base64.b64encode(a.encode('utf-8')).decode('ascii')"
 }
 
 fn base64Decode {
@@ -74,10 +65,7 @@ fn base64Decode {
     - `(base64Decode "ZnVuaw==")` → `"funk"`
   """
   engine python
-  src """
-    import base64
-    return base64.b64decode(a.encode('ascii')).decode('utf-8')
-  """
+  src "import base64\nreturn base64.b64decode(a.encode('ascii')).decode('utf-8')"
 }
 
 fn urlEncode {
@@ -93,10 +81,7 @@ fn urlEncode {
     - `(urlEncode "x/y")` → `"x%2Fy"`
   """
   engine python
-  src """
-    import urllib.parse
-    return urllib.parse.quote(a, safe='')
-  """
+  src "import urllib.parse\nreturn urllib.parse.quote(a, safe='')"
 }
 
 fn urlDecode {
@@ -112,8 +97,5 @@ fn urlDecode {
     - `(urlDecode "x%2Fy")` → `"x/y"`
   """
   engine python
-  src """
-    import urllib.parse
-    return urllib.parse.unquote(a)
-  """
+  src "import urllib.parse\nreturn urllib.parse.unquote(a)"
 }

@@ -23,9 +23,7 @@ fn architect {
     - `(architect "add two numbers")` → `add / in (a Num) (b Num) / out (r Num) / python / return a + b`
   """
   engine claude
-  src """
-    You are a software architect for `funk`, a workflow language. Given a task, produce a TERSE design for ONE function: a snake or camelCase name, the inputs as (name Type), the single output (r Type), the engine (python for logic), and a one-line approach. Types are Num Str Bool List Json. Output only the design, no prose.
-  """
+  src "You are a software architect for `funk`, a workflow language. Given a task, produce a TERSE design for ONE function: a snake or camelCase name, the inputs as (name Type), the single output (r Type), the engine (python for logic), and a one-line approach. Types are Num Str Bool List Json. Output only the design, no prose."
 }
 
 fn programmer {
@@ -41,19 +39,7 @@ fn programmer {
     - `(programmer "<design for upper>")` → `fn upper { ... src "return s.upper()" }`
   """
   engine claude
-  src """
-    You write functions in `funk`. Output ONLY one `fn` block, no markdown, no fences, no prose. Template:
-
-    fn NAME {
-      doc "one line"
-      in (arg Type) ...
-      out (r Type)
-      engine python
-      src "PYTHON"
-    }
-
-    Rules: Types are Num Str Bool List Json. engine is python. The src is a double-quoted Python body where each input port is already a local variable and you must `return` the result; escape newlines inside src as \n and quotes as \". Keep it correct and minimal. Produce the fn block for the given design.
-  """
+  src "You write functions in `funk`. Output ONLY one `fn` block, no markdown, no fences, no prose. Template:\n\nfn NAME {\n  doc \"one line\"\n  in (arg Type) ...\n  out (r Type)\n  engine python\n  src \"PYTHON\"\n}\n\nRules: Types are Num Str Bool List Json. engine is python. The src is a double-quoted Python body where each input port is already a local variable and you must `return` the result; escape newlines inside src as \\n and quotes as \\\". Keep it correct and minimal. Produce the fn block for the given design."
 }
 
 fn reviewer {
@@ -69,9 +55,7 @@ fn reviewer {
     - `(reviewer "fn div { ... src \"return a / b\" }")` → `- No zero-divisor guard ... Verdict: NEEDS-WORK`
   """
   engine claude
-  src """
-    You are a code reviewer for `funk`. Review the given `fn` block: is the Python correct, are the port types right, is the doc clear, are edge cases handled? Reply with a short bulleted review ending with a verdict line: PASS or NEEDS-WORK.
-  """
+  src "You are a code reviewer for `funk`. Review the given `fn` block: is the Python correct, are the port types right, is the doc clear, are edge cases handled? Reply with a short bulleted review ending with a verdict line: PASS or NEEDS-WORK."
 }
 
 fn tester {
@@ -87,9 +71,7 @@ fn tester {
     - `(tester "fn add { ... src \"return a - b\" }")` → `add 2 3 -> 5 but got -1 ... Verdict: SUSPECT`
   """
   engine claude
-  src """
-    You are a tester for `funk`. For the given `fn` block, list 2-3 concrete input->expected-output test cases, then a verdict: LIKELY-CORRECT or SUSPECT, with one line of reasoning.
-  """
+  src "You are a tester for `funk`. For the given `fn` block, list 2-3 concrete input->expected-output test cases, then a verdict: LIKELY-CORRECT or SUSPECT, with one line of reasoning."
 }
 
 fn reflect {
@@ -106,9 +88,7 @@ fn reflect {
     - `(reflect "fn add { ... }" "Verdict: PASS")` → `fn add { ... }` (unchanged)
   """
   engine claude
-  src """
-    You improve `funk` source. You are given a `fn` block and a report (an error, review, or run result). If the report shows a problem, output a CORRECTED `fn` block; if it is already fine, output the SAME block unchanged. Output ONLY the fn block — no markdown, no fences, no prose. Keep engine python; escape newlines in src as \n and quotes as \".
-  """
+  src "You improve `funk` source. You are given a `fn` block and a report (an error, review, or run result). If the report shows a problem, output a CORRECTED `fn` block; if it is already fine, output the SAME block unchanged. Output ONLY the fn block — no markdown, no fences, no prose. Keep engine python; escape newlines in src as \\n and quotes as \\\"."
 }
 
 ; The core generation pipeline, expressed IN funk: task -> design -> code.
