@@ -59,6 +59,22 @@ func TestServeGetEndpoints(t *testing.T) {
 	}
 }
 
+func TestServeSearch(t *testing.T) {
+	srv := serveTestServer(t)
+	// text search finds the `add` function by name
+	if code, body := getBody(t, srv.URL+"/search?q=add"); code != 200 || !strings.Contains(body, `"add"`) {
+		t.Fatalf("/search?q=add = %d %q", code, body)
+	}
+	// signature `Num -> Num` matches bump (single Num input)
+	if _, body := getBody(t, srv.URL+"/search?q=Num+-%3E+Num"); !strings.Contains(body, "bump") {
+		t.Fatalf("/search signature = %q", body)
+	}
+	// missing q → 400
+	if code, _ := getBody(t, srv.URL+"/search"); code != http.StatusBadRequest {
+		t.Fatalf("/search (no q) status = %d, want 400", code)
+	}
+}
+
 func TestServeRunPlainTraceLive(t *testing.T) {
 	srv := serveTestServer(t)
 	// plain: one {"value":105} NDJSON line

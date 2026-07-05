@@ -33,6 +33,39 @@ func cmdSearch(args []string) error {
 		return err
 	}
 
+	rows := searchResults(lib, query, limit)
+	if asJSON {
+		b, _ := json.MarshalIndent(rows, "", "  ")
+		fmt.Println(string(b))
+		return nil
+	}
+	if len(rows) == 0 {
+		fmt.Println("no matches")
+		return nil
+	}
+	for _, r := range rows {
+		disp := ""
+		if r.Display != "" && r.Display != r.Name {
+			disp = "  “" + r.Display + "”"
+		}
+		fmt.Printf("%s%s\n    %s\n    %s\n", r.Address, disp, r.Signature, r.Doc)
+	}
+	return nil
+}
+
+// searchRow is one result of a library search (shared by `funk search` and funkd's
+// /search endpoint).
+type searchRow struct {
+	Address   string `json:"address"`
+	Name      string `json:"name"`
+	Display   string `json:"display,omitempty"`
+	Signature string `json:"signature"`
+	Doc       string `json:"doc,omitempty"`
+}
+
+// searchResults scores every function against the query (signature mode when the
+// query has an arrow, else text mode), ranks, and truncates to limit.
+func searchResults(lib *funk.Library, query string, limit int) []searchRow {
 	type hit struct {
 		f     *funk.Fn
 		score int
@@ -58,38 +91,14 @@ func cmdSearch(args []string) error {
 		}
 		return hits[i].f.Address() < hits[j].f.Address()
 	})
-	if len(hits) > limit {
+	if limit > 0 && len(hits) > limit {
 		hits = hits[:limit]
 	}
-
-	if asJSON {
-		type row struct {
-			Address   string `json:"address"`
-			Name      string `json:"name"`
-			Display   string `json:"display,omitempty"`
-			Signature string `json:"signature"`
-			Doc       string `json:"doc,omitempty"`
-		}
-		out := []row{}
-		for _, h := range hits {
-			out = append(out, row{h.f.Address(), h.f.Name, h.f.Display, signature(h.f), docSummary(h.f.Doc)})
-		}
-		b, _ := json.MarshalIndent(out, "", "  ")
-		fmt.Println(string(b))
-		return nil
-	}
-	if len(hits) == 0 {
-		fmt.Println("no matches")
-		return nil
-	}
+	rows := make([]searchRow, 0, len(hits))
 	for _, h := range hits {
-		disp := ""
-		if h.f.Display != "" && h.f.Display != h.f.Name {
-			disp = "  “" + h.f.Display + "”"
-		}
-		fmt.Printf("%s%s\n    %s\n    %s\n", h.f.Address(), disp, signature(h.f), docSummary(h.f.Doc))
+		rows = append(rows, searchRow{h.f.Address(), h.f.Name, h.f.Display, signature(h.f), docSummary(h.f.Doc)})
 	}
-	return nil
+	return rows
 }
 
 // splitArrow splits a signature query `A B -> C` into its input types and output

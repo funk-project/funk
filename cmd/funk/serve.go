@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/funk-project/funk/internal/funk"
 )
@@ -28,7 +29,7 @@ func cmdServe(args []string) error {
 	mux := serveMux(lib)
 
 	fmt.Fprintf(os.Stderr, "funkd listening on %s — %d functions, %d types\n", addr, len(lib.Fns), len(lib.Types)/2)
-	fmt.Fprintf(os.Stderr, "  GET  /health  /functions  /introspect?fn=NAME\n  POST /run {\"ref\":\"add\",\"inputs\":{\"a\":40,\"b\":2}}\n")
+	fmt.Fprintf(os.Stderr, "  GET  /health  /functions  /introspect?fn=NAME  /search?q=QUERY\n  POST /run {\"ref\":\"add\",\"inputs\":{\"a\":40,\"b\":2}}\n")
 	srv := &http.Server{Addr: addr, Handler: mux}
 	return srv.ListenAndServe()
 }
@@ -56,6 +57,20 @@ func serveMux(lib *funk.Library) *http.ServeMux {
 			out = append(out, info{f.Address(), f.DisplayName(), kind, f.Doc})
 		}
 		writeJSON(w, out)
+	})
+	mux.HandleFunc("/search", func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query().Get("q")
+		if q == "" {
+			http.Error(w, "missing ?q=", http.StatusBadRequest)
+			return
+		}
+		limit := 20
+		if l := r.URL.Query().Get("limit"); l != "" {
+			if n, err := strconv.Atoi(l); err == nil {
+				limit = n
+			}
+		}
+		writeJSON(w, searchResults(lib, q, limit))
 	})
 	mux.HandleFunc("/introspect", func(w http.ResponseWriter, r *http.Request) {
 		in, ok := funk.Introspect(lib, r.URL.Query().Get("fn"))
