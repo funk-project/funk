@@ -5,49 +5,109 @@ package "funk/std/encoding" {
 }
 
 fn jsonParse {
-  doc "parse a JSON string into a value"
-  in  (a Str)
-  out (r Json)
+  doc """
+    # Json Parse
+    ### Parse a JSON string into a `Json` value (object, array, number, string, boolean, or null).
+  """
+  in  (a Str (doc "a JSON-encoded string"))
+  out (r Json (doc "the decoded value"))
+  examples """
+    - `(jsonParse "[1, 2]")` → `[1, 2]`
+    - `(jsonParse "{\"a\": 1}")` → `{"a": 1}`
+  """
   engine python
-  src "import json\nreturn json.loads(a)"
+  src """
+    import json
+    return json.loads(a)
+  """
 }
 
 fn jsonStringify {
-  doc "serialize a value to a JSON string"
-  in  (a Json)
-  out (r Str)
+  doc """
+    # Json Stringify
+    ### Serialize a `Json` value to a compact JSON string.
+  """
+  in  (a Json (doc "the value to serialize"))
+  out (r Str (doc "the JSON-encoded string"))
+  examples """
+    - `(jsonStringify [1, 2])` → `"[1,2]"`
+    - `(jsonStringify {"a": 1})` → `"{\"a\":1}"`
+  """
   engine python
-  src "import json\nreturn json.dumps(a)"
+  src """
+    import json
+    return json.dumps(a)
+  """
 }
 
 fn base64Encode {
-  doc "base64-encode a UTF-8 string"
-  in  (a Str)
-  out (r Str)
+  doc """
+    # Base64 Encode
+    ### Base64-encode a UTF-8 string.
+  """
+  in  (a Str (doc "the UTF-8 string to encode"))
+  out (r Str (doc "the base64-encoded (ASCII) representation of `a`"))
+  examples """
+    - `(base64Encode "hi")` → `"aGk="`
+    - `(base64Encode "funk")` → `"ZnVuaw=="`
+  """
   engine python
-  src "import base64\nreturn base64.b64encode(a.encode('utf-8')).decode('ascii')"
+  src """
+    import base64
+    return base64.b64encode(a.encode('utf-8')).decode('ascii')
+  """
 }
 
 fn base64Decode {
-  doc "decode a base64 string to a UTF-8 string"
-  in  (a Str)
-  out (r Str)
+  doc """
+    # Base64 Decode
+    ### Decode a base64 string back into a UTF-8 string.
+  """
+  in  (a Str (doc "the base64-encoded string to decode"))
+  out (r Str (doc "the decoded UTF-8 string"))
+  examples """
+    - `(base64Decode "aGk=")` → `"hi"`
+    - `(base64Decode "ZnVuaw==")` → `"funk"`
+  """
   engine python
-  src "import base64\nreturn base64.b64decode(a.encode('ascii')).decode('utf-8')"
+  src """
+    import base64
+    return base64.b64decode(a.encode('ascii')).decode('utf-8')
+  """
 }
 
 fn urlEncode {
-  doc "percent-encode a string for use in a URL"
-  in  (a Str)
-  out (r Str)
+  doc """
+    # Url Encode
+    ### Percent-encode a string so it is safe to use in a URL (all reserved characters escaped).
+  """
+  in  (a Str (doc "the string to percent-encode"))
+  out (r Str (doc "the percent-encoded string"))
+  examples """
+    - `(urlEncode "a b&c")` → `"a%20b%26c"`
+    - `(urlEncode "x/y")` → `"x%2Fy"`
+  """
   engine python
-  src "import urllib.parse\nreturn urllib.parse.quote(a, safe='')"
+  src """
+    import urllib.parse
+    return urllib.parse.quote(a, safe='')
+  """
 }
 
 fn urlDecode {
-  doc "decode a percent-encoded URL string"
-  in  (a Str)
-  out (r Str)
+  doc """
+    # Url Decode
+    ### Decode a percent-encoded URL string back to its original text.
+  """
+  in  (a Str (doc "the percent-encoded string to decode"))
+  out (r Str (doc "the decoded string"))
+  examples """
+    - `(urlDecode "a%20b")` → `"a b"`
+    - `(urlDecode "x%2Fy")` → `"x/y"`
+  """
   engine python
-  src "import urllib.parse\nreturn urllib.parse.unquote(a)"
+  src """
+    import urllib.parse
+    return urllib.parse.unquote(a)
+  """
 }

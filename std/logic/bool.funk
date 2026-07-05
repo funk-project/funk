@@ -5,25 +5,48 @@ package "funk/std/logic" {
 }
 
 fn and {
-  doc "logical and (short-circuit)"
-  in  (a Bool) (b Bool)
-  out (r Bool)
+  doc """
+    # And
+    ### Logical **and** of two booleans; short-circuits, returning `b` only when `a` is `true`.
+  """
+  in  (a Bool (doc "the left operand (evaluated first)"))
+      (b Bool (doc "the right operand, returned when `a` is `true`"))
+  out (r Bool (doc "`true` if both `a` and `b` are `true`, else `false`"))
+  examples """
+    - `(and true false)` → `false`
+    - `(and true true)` → `true`
+  """
   body (if a (flush (r b)) (flush (r false)))
   test (is (and true false) false)
 }
 
 fn or {
-  doc "logical or (short-circuit)"
-  in  (a Bool) (b Bool)
-  out (r Bool)
+  doc """
+    # Or
+    ### Logical **or** of two booleans; short-circuits, returning `b` only when `a` is `false`.
+  """
+  in  (a Bool (doc "the left operand (evaluated first)"))
+      (b Bool (doc "the right operand, returned when `a` is `false`"))
+  out (r Bool (doc "`true` if either `a` or `b` is `true`, else `false`"))
+  examples """
+    - `(or false true)` → `true`
+    - `(or false false)` → `false`
+  """
   body (if a (flush (r true)) (flush (r b)))
   test (is (or false true) true)
 }
 
 fn not {
-  doc "logical not"
-  in  (a Bool)
-  out (r Bool)
+  doc """
+    # Not
+    ### Logical negation of a boolean.
+  """
+  in  (a Bool (doc "the boolean to negate"))
+  out (r Bool (doc "`true` if `a` is `false`, else `false`"))
+  examples """
+    - `(not false)` → `true`
+    - `(not true)` → `false`
+  """
   body (if a (flush (r false)) (flush (r true)))
   test (is (not false) true)
 }

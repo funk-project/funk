@@ -6,9 +6,16 @@ package "funk/std/examples" {
 }
 
 fn createIssue {
-  doc "open a GitHub issue (illustrative) — declares what it needs"
-  in  (title Str)
-  out (r Json)
+  doc """
+    # Create Issue
+    ### Open a GitHub issue titled `title` (illustrative) — declares the `github`, `secret`, and `config` resources it `needs` and the network host it may reach.
+  """
+  in  (title Str (doc "the issue title"))
+  out (r Json (doc "a JSON object echoing the opened title, e.g. `{\"opened\": title}`"))
+  examples """
+    - `(createIssue "Fix bug")` → `{"opened": "Fix bug"}`
+    - `(createIssue "Release v1")` → `{"opened": "Release v1"}`
+  """
   engine python
   needs {
     github gh
@@ -18,13 +25,22 @@ fn createIssue {
   effects {
     net api.github.com
   }
-  src "return {\"opened\": title}"
+  src """
+    return {"opened": title}
+  """
 }
 
 fn triage {
-  doc "a composite that calls createIssue — its needs/effects aggregate up"
-  in  (title Str)
-  out (r Json)
+  doc """
+    # Triage
+    ### A composite that calls `createIssue`; its `needs` and `effects` aggregate up from the callee.
+  """
+  in  (title Str (doc "the issue title, forwarded to `createIssue`"))
+  out (r Json (doc "the JSON returned by `createIssue`"))
+  examples """
+    - `(triage "Fix bug")` → `{"opened": "Fix bug"}`
+    - `(triage "Release v1")` → `{"opened": "Release v1"}`
+  """
   body
     (flush (r (createIssue title)))
 }

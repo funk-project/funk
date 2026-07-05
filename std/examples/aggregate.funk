@@ -7,22 +7,43 @@ package "funk/std/examples" {
 }
 
 fn runningSum {
-  doc "running sum of 1..n — a stateful stream fold"
-  in  (n Num)
-  out (r Stream<Num>)
+  doc """
+    # Running Sum
+    ### Running (cumulative) sum of `1..n`, emitted as a stream — a stateful `scan` fold with `maths.add` from `0`.
+  """
+  in  (n Num (doc "upper bound of the range `1..n` to accumulate"))
+  out (r Stream<Num> (doc "the running total after each item, one value per input"))
+  examples """
+    - `(runningSum 4)` → `[1, 3, 6, 10]`
+    - `(runningSum 5)` → `[1, 3, 6, 10, 15]`
+  """
   body (scan (range 1 n) maths.add 0)
 }
 
 fn runningMax {
-  doc "running maximum of 1..n"
-  in  (n Num)
-  out (r Stream<Num>)
+  doc """
+    # Running Max
+    ### Running maximum of `1..n`, emitted as a stream — a stateful `scan` fold with `maths.max` from `0`.
+  """
+  in  (n Num (doc "upper bound of the range `1..n` to scan"))
+  out (r Stream<Num> (doc "the largest value seen so far after each item"))
+  examples """
+    - `(runningMax 4)` → `[1, 2, 3, 4]`
+    - `(runningMax 5)` → `[1, 2, 3, 4, 5]`
+  """
   body (scan (range 1 n) maths.max 0)
 }
 
 fn mergedCount {
-  doc "how many items when two ranges are merged"
-  in  (n Num)
-  out (r Num)
+  doc """
+    # Merged Count
+    ### How many items result from `merge`-ing two copies of the range `1..n` into one stream (always `2n`).
+  """
+  in  (n Num (doc "upper bound of each range `1..n` being merged"))
+  out (r Num (doc "the total number of items across both merged ranges"))
+  examples """
+    - `(mergedCount 4)` → `8`
+    - `(mergedCount 3)` → `6`
+  """
   body (flush (r (collections.count (collect (merge (range 1 n) (range 1 n))))))
 }

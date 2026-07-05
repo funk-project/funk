@@ -7,15 +7,29 @@ package "funk/std/examples" {
 }
 
 fn ticks {
-  doc "emit n numbers, one every 200ms — a real-time source, bounded by take"
-  in  (n Num)
-  out (r Stream<Num>)
+  doc """
+    # Ticks
+    ### Emit the numbers `0, 1, …, n-1`, one every 200ms — a real-time source bounded by `take`.
+  """
+  in  (n Num (doc "how many ticks to emit before completing"))
+  out (r Stream<Num> (doc "a stream of the first `n` tick counts, 200ms apart"))
+  examples """
+    - `(ticks 3)` → emits `0`, `1`, `2` (200ms apart)
+    - `(ticks 1)` → emits `0`
+  """
   body (take (tick 200ms) n)
 }
 
 fn liveSquares {
-  doc "square of a tick, every 200ms, n times"
-  in  (n Num)
-  out (r Stream<Num>)
+  doc """
+    # Live Squares
+    ### Emit the square of each tick, one every 200ms, for the first `n` ticks.
+  """
+  in  (n Num (doc "how many squared ticks to emit before completing"))
+  out (r Stream<Num> (doc "a stream of `0², 1², …, (n-1)²`, 200ms apart"))
+  examples """
+    - `(liveSquares 3)` → emits `0`, `1`, `4` (200ms apart)
+    - `(liveSquares 1)` → emits `0`
+  """
   body (take (stream.map (tick 200ms) maths.square) n)
 }

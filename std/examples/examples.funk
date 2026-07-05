@@ -7,9 +7,16 @@ package "funk/std/examples" {
 }
 
 fn analyze {
-  doc "mean of the last 100 items, or 'no data' if empty"
-  in  (xs Stream<Num>)
-  out (r Num)
+  doc """
+    # Analyze
+    ### Mean of the last 100 items of a stream, or `exit`s with `no data` when the stream is empty.
+  """
+  in  (xs Stream<Num> (doc "the stream of numbers to analyze"))
+  out (r Num (doc "the mean over the last 100 items, or an early exit if `xs` is empty"))
+  examples """
+    - `(analyze [10, 20, 30])` → `20`
+    - `(analyze [])` → `no data`
+  """
   body
     (if (collections.isEmpty? xs)
       (exit "no data")
@@ -17,9 +24,16 @@ fn analyze {
 }
 
 fn bump {
-  doc "add 100 when x > 5, else pass x through — proves the condition gates the add"
-  in  (x Num)
-  out (r Num)
+  doc """
+    # Bump
+    ### Add `100` to `x` when `x > 5`, otherwise pass `x` through unchanged — the condition gates the add.
+  """
+  in  (x Num (doc "the number to conditionally bump"))
+  out (r Num (doc "`x + 100` if `x > 5`, else `x` unchanged"))
+  examples """
+    - `(bump 9)` → `109`
+    - `(bump 3)` → `3`
+  """
   body
     (if (maths.gt x 5)
       (flush (r (maths.add x 100)))

@@ -9,40 +9,76 @@ package "funk/std/collections" {
 }
 
 fn incAcc {
-  doc "add one to the accumulator, ignoring the item (used by count via fold)"
-  in  (a Num) (b Any)
-  out (r Num)
+  doc """
+    # Inc Acc
+    ### Fold step that adds one to the accumulator, ignoring the item — powers `count`.
+  """
+  in  (a Num (doc "the running accumulator"))
+      (b Any (doc "the current item (ignored)"))
+  out (r Num (doc "the accumulator plus one, `a + 1`"))
+  examples """
+    - `(incAcc 5 99)` → `6`
+    - `(incAcc 0 "x")` → `1`
+  """
   body (flush (r (maths.inc a)))
 }
 
 fn sum {
-  doc "sum of a list/stream of numbers"
-  in  (xs List)
-  out (r Num)
+  doc """
+    # Sum
+    ### Sum of a list or stream of numbers (`fold` with `add` from `0`).
+  """
+  in  (xs List (doc "the numbers to add up"))
+  out (r Num (doc "the total of every item in `xs`"))
+  examples """
+    - `(sum (range 1 5))` → `15`
+    - `(sum [1, 2, 3, 4])` → `10`
+  """
   body (flush (r (fold xs maths.add 0)))
   test (is (sum (range 1 5)) 15)
 }
 
 fn count {
-  doc "number of items"
-  in  (xs List)
-  out (r Num)
+  doc """
+    # Count
+    ### Number of items in a list or stream (`fold` incrementing once per item).
+  """
+  in  (xs List (doc "the list or stream to measure"))
+  out (r Num (doc "how many items `xs` contains"))
+  examples """
+    - `(count (range 1 5))` → `5`
+    - `(count [7, 8, 9])` → `3`
+  """
   body (flush (r (fold xs incAcc 0)))
   test (is (count (range 1 5)) 5)
 }
 
 fn product {
-  doc "product of a list/stream of numbers"
-  in  (xs List)
-  out (r Num)
+  doc """
+    # Product
+    ### Product of a list or stream of numbers (`fold` with `mul` from `1`).
+  """
+  in  (xs List (doc "the numbers to multiply together"))
+  out (r Num (doc "the product of every item in `xs`"))
+  examples """
+    - `(product (range 1 4))` → `24`
+    - `(product [2, 5])` → `10`
+  """
   body (flush (r (fold xs maths.mul 1)))
   test (is (product (range 1 4)) 24)
 }
 
 fn mean {
-  doc "arithmetic mean — sum over count, in funk"
-  in  (xs List)
-  out (r Num)
+  doc """
+    # Mean
+    ### Arithmetic mean of a list — its `sum` divided by its `count`, written in funk.
+  """
+  in  (xs List (doc "the numbers to average"))
+  out (r Num (doc "the mean of `xs`, `sum / count`"))
+  examples """
+    - `(mean (range 1 5))` → `3`
+    - `(mean [2, 4, 6])` → `4`
+  """
   body
     (let (l (collect xs))
       (flush (r (maths.div (sum l) (count l)))))

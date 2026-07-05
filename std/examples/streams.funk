@@ -10,43 +10,85 @@ package "funk/std/examples" {
 }
 
 fn evens {
-  doc "the first n even numbers, mapped lazily from an infinite source"
-  in  (n Num)
-  out (r Stream<Num>)
+  doc """
+    # Evens
+    ### The first `n` even numbers, produced by lazily doubling an infinite source of naturals and bounding it with `take`.
+  """
+  in  (n Num (doc "how many even numbers to take"))
+  out (r Stream<Num> (doc "the even numbers `0, 2, 4, …`, `n` of them"))
+  examples """
+    - `(evens 4)` → `[0, 2, 4, 6]`
+    - `(evens 3)` → `[0, 2, 4]`
+  """
   body (take (stream.map (nats) maths.double) n)
 }
 
 fn squares {
-  doc "squares of 1..n"
-  in  (n Num)
-  out (r Stream<Num>)
+  doc """
+    # Squares
+    ### The squares of each number in `1..n`, mapped over the range.
+  """
+  in  (n Num (doc "upper bound of the range `1..n` to square"))
+  out (r Stream<Num> (doc "the squares `1, 4, 9, …` of `1..n`"))
+  examples """
+    - `(squares 4)` → `[1, 4, 9, 16]`
+    - `(squares 5)` → `[1, 4, 9, 16, 25]`
+  """
   body (stream.map (range 1 n) maths.square)
 }
 
 fn firstEvens {
-  doc "the first n even naturals, filtered from an infinite source"
-  in  (n Num)
-  out (r Stream<Num>)
+  doc """
+    # First Evens
+    ### The first `n` even naturals, `filter`ed from an infinite source of naturals and bounded with `take`.
+  """
+  in  (n Num (doc "how many even naturals to take"))
+  out (r Stream<Num> (doc "the even naturals `0, 2, 4, …`, `n` of them"))
+  examples """
+    - `(firstEvens 4)` → `[0, 2, 4, 6]`
+    - `(firstEvens 3)` → `[0, 2, 4]`
+  """
   body (take (stream.filter (nats) maths.even?) n)
 }
 
 fn sumSquares {
-  doc "sum of the squares of 1..n (a windowed aggregate)"
-  in  (n Num)
-  out (r Num)
+  doc """
+    # Sum Squares
+    ### The sum of the squares of `1..n` — map to squares, `collect` into a list, then `sum`.
+  """
+  in  (n Num (doc "upper bound of the range `1..n`"))
+  out (r Num (doc "the total `1² + 2² + … + n²`"))
+  examples """
+    - `(sumSquares 3)` → `14`
+    - `(sumSquares 4)` → `30`
+  """
   body (flush (r (collections.sum (collect (stream.map (range 1 n) maths.square)))))
 }
 
 fn batchSums {
-  doc "sum of each tumbling window of 3 over 1..n (windowed stream aggregate)"
-  in  (n Num)
-  out (r Stream<Num>)
+  doc """
+    # Batch Sums
+    ### The sum of each tumbling `window` of 3 over `1..n` — a windowed stream aggregate; a trailing partial window is summed too.
+  """
+  in  (n Num (doc "upper bound of the range `1..n` to window"))
+  out (r Stream<Num> (doc "one sum per consecutive, non-overlapping window of 3"))
+  examples """
+    - `(batchSums 6)` → `[6, 15]`
+    - `(batchSums 10)` → `[6, 15, 24, 10]`
+  """
   body (stream.map (window (range 1 n) 3) collections.sum)
 }
 
 fn slidingSums {
-  doc "sum of each SLIDING window of 3 (step 1) over 1..n — overlapping windows"
-  in  (n Num)
-  out (r Stream<Num>)
+  doc """
+    # Sliding Sums
+    ### The sum of each SLIDING `window` of 3 (step 1) over `1..n` — overlapping windows, only full windows emitted.
+  """
+  in  (n Num (doc "upper bound of the range `1..n` to window"))
+  out (r Stream<Num> (doc "one sum per overlapping window of 3, advancing by 1"))
+  examples """
+    - `(slidingSums 5)` → `[6, 9, 12]`
+    - `(slidingSums 6)` → `[6, 9, 12, 15]`
+  """
   body (stream.map (window (range 1 n) 3 every 1) collections.sum)
 }

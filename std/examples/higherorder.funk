@@ -7,34 +7,65 @@ package "funk/std/examples" {
 }
 
 fn applyTwice {
-  doc "apply a function to x, twice — higher-order"
-  in  (f Fn) (x Num)
-  out (r Num)
+  doc """
+    # Apply Twice
+    ### Apply the function `f` to `x` twice — `f(f(x))` — demonstrating a function passed as a first-class value.
+  """
+  in  (f Fn (doc "the function to apply, taking and returning one `Num`"))
+      (x Num (doc "the starting value"))
+  out (r Num (doc "`f` applied to `x`, then to that result"))
+  examples """
+    - `(applyTwice double 5)` → `20`
+    - `(applyTwice inc 10)` → `12`
+  """
   body
     (flush (r (f (f x))))
 }
 
 fn quadruple {
-  doc "double twice, by passing the `double` function to applyTwice"
-  in  (x Num)
-  out (r Num)
+  doc """
+    # Quadruple
+    ### Multiply `x` by four by passing `maths.double` to `applyTwice` (double, then double again).
+  """
+  in  (x Num (doc "the number to quadruple"))
+  out (r Num (doc "`x * 4`"))
+  examples """
+    - `(quadruple 5)` → `20`
+    - `(quadruple 3)` → `12`
+  """
   body
     (flush (r (applyTwice maths.double x)))
   test (is (quadruple 5) 20)
 }
 
 fn compose2 {
-  doc "apply g then f to x — two functions as values"
-  in  (f Fn) (g Fn) (x Num)
-  out (r Num)
+  doc """
+    # Compose2
+    ### Compose two functions: apply `g` to `x`, then `f` to that result — `f(g(x))`.
+  """
+  in  (f Fn (doc "the outer function, applied second"))
+      (g Fn (doc "the inner function, applied first"))
+      (x Num (doc "the starting value"))
+  out (r Num (doc "`f` applied to `g(x)`"))
+  examples """
+    - `(compose2 square inc 4)` → `25`
+    - `(compose2 double inc 3)` → `8`
+  """
   body
     (flush (r (f (g x))))
 }
 
 fn incThenSquare {
-  doc "square(inc(x)) via compose2"
-  in  (x Num)
-  out (r Num)
+  doc """
+    # Inc Then Square
+    ### Increment `x` then square it — `square(inc(x))` — built with `compose2`.
+  """
+  in  (x Num (doc "the number to increment then square"))
+  out (r Num (doc "`(x + 1)²`"))
+  examples """
+    - `(incThenSquare 4)` → `25`
+    - `(incThenSquare 2)` → `9`
+  """
   body
     (flush (r (compose2 maths.square maths.inc x)))
   test (is (incThenSquare 4) 25)

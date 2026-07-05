@@ -4,7 +4,70 @@ package "funk/std/maths" {
   version 0.0.1
 }
 
-fn double { doc "a times two"          in (a Num) out (r Num)  engine builtin src "num.double" }
-fn square { doc "a squared"            in (a Num) out (r Num)  engine builtin src "num.square" }
-fn inc    { doc "a plus one"           in (a Num) out (r Num)  engine builtin src "num.inc" }
-fn even?  { doc "true if a is even"    in (a Num) out (r Bool) engine builtin src "num.even" }
+fn double {
+  doc """
+    # Double
+    ### Multiply a number by two.
+  """
+  in  (a Num (doc "the number to double"))
+  out (r Num (doc "`a * 2`"))
+  examples """
+    - `(double 21)` → `42`
+    - `(double -3)` → `-6`
+  """
+  engine builtin
+  src """
+    num.double
+  """
+}
+
+fn square {
+  doc """
+    # Square
+    ### Multiply a number by itself.
+  """
+  in  (a Num (doc "the number to square"))
+  out (r Num (doc "`a * a`, always non-negative"))
+  examples """
+    - `(square 5)` → `25`
+    - `(square -4)` → `16`
+  """
+  engine builtin
+  src """
+    num.square
+  """
+}
+
+fn inc {
+  doc """
+    # Inc
+    ### Add one to a number.
+  """
+  in  (a Num (doc "the number to increment"))
+  out (r Num (doc "`a + 1`"))
+  examples """
+    - `(inc 41)` → `42`
+    - `(inc -1)` → `0`
+  """
+  engine builtin
+  src """
+    num.inc
+  """
+}
+
+fn even? {
+  doc """
+    # Even?
+    ### Test whether a number is even.
+  """
+  in  (a Num (doc "the number to test"))
+  out (r Bool (doc "`true` if `a` is divisible by 2, else `false`"))
+  examples """
+    - `(even? 4)` → `true`
+    - `(even? 7)` → `false`
+  """
+  engine builtin
+  src """
+    num.even
+  """
+}

@@ -5,65 +5,150 @@ package "funk/std/stats" {
 }
 
 fn median {
-  doc "median of a list of numbers"
-  in  (xs List)
-  out (r Num)
+  doc """
+    # Median
+    ### Middle value of a list; the mean of the two middle values when the count is even.
+  """
+  in  (xs List (doc "the list of numbers"))
+  out (r Num (doc "the median value"))
+  examples """
+    - `(median [3, 1, 2])` → `2`
+    - `(median [1, 2, 3, 4])` → `2.5`
+  """
   engine python
-  src "import statistics\nreturn statistics.median(xs)"
+  src """
+    import statistics
+    return statistics.median(xs)
+  """
 }
 
 fn mode {
-  doc "most common value in a list"
-  in  (xs List)
-  out (r Any)
+  doc """
+    # Mode
+    ### Most common value in a list.
+  """
+  in  (xs List (doc "the list of values"))
+  out (r Any (doc "the value that appears most often"))
+  examples """
+    - `(mode [1, 1, 2, 3])` → `1`
+    - `(mode [4, 4, 1, 2])` → `4`
+  """
   engine python
-  src "import statistics\nreturn statistics.mode(xs)"
+  src """
+    import statistics
+    return statistics.mode(xs)
+  """
 }
 
 fn variance {
-  doc "sample variance of a list of numbers"
-  in  (xs List)
-  out (r Num)
+  doc """
+    # Variance
+    ### Sample variance of a list of numbers (divides by `n - 1`).
+  """
+  in  (xs List (doc "the list of numbers"))
+  out (r Num (doc "the sample variance"))
+  examples """
+    - `(variance [2, 4, 6])` → `4`
+    - `(variance [1, 2, 3, 4, 5])` → `2.5`
+  """
   engine python
-  src "import statistics\nreturn statistics.variance(xs)"
+  src """
+    import statistics
+    return statistics.variance(xs)
+  """
 }
 
 fn stdev {
-  doc "sample standard deviation of a list of numbers"
-  in  (xs List)
-  out (r Num)
+  doc """
+    # Stdev
+    ### Sample standard deviation — the square root of the sample `variance`.
+  """
+  in  (xs List (doc "the list of numbers"))
+  out (r Num (doc "the sample standard deviation"))
+  examples """
+    - `(stdev [2, 4, 6])` → `2`
+    - `(stdev [1, 2, 3, 4, 5])` → `1.581…`
+  """
   engine python
-  src "import statistics\nreturn statistics.stdev(xs)"
+  src """
+    import statistics
+    return statistics.stdev(xs)
+  """
 }
 
 fn pmin {
-  doc "minimum value in a list"
-  in  (xs List)
-  out (r Num)
+  doc """
+    # Pmin
+    ### Smallest value in a list.
+  """
+  in  (xs List (doc "the list of numbers"))
+  out (r Num (doc "the minimum value"))
+  examples """
+    - `(pmin [3, 1, 2])` → `1`
+    - `(pmin [5, 9, 2, 7])` → `2`
+  """
   engine python
-  src "return min(xs)"
+  src """
+    return min(xs)
+  """
 }
 
 fn pmax {
-  doc "maximum value in a list"
-  in  (xs List)
-  out (r Num)
+  doc """
+    # Pmax
+    ### Largest value in a list.
+  """
+  in  (xs List (doc "the list of numbers"))
+  out (r Num (doc "the maximum value"))
+  examples """
+    - `(pmax [3, 1, 2])` → `3`
+    - `(pmax [5, 9, 2, 7])` → `9`
+  """
   engine python
-  src "return max(xs)"
+  src """
+    return max(xs)
+  """
 }
 
 fn range {
-  doc "difference between the max and min of a list"
-  in  (xs List)
-  out (r Num)
+  doc """
+    # Range
+    ### Spread of a list — the difference between its largest and smallest values.
+  """
+  in  (xs List (doc "the list of numbers"))
+  out (r Num (doc "`max(xs) - min(xs)`"))
+  examples """
+    - `(range [3, 1, 7, 2])` → `6`
+    - `(range [5, 5])` → `0`
+  """
   engine python
-  src "return max(xs) - min(xs)"
+  src """
+    return max(xs) - min(xs)
+  """
 }
 
 fn percentile {
-  doc "p-th percentile (0-100) of a list, linear interpolation"
-  in  (p Num) (xs List)
-  out (r Num)
+  doc """
+    # Percentile
+    ### The `p`-th percentile (0–100) of a list, using linear interpolation between adjacent ranks.
+  """
+  in  (p Num (doc "the percentile to compute, from 0 to 100"))
+      (xs List (doc "the list of numbers"))
+  out (r Num (doc "the value at the `p`-th percentile"))
+  examples """
+    - `(percentile 50 [1, 2, 3, 4])` → `2.5`
+    - `(percentile 25 [1, 2, 3, 4, 5])` → `2`
+  """
   engine python
-  src "s = sorted(xs)\nif not s:\n    return 0\nif len(s) == 1:\n    return s[0]\nk = (len(s) - 1) * (p / 100.0)\nlo = int(k)\nhi = min(lo + 1, len(s) - 1)\nreturn s[lo] + (s[hi] - s[lo]) * (k - lo)"
+  src """
+    s = sorted(xs)
+    if not s:
+        return 0
+    if len(s) == 1:
+        return s[0]
+    k = (len(s) - 1) * (p / 100.0)
+    lo = int(k)
+    hi = min(lo + 1, len(s) - 1)
+    return s[lo] + (s[hi] - s[lo]) * (k - lo)
+  """
 }

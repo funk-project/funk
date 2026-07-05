@@ -5,81 +5,179 @@ package "funk/std/text" {
 }
 
 fn split {
-  doc "split a string by a separator into a list"
-  in  (a Str) (sep Str)
-  out (r List)
+  doc """
+    # Split
+    ### Split a string into a list of substrings around each occurrence of `sep`.
+  """
+  in  (a Str (doc "the string to split"))
+      (sep Str (doc "the separator to split on"))
+  out (r List (doc "the list of substrings between separators"))
+  examples """
+    - `(split "a,b,c" ",")` → `["a","b","c"]`
+    - `(split "hello" "l")` → `["he","","o"]`
+  """
   engine python
-  src "return a.split(sep)"
+  src """
+    return a.split(sep)
+  """
 }
 
 fn join {
-  doc "join a list of strings with a separator"
-  in  (xs List) (sep Str)
-  out (r Str)
+  doc """
+    # Join
+    ### Join a list of values into a single string, placing `sep` between each element.
+  """
+  in  (xs List (doc "the list of values to join"))
+      (sep Str (doc "the separator inserted between elements"))
+  out (r Str (doc "the concatenated string"))
+  examples """
+    - `(join ["a","b","c"] "-")` → `"a-b-c"`
+    - `(join ["x","y"] ", ")` → `"x, y"`
+  """
   engine python
-  src "return sep.join(str(x) for x in xs)"
+  src """
+    return sep.join(str(x) for x in xs)
+  """
 }
 
 fn replace {
-  doc "replace all occurrences of old with new in a"
-  in  (a Str) (old Str) (new Str)
-  out (r Str)
+  doc """
+    # Replace
+    ### Replace every occurrence of `old` with `new` in the string `a`.
+  """
+  in  (a Str (doc "the string to search in"))
+      (old Str (doc "the substring to replace"))
+      (new Str (doc "the replacement substring"))
+  out (r Str (doc "the string with all replacements applied"))
+  examples """
+    - `(replace "banana" "a" "o")` → `"bonono"`
+    - `(replace "a-b-c" "-" "+")` → `"a+b+c"`
+  """
   engine python
-  src "return a.replace(old, new)"
+  src """
+    return a.replace(old, new)
+  """
 }
 
 fn contains? {
-  doc "true if a contains the substring sub"
-  in  (a Str) (sub Str)
-  out (r Bool)
+  doc """
+    # Contains?
+    ### Return `true` if the string `a` contains the substring `sub`.
+  """
+  in  (a Str (doc "the string to search in"))
+      (sub Str (doc "the substring to look for"))
+  out (r Bool (doc "`true` if `sub` occurs in `a`, else `false`"))
+  examples """
+    - `(contains? "hello" "ell")` → `true`
+    - `(contains? "hello" "xyz")` → `false`
+  """
   engine python
-  src "return sub in a"
+  src """
+    return sub in a
+  """
 }
 
 fn startsWith? {
-  doc "true if a starts with the prefix"
-  in  (a Str) (prefix Str)
-  out (r Bool)
+  doc """
+    # Starts With?
+    ### Return `true` if the string `a` begins with `prefix`.
+  """
+  in  (a Str (doc "the string to test"))
+      (prefix Str (doc "the prefix to check for"))
+  out (r Bool (doc "`true` if `a` starts with `prefix`, else `false`"))
+  examples """
+    - `(startsWith? "hello" "he")` → `true`
+    - `(startsWith? "hello" "lo")` → `false`
+  """
   engine python
-  src "return a.startswith(prefix)"
+  src """
+    return a.startswith(prefix)
+  """
 }
 
 fn endsWith? {
-  doc "true if a ends with the suffix"
-  in  (a Str) (suffix Str)
-  out (r Bool)
+  doc """
+    # Ends With?
+    ### Return `true` if the string `a` ends with `suffix`.
+  """
+  in  (a Str (doc "the string to test"))
+      (suffix Str (doc "the suffix to check for"))
+  out (r Bool (doc "`true` if `a` ends with `suffix`, else `false`"))
+  examples """
+    - `(endsWith? "hello" "lo")` → `true`
+    - `(endsWith? "hello" "he")` → `false`
+  """
   engine python
-  src "return a.endswith(suffix)"
+  src """
+    return a.endswith(suffix)
+  """
 }
 
 fn reverse {
-  doc "reverse the characters of a string"
-  in  (a Str)
-  out (r Str)
+  doc """
+    # Reverse
+    ### Reverse the order of the characters in a string.
+  """
+  in  (a Str (doc "the string to reverse"))
+  out (r Str (doc "the string with its characters in reverse order"))
+  examples """
+    - `(reverse "hello")` → `"olleh"`
+    - `(reverse "abc")` → `"cba"`
+  """
   engine python
-  src "return a[::-1]"
+  src """
+    return a[::-1]
+  """
 }
 
 fn words {
-  doc "split a string on whitespace into a list of words"
-  in  (a Str)
-  out (r List)
+  doc """
+    # Words
+    ### Split a string on runs of whitespace into a list of words, discarding empty entries.
+  """
+  in  (a Str (doc "the string to tokenize"))
+  out (r List (doc "the list of whitespace-separated words"))
+  examples """
+    - `(words "foo bar baz")` → `["foo","bar","baz"]`
+    - `(words "  a   b ")` → `["a","b"]`
+  """
   engine python
-  src "return a.split()"
+  src """
+    return a.split()
+  """
 }
 
 fn capitalize {
-  doc "capitalize the first character of a string"
-  in  (a Str)
-  out (r Str)
+  doc """
+    # Capitalize
+    ### Capitalize the first character of a string and lowercase the rest.
+  """
+  in  (a Str (doc "the string to capitalize"))
+  out (r Str (doc "the string with an uppercase first character and lowercase remainder"))
+  examples """
+    - `(capitalize "hello world")` → `"Hello world"`
+    - `(capitalize "ABC")` → `"Abc"`
+  """
   engine python
-  src "return a.capitalize()"
+  src """
+    return a.capitalize()
+  """
 }
 
 fn repeat {
-  doc "repeat a string n times"
-  in  (a Str) (n Num)
-  out (r Str)
+  doc """
+    # Repeat
+    ### Repeat a string `n` times, concatenated end to end.
+  """
+  in  (a Str (doc "the string to repeat"))
+      (n Num (doc "the number of repetitions"))
+  out (r Str (doc "the string `a` repeated `n` times"))
+  examples """
+    - `(repeat "ab" 3)` → `"ababab"`
+    - `(repeat "x" 0)` → `""`
+  """
   engine python
-  src "return a * int(n)"
+  src """
+    return a * int(n)
+  """
 }

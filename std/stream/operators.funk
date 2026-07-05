@@ -12,16 +12,32 @@ package "funk/std/stream" {
 }
 
 fn map {
-  doc "apply f to each item of a stream — the reactive lift (docs/07 §5)"
-  in  (xs Stream) (f Fn)
-  out (r Stream)
+  doc """
+    # Map
+    ### Apply `f` to every item of a stream, producing a new stream — the reactive lift (docs/07 §5).
+  """
+  in  (xs Stream (doc "the input stream"))
+      (f Fn (doc "the scalar function fired on each item"))
+  out (r Stream (doc "a stream of the results of `f` applied to each item"))
+  examples """
+    - `(map (range 1 3) maths.double)` → stream `2, 4, 6`
+    - `(map (range 1 4) maths.inc)` → stream `2, 3, 4, 5`
+  """
   body (f xs)
 }
 
 fn filter {
-  doc "keep items where f is true (defined in funk)"
-  in  (xs Stream) (f Fn)
-  out (r Stream)
+  doc """
+    # Filter
+    ### Keep only the stream items for which `f` returns true, defined in funk via `each`/`yield`.
+  """
+  in  (xs Stream (doc "the input stream"))
+      (f Fn (doc "the predicate tested on each item"))
+  out (r Stream (doc "a stream of the items that satisfy `f`"))
+  examples """
+    - `(filter (range 1 4) maths.even?)` → stream `2, 4`
+    - `(filter (range 1 6) maths.even?)` → stream `2, 4, 6`
+  """
   body
     (each xs (item)
       (if (f item)
@@ -29,18 +45,32 @@ fn filter {
 }
 
 fn mapSum {
-  doc "sum of doubles of 1..n via the funk-defined map"
-  in  (n Num)
-  out (r Num)
+  doc """
+    # Map Sum
+    ### Sum of the doubles of `1..n`, computed with the funk-defined `map`.
+  """
+  in  (n Num (doc "the inclusive upper bound of the range `1..n`"))
+  out (r Num (doc "the sum of `2·k` for each `k` in `1..n`"))
+  examples """
+    - `(mapSum 4)` → `20`
+    - `(mapSum 3)` → `12`
+  """
   body
     (flush (r (collections.sum (collect (map (range 1 n) maths.double)))))
   test (is (mapSum 4) 20)
 }
 
 fn filterCount {
-  doc "how many even numbers in 1..n via the funk-defined filter"
-  in  (n Num)
-  out (r Num)
+  doc """
+    # Filter Count
+    ### Count of the even numbers in `1..n`, computed with the funk-defined `filter`.
+  """
+  in  (n Num (doc "the inclusive upper bound of the range `1..n`"))
+  out (r Num (doc "how many numbers in `1..n` are even"))
+  examples """
+    - `(filterCount 10)` → `5`
+    - `(filterCount 5)` → `2`
+  """
   body
     (flush (r (collections.count (collect (filter (range 1 n) maths.even?)))))
   test (is (filterCount 10) 5)

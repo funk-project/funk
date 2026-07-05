@@ -6,9 +6,16 @@ package "funk/std/examples" {
 }
 
 fn powTwoLE {
-  doc "largest power of two <= n, via a while loop"
-  in  (n Num)
-  out (r Num)
+  doc """
+    # Pow Two LE
+    ### The largest power of two less than or equal to `n`, computed via a `while` loop that doubles until the next double would exceed `n`.
+  """
+  in  (n Num (doc "the upper bound (inclusive)"))
+  out (r Num (doc "the greatest power of two `≤ n`"))
+  examples """
+    - `(powTwoLE 100)` → `64`
+    - `(powTwoLE 1000)` → `512`
+  """
   body
     (while (s 1)
       (maths.lte (maths.mul s 2) n)
@@ -18,9 +25,16 @@ fn powTwoLE {
 }
 
 fn countUp {
-  doc "count up to n (returns n) — a minimal while"
-  in  (n Num)
-  out (r Num)
+  doc """
+    # Count Up
+    ### Count up from `0` to `n`, returning `n` — a minimal `while` loop that increments while `s < n`.
+  """
+  in  (n Num (doc "the target value to count up to"))
+  out (r Num (doc "`n` (the final counter value)"))
+  examples """
+    - `(countUp 5)` → `5`
+    - `(countUp 0)` → `0`
+  """
   body
     (while (s 0)
       (maths.lt s n)

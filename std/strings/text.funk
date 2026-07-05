@@ -4,8 +4,88 @@ package "funk/std/strings" {
   version 0.0.1
 }
 
-fn concat { doc "concatenate two strings" in (a Str) (b Str) out (r Str) engine builtin src "str.concat" }
-fn upper  { doc "uppercase"               in (a Str)         out (r Str) engine builtin src "str.upper" }
-fn lower  { doc "lowercase"               in (a Str)         out (r Str) engine builtin src "str.lower" }
-fn trim   { doc "trim whitespace"         in (a Str)         out (r Str) engine builtin src "str.trim" }
-fn length { doc "string length"           in (a Str)         out (r Num) engine builtin src "str.len" }
+fn concat {
+  doc """
+    # Concat
+    ### Concatenate two strings into one.
+  """
+  in  (a Str (doc "the left string"))
+      (b Str (doc "the right string, appended after `a`"))
+  out (r Str (doc "the joined string `a` followed by `b`"))
+  examples """
+    - `(concat "foo" "bar")` → `"foobar"`
+    - `(concat "a" "")` → `"a"`
+  """
+  engine builtin
+  src """
+    str.concat
+  """
+}
+
+fn upper {
+  doc """
+    # Upper
+    ### Convert all characters in a string to uppercase.
+  """
+  in  (a Str (doc "the string to convert"))
+  out (r Str (doc "the uppercased string"))
+  examples """
+    - `(upper "hello")` → `"HELLO"`
+    - `(upper "aB")` → `"AB"`
+  """
+  engine builtin
+  src """
+    str.upper
+  """
+}
+
+fn lower {
+  doc """
+    # Lower
+    ### Convert all characters in a string to lowercase.
+  """
+  in  (a Str (doc "the string to convert"))
+  out (r Str (doc "the lowercased string"))
+  examples """
+    - `(lower "HELLO")` → `"hello"`
+    - `(lower "aB")` → `"ab"`
+  """
+  engine builtin
+  src """
+    str.lower
+  """
+}
+
+fn trim {
+  doc """
+    # Trim
+    ### Remove leading and trailing whitespace from a string.
+  """
+  in  (a Str (doc "the string to trim"))
+  out (r Str (doc "the string with surrounding whitespace removed"))
+  examples """
+    - `(trim "  hi  ")` → `"hi"`
+    - `(trim "x ")` → `"x"`
+  """
+  engine builtin
+  src """
+    str.trim
+  """
+}
+
+fn length {
+  doc """
+    # Length
+    ### The number of characters in a string.
+  """
+  in  (a Str (doc "the string to measure"))
+  out (r Num (doc "the character count of `a`"))
+  examples """
+    - `(length "hello")` → `5`
+    - `(length "")` → `0`
+  """
+  engine builtin
+  src """
+    str.len
+  """
+}

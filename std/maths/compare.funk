@@ -4,9 +4,110 @@ package "funk/std/maths" {
   version 0.0.1
 }
 
-fn gt  { doc "a greater than b"          in (a Num) (b Num) out (r Bool) engine builtin src "num.gt" }
-fn lt  { doc "a less than b"             in (a Num) (b Num) out (r Bool) engine builtin src "num.lt" }
-fn gte { doc "a greater than or equal b" in (a Num) (b Num) out (r Bool) engine builtin src "num.gte" }
-fn lte { doc "a less than or equal b"    in (a Num) (b Num) out (r Bool) engine builtin src "num.lte" }
-fn eq  { doc "a equals b"                in (a Num) (b Num) out (r Bool) engine builtin src "num.eq" }
-fn neq { doc "a not equal b"             in (a Num) (b Num) out (r Bool) engine builtin src "num.neq" }
+fn gt {
+  doc """
+    # Gt
+    ### Test whether `a` is strictly greater than `b`.
+  """
+  in  (a Num (doc "the left operand"))
+      (b Num (doc "the right operand"))
+  out (r Bool (doc "`true` if `a > b`, else `false`"))
+  examples """
+    - `(gt 5 3)` → `true`
+    - `(gt 3 3)` → `false`
+  """
+  engine builtin
+  src """
+    num.gt
+  """
+}
+
+fn lt {
+  doc """
+    # Lt
+    ### Test whether `a` is strictly less than `b`.
+  """
+  in  (a Num (doc "the left operand"))
+      (b Num (doc "the right operand"))
+  out (r Bool (doc "`true` if `a < b`, else `false`"))
+  examples """
+    - `(lt 3 5)` → `true`
+    - `(lt 5 3)` → `false`
+  """
+  engine builtin
+  src """
+    num.lt
+  """
+}
+
+fn gte {
+  doc """
+    # Gte
+    ### Test whether `a` is greater than or equal to `b`.
+  """
+  in  (a Num (doc "the left operand"))
+      (b Num (doc "the right operand"))
+  out (r Bool (doc "`true` if `a >= b`, else `false`"))
+  examples """
+    - `(gte 3 3)` → `true`
+    - `(gte 2 3)` → `false`
+  """
+  engine builtin
+  src """
+    num.gte
+  """
+}
+
+fn lte {
+  doc """
+    # Lte
+    ### Test whether `a` is less than or equal to `b`.
+  """
+  in  (a Num (doc "the left operand"))
+      (b Num (doc "the right operand"))
+  out (r Bool (doc "`true` if `a <= b`, else `false`"))
+  examples """
+    - `(lte 3 3)` → `true`
+    - `(lte 4 3)` → `false`
+  """
+  engine builtin
+  src """
+    num.lte
+  """
+}
+
+fn eq {
+  doc """
+    # Eq
+    ### Test whether `a` equals `b`.
+  """
+  in  (a Num (doc "the left operand"))
+      (b Num (doc "the right operand"))
+  out (r Bool (doc "`true` if `a == b`, else `false`"))
+  examples """
+    - `(eq 4 4)` → `true`
+    - `(eq 4 5)` → `false`
+  """
+  engine builtin
+  src """
+    num.eq
+  """
+}
+
+fn neq {
+  doc """
+    # Neq
+    ### Test whether `a` does not equal `b`.
+  """
+  in  (a Num (doc "the left operand"))
+      (b Num (doc "the right operand"))
+  out (r Bool (doc "`true` if `a != b`, else `false`"))
+  examples """
+    - `(neq 1 2)` → `true`
+    - `(neq 2 2)` → `false`
+  """
+  engine builtin
+  src """
+    num.neq
+  """
+}

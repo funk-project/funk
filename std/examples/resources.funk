@@ -8,21 +8,37 @@ package "funk/std/examples" {
 }
 
 fn secretPeek {
-  doc "show a config value and a masked secret — injected at runtime into python"
+  doc """
+    # Secret Peek
+    ### Show a `config` value alongside a masked `secret` — both injected at runtime into the python body, which keeps only the first three characters of the secret.
+  """
   in  ()
-  out (r Str)
+  out (r Str (doc "`<config.repo> @ <first 3 chars of secret.token>***`"))
+  examples """
+    - with `config.repo=funk/std`, `secret.token=abcdef` → `funk/std @ abc***`
+    - with `config.repo=me/app`, `secret.token=xyzzy` → `me/app @ xyz***`
+  """
   engine python
   needs {
     config repo Str
     secret token
   }
-  src "return needs['config']['repo'] + ' @ ' + needs['secret']['token'][:3] + '***'"
+  src """
+    return needs['config']['repo'] + ' @ ' + needs['secret']['token'][:3] + '***'
+  """
 }
 
 fn siteGreeting {
-  doc "greet using an injected config value — needs.kind.alias in a funk body"
+  doc """
+    # Site Greeting
+    ### Greet using an injected `config` value, read as `needs.config.site` in a funk body.
+  """
   in  ()
-  out (r Str)
+  out (r Str (doc "the string `\"hello from \"` followed by the injected `config.site`"))
+  examples """
+    - with `config.site=example.com` → `hello from example.com`
+    - with `config.site=funk.dev` → `hello from funk.dev`
+  """
   needs {
     config site Str
   }

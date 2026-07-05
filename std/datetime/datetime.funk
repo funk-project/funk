@@ -5,48 +5,107 @@ package "funk/std/datetime" {
 }
 
 fn now {
-  doc "current Unix timestamp in seconds"
-  out (r Time)
+  doc """
+    # Now
+    ### The current time as a Unix timestamp (seconds since the 1970 epoch, UTC).
+  """
+  out (r Time (doc "the current Unix timestamp in seconds"))
+  examples """
+    - `(now)` → `1751673600.0`
+    - `(now)` → `1751673601.5`
+  """
   engine python
-  src "return __import__('time').time()"
+  src """
+    return __import__('time').time()
+  """
 }
 
 fn parseIso {
-  doc "parse an ISO-8601 string into a Unix timestamp"
-  in  (a Str)
-  out (r Time)
+  doc """
+    # Parse Iso
+    ### Parse an ISO-8601 date/time string into a Unix timestamp.
+  """
+  in  (a Str (doc "an ISO-8601 formatted string, e.g. `2024-01-01T00:00:00+00:00`"))
+  out (r Time (doc "the corresponding Unix timestamp in seconds"))
+  examples """
+    - `(parseIso "1970-01-01T00:00:00+00:00")` → `0`
+    - `(parseIso "2024-01-01T00:00:00+00:00")` → `1704067200`
+  """
   engine python
-  src "import datetime\nreturn datetime.datetime.fromisoformat(a).timestamp()"
+  src """
+    import datetime
+    return datetime.datetime.fromisoformat(a).timestamp()
+  """
 }
 
 fn formatIso {
-  doc "format a Unix timestamp as an ISO-8601 string (UTC)"
-  in  (t Time)
-  out (r Str)
+  doc """
+    # Format Iso
+    ### Format a Unix timestamp as an ISO-8601 string in UTC.
+  """
+  in  (t Time (doc "a Unix timestamp in seconds"))
+  out (r Str (doc "the timestamp rendered as an ISO-8601 string in UTC"))
+  examples """
+    - `(formatIso 0)` → `"1970-01-01T00:00:00+00:00"`
+    - `(formatIso 1704067200)` → `"2024-01-01T00:00:00+00:00"`
+  """
   engine python
-  src "import datetime\nreturn datetime.datetime.fromtimestamp(t, datetime.timezone.utc).isoformat()"
+  src """
+    import datetime
+    return datetime.datetime.fromtimestamp(t, datetime.timezone.utc).isoformat()
+  """
 }
 
 fn addSeconds {
-  doc "add n seconds to a Unix timestamp"
-  in  (t Time) (n Num)
-  out (r Time)
+  doc """
+    # Add Seconds
+    ### Add `n` seconds to a Unix timestamp.
+  """
+  in  (t Time (doc "the base Unix timestamp in seconds"))
+      (n Num (doc "the number of seconds to add (may be negative)"))
+  out (r Time (doc "the timestamp `t + n`"))
+  examples """
+    - `(addSeconds 1000 60)` → `1060`
+    - `(addSeconds 100 -40)` → `60`
+  """
   engine python
-  src "return t + n"
+  src """
+    return t + n
+  """
 }
 
 fn dayOfWeek {
-  doc "day of week for a timestamp (Monday=0 .. Sunday=6)"
-  in  (t Time)
-  out (r Num)
+  doc """
+    # Day Of Week
+    ### The day of the week for a timestamp, with Monday=0 through Sunday=6 (UTC).
+  """
+  in  (t Time (doc "a Unix timestamp in seconds"))
+  out (r Num (doc "the weekday index, `0` (Monday) through `6` (Sunday)"))
+  examples """
+    - `(dayOfWeek 0)` → `3`
+    - `(dayOfWeek 1704067200)` → `0`
+  """
   engine python
-  src "import datetime\nreturn datetime.datetime.fromtimestamp(t, datetime.timezone.utc).weekday()"
+  src """
+    import datetime
+    return datetime.datetime.fromtimestamp(t, datetime.timezone.utc).weekday()
+  """
 }
 
 fn isoWeek {
-  doc "ISO week number (1-53) for a timestamp"
-  in  (t Time)
-  out (r Num)
+  doc """
+    # Iso Week
+    ### The ISO-8601 week number (1-53) for a timestamp (UTC).
+  """
+  in  (t Time (doc "a Unix timestamp in seconds"))
+  out (r Num (doc "the ISO week number, `1` through `53`"))
+  examples """
+    - `(isoWeek 0)` → `1`
+    - `(isoWeek 1704067200)` → `1`
+  """
   engine python
-  src "import datetime\nreturn datetime.datetime.fromtimestamp(t, datetime.timezone.utc).isocalendar()[1]"
+  src """
+    import datetime
+    return datetime.datetime.fromtimestamp(t, datetime.timezone.utc).isocalendar()[1]
+  """
 }

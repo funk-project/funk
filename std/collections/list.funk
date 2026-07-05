@@ -4,6 +4,53 @@ package "funk/std/collections" {
   version 0.0.1
 }
 
-fn isEmpty? { doc "true if the list is empty" in (a List) out (r Bool) engine builtin src "list.isEmpty" }
-fn first    { doc "first item"                in (a List) out (r Any)  engine builtin src "list.first" }
-fn last     { doc "last item"                 in (a List) out (r Any)  engine builtin src "list.last" }
+fn isEmpty? {
+  doc """
+    # Is Empty?
+    ### True if the list has no items.
+  """
+  in  (a List (doc "the list to test"))
+  out (r Bool (doc "`true` when `a` has no items, else `false`"))
+  examples """
+    - `(isEmpty? [])` → `true`
+    - `(isEmpty? [1])` → `false`
+  """
+  engine builtin
+  src """
+    list.isEmpty
+  """
+}
+
+fn first {
+  doc """
+    # First
+    ### The first item of a list.
+  """
+  in  (a List (doc "the list to read from"))
+  out (r Any (doc "the item at the head of `a`"))
+  examples """
+    - `(first [10, 20, 30])` → `10`
+    - `(first ["a", "b"])` → `"a"`
+  """
+  engine builtin
+  src """
+    list.first
+  """
+}
+
+fn last {
+  doc """
+    # Last
+    ### The last item of a list.
+  """
+  in  (a List (doc "the list to read from"))
+  out (r Any (doc "the item at the tail of `a`"))
+  examples """
+    - `(last [10, 20, 30])` → `30`
+    - `(last ["a", "b"])` → `"b"`
+  """
+  engine builtin
+  src """
+    list.last
+  """
+}

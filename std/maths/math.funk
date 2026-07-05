@@ -7,91 +7,198 @@ package "funk/std/maths" {
 }
 
 fn add {
-  doc "add two numbers"
-  in  (a Num) (b Num)
-  out (r Num)
+  doc """
+    # Add
+    ### Add two numbers.
+  """
+  in  (a Num (doc "first addend"))
+      (b Num (doc "second addend"))
+  out (r Num (doc "the sum `a + b`"))
+  examples """
+    - `(add 40 2)` → `42`
+    - `(add -1 1)` → `0`
+  """
   engine builtin
-  src "num.add"
+  src """
+    num.add
+  """
   test (is (add 40 2) 42)
   test (is (add 0 0) 0)
 }
 
 fn sub {
-  doc "subtract b from a"
-  in  (a Num) (b Num)
-  out (r Num)
+  doc """
+    # Sub
+    ### Subtract `b` from `a`.
+  """
+  in  (a Num (doc "the minuend"))
+      (b Num (doc "the subtrahend"))
+  out (r Num (doc "the difference `a - b`"))
+  examples """
+    - `(sub 5 3)` → `2`
+    - `(sub 0 4)` → `-4`
+  """
   engine builtin
-  src "num.sub"
+  src """
+    num.sub
+  """
 }
 
 fn mul {
-  doc "multiply two numbers"
-  in  (a Num) (b Num)
-  out (r Num)
+  doc """
+    # Mul
+    ### Multiply two numbers.
+  """
+  in  (a Num (doc "first factor"))
+      (b Num (doc "second factor"))
+  out (r Num (doc "the product `a * b`"))
+  examples """
+    - `(mul 6 7)` → `42`
+    - `(mul -2 3)` → `-6`
+  """
   engine builtin
-  src "num.mul"
+  src """
+    num.mul
+  """
 }
 
 fn div {
-  doc "divide a by b"
-  in  (a Num) (b Num)
-  out (r Num)
+  doc """
+    # Div
+    ### Divide `a` by `b`. Errors on division by zero.
+  """
+  in  (a Num (doc "the dividend"))
+      (b Num (doc "the divisor (must be non-zero)"))
+  out (r Num (doc "the quotient `a / b`"))
+  examples """
+    - `(div 10 2)` → `5`
+    - `(div 7 2)` → `3.5`
+  """
   engine builtin
-  src "num.div"
+  src """
+    num.div
+  """
 }
 
 fn mod {
-  doc "remainder of a divided by b"
-  in  (a Num) (b Num)
-  out (r Num)
+  doc """
+    # Mod
+    ### Remainder of `a` divided by `b`.
+  """
+  in  (a Num (doc "the dividend"))
+      (b Num (doc "the divisor"))
+  out (r Num (doc "the remainder `a mod b`"))
+  examples """
+    - `(mod 10 3)` → `1`
+    - `(mod 8 4)` → `0`
+  """
   engine builtin
-  src "num.mod"
+  src """
+    num.mod
+  """
 }
 
 fn neg {
-  doc "negate a number"
-  in  (a Num)
-  out (r Num)
+  doc """
+    # Neg
+    ### Negate a number (flip its sign).
+  """
+  in  (a Num (doc "the number to negate"))
+  out (r Num (doc "`-a`"))
+  examples """
+    - `(neg 5)` → `-5`
+    - `(neg -3)` → `3`
+  """
   engine builtin
-  src "num.neg"
+  src """
+    num.neg
+  """
 }
 
 fn abs {
-  doc "absolute value"
-  in  (a Num)
-  out (r Num)
+  doc """
+    # Abs
+    ### Absolute value (distance from zero).
+  """
+  in  (a Num (doc "the number"))
+  out (r Num (doc "`|a|`, always non-negative"))
+  examples """
+    - `(abs -7)` → `7`
+    - `(abs 4)` → `4`
+  """
   engine builtin
-  src "num.abs"
+  src """
+    num.abs
+  """
 }
 
 fn sqrt {
-  doc "square root"
-  in  (a Num)
-  out (r Num)
+  doc """
+    # Sqrt
+    ### Square root of a non-negative number.
+  """
+  in  (a Num (doc "the radicand (must be ≥ 0)"))
+  out (r Num (doc "the non-negative square root of `a`"))
+  examples """
+    - `(sqrt 9)` → `3`
+    - `(sqrt 2)` → `1.414…`
+  """
   engine builtin
-  src "num.sqrt"
+  src """
+    num.sqrt
+  """
 }
 
 fn pow {
-  doc "a raised to the power b"
-  in  (a Num) (b Num)
-  out (r Num)
+  doc """
+    # Pow
+    ### Raise `a` to the power `b`.
+  """
+  in  (a Num (doc "the base"))
+      (b Num (doc "the exponent"))
+  out (r Num (doc "`a` raised to the `b`"))
+  examples """
+    - `(pow 2 10)` → `1024`
+    - `(pow 9 0.5)` → `3`
+  """
   engine builtin
-  src "num.pow"
+  src """
+    num.pow
+  """
 }
 
 fn min {
-  doc "the smaller of two numbers"
-  in  (a Num) (b Num)
-  out (r Num)
+  doc """
+    # Min
+    ### The smaller of two numbers.
+  """
+  in  (a Num (doc "first number"))
+      (b Num (doc "second number"))
+  out (r Num (doc "whichever of `a`, `b` is smaller"))
+  examples """
+    - `(min 3 8)` → `3`
+    - `(min -1 -4)` → `-4`
+  """
   engine builtin
-  src "num.min"
+  src """
+    num.min
+  """
 }
 
 fn max {
-  doc "the larger of two numbers"
-  in  (a Num) (b Num)
-  out (r Num)
+  doc """
+    # Max
+    ### The larger of two numbers.
+  """
+  in  (a Num (doc "first number"))
+      (b Num (doc "second number"))
+  out (r Num (doc "whichever of `a`, `b` is larger"))
+  examples """
+    - `(max 3 8)` → `8`
+    - `(max -1 -4)` → `-1`
+  """
   engine builtin
-  src "num.max"
+  src """
+    num.max
+  """
 }
