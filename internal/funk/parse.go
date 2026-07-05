@@ -57,8 +57,8 @@ func kindName(k tokKind) string {
 }
 
 type tok struct {
-	k        tokKind
-	v        string
+	k         tokKind
+	v         string
 	line, col int
 }
 
@@ -108,6 +108,27 @@ func tokenize(src string) ([]tok, Pos, *ParseError) {
 		case c == '}':
 			toks = append(toks, tok{k: tRBrace, line: line, col: col})
 			step()
+		case c == '"' && i+2 < n && src[i+1] == '"' && src[i+2] == '"':
+			// triple-quoted multi-line string ("""…"""): content is captured
+			// verbatim (no escapes), then trimmed YAML/PEP-257 style by cleandoc —
+			// the first line stripped, following lines dedented by their shared
+			// indent — so you can align the text under wherever it starts.
+			sl, sc := line, col
+			step()
+			step()
+			step() // opening """
+			var sb strings.Builder
+			for i < n && !(src[i] == '"' && i+2 < n && src[i+1] == '"' && src[i+2] == '"') {
+				sb.WriteByte(src[i])
+				step()
+			}
+			if i >= n {
+				return toks, Pos{line, col}, &ParseError{Pos: Pos{sl, sc}, Msg: "unterminated string (missing closing '\"\"\"')"}
+			}
+			step()
+			step()
+			step() // closing """
+			toks = append(toks, tok{k: tStr, v: cleandoc(sb.String()), line: sl, col: sc})
 		case c == '"':
 			sl, sc := line, col
 			step() // opening quote
@@ -144,6 +165,35 @@ func tokenize(src string) ([]tok, Pos, *ParseError) {
 		}
 	}
 	return toks, Pos{line, col}, nil
+}
+
+// cleandoc trims a triple-quoted block YAML/PEP-257 style: the first line (which
+// may sit inline right after the opening """) is stripped of its own leading
+// whitespace, and every FOLLOWING line is dedented by the whitespace prefix they
+// share — so you can align the continuation lines under wherever the text starts.
+// Relative indentation among the continuation lines is preserved; blank lines are
+// normalized to empty; leading and trailing blank lines are dropped.
+func cleandoc(s string) string {
+	lines := strings.Split(s, "\n")
+	min := -1
+	for _, l := range lines[1:] { // the common indent is measured on lines 2..n
+		t := strings.TrimLeft(l, " \t")
+		if t == "" {
+			continue
+		}
+		if ind := len(l) - len(t); min < 0 || ind < min {
+			min = ind
+		}
+	}
+	lines[0] = strings.TrimLeft(lines[0], " \t")
+	for i := 1; i < len(lines); i++ {
+		if strings.TrimSpace(lines[i]) == "" {
+			lines[i] = ""
+		} else if min > 0 {
+			lines[i] = lines[i][min:]
+		}
+	}
+	return strings.Trim(strings.Join(lines, "\n"), "\n")
 }
 
 type parser struct {
@@ -282,18 +332,33 @@ func (ps *parser) parseField() (Field, error) {
 		}
 		values = append(values, v)
 	}
-	// extra values may only be forms or strings — a bare atom starts the next field
+	// Extra values continue the field. A form on a FOLLOWING line also continues
+	// it: a field always begins with an atom key, so a leading '(' is never a new
+	// field — this lets `in`/`out` span multiple lines for readable port docs. A
+	// bare atom, by contrast, starts the next field.
 	for {
-		t, ok := ps.peek()
-		if ok && (t.k == tLParen || t.k == tStr) {
+		j := ps.p
+		for j < len(ps.toks) && ps.toks[j].k == tNL {
+			j++
+		}
+		if j < len(ps.toks) && ps.toks[j].k == tLParen {
+			ps.p = j
 			v, err := ps.parseValue()
 			if err != nil {
 				return Field{}, err
 			}
 			values = append(values, v)
-		} else {
-			break
+			continue
 		}
+		if t, ok := ps.peek(); ok && t.k == tStr { // same-line string continuation
+			v, err := ps.parseValue()
+			if err != nil {
+				return Field{}, err
+			}
+			values = append(values, v)
+			continue
+		}
+		break
 	}
 	ps.skipNL()
 	return Field{Key: key.v, Values: values, Pos: key.pos()}, nil

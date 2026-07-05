@@ -6,6 +6,7 @@ type Introspection struct {
 	Name       string   `json:"name"`
 	Address    string   `json:"address"`
 	Doc        string   `json:"doc,omitempty"`
+	Examples   string   `json:"examples,omitempty"`
 	Kind       string   `json:"kind"` // "atomic" | "composite"
 	Engine     string   `json:"engine,omitempty"`
 	In         []Port   `json:"in"`
@@ -27,6 +28,7 @@ func Introspect(lib *Library, ref string) (*Introspection, bool) {
 		Name:     f.Name,
 		Address:  f.Address(),
 		Doc:      f.Doc,
+		Examples: f.Examples,
 		In:       f.In,
 		Out:      f.Out,
 		Requires: f.Requires,

@@ -84,6 +84,7 @@ homoiconic; the parser already reads nested forms):
 |---|---|---|
 | `(min n)` / `(max n)` | numeric range (refinement) | on input arrival |
 | `(default v)` | value used until the first real item arrives | — |
+| `(doc "…")` | human description of the port (display only) | — |
 | `(len min max)` *(proposal)* | Str/List length bound | on arrival |
 | `(one-of a b …)` *(proposal)* | enum | on arrival |
 | `(pattern "…")` *(proposal)* | Str regex | on arrival |

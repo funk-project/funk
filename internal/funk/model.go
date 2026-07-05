@@ -16,6 +16,7 @@ import (
 type Port struct {
 	Name     string   `json:"name"`
 	Type     string   `json:"type"`               // "Num", "Str", "Stream<Num>", … ("" ⇒ Any)
+	Doc      string   `json:"doc,omitempty"`      // (doc "…") — optional human description
 	Policy   string   `json:"policy,omitempty"`   // in-ports: "zip" | "latest"
 	Group    int      `json:"group,omitempty"`    // in-ports: firing group index
 	Min      *float64 `json:"min,omitempty"`      // (min n) refinement
@@ -59,7 +60,8 @@ type Fn struct {
 	Name     string
 	Display  string // optional `name` field — a human label for display only
 	Package  string // e.g. "funk/std/maths"
-	Doc      string
+	Doc      string // markdown description (supports triple-quoted multi-line)
+	Examples string // optional `examples` field — markdown usage examples
 	In       []Port
 	Out      []Port
 	Engine   string // atomic: "builtin" | "python" | "go" | "claude" | "codex"
@@ -134,6 +136,10 @@ func portFromForm(n Node, policy string, group int) (Port, bool) {
 			if len(sf.Args) > 0 {
 				p.Default = sf.Args[0]
 				p.Optional = true
+			}
+		case "doc":
+			if len(sf.Args) > 0 {
+				p.Doc = atomStr(sf.Args[0])
 			}
 		}
 	}
@@ -227,6 +233,7 @@ func FnFromBlock(b Block, pkg string) (*Fn, error) {
 	f := &Fn{Name: b.Name, Package: pkg, Pos: b.Pos}
 	f.Display = b.FieldStr("name") // optional display label; defaults to Name via DisplayName()
 	f.Doc = b.FieldStr("doc")
+	f.Examples = b.FieldStr("examples")
 	f.Engine = b.FieldStr("engine")
 	if in, ok := b.Field("in"); ok {
 		f.In = inPortsFromField(in)

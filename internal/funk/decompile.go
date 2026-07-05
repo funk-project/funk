@@ -49,9 +49,29 @@ func formatField(f Field, indent string) string {
 	}
 	b.WriteString(indent + f.Key)
 	for _, v := range f.Values {
-		b.WriteString(" " + formatNode(v))
+		if a, ok := v.(Atom); ok && a.Kind == "str" && strings.Contains(a.Value, "\n") {
+			b.WriteString(" " + tripleQuote(a.Value, indent))
+		} else {
+			b.WriteString(" " + formatNode(v))
+		}
 	}
 	b.WriteString("\n")
+	return b.String()
+}
+
+// tripleQuote renders a multi-line string as a `"""…"""` block, indenting each
+// line under the field so it re-parses (via dedent) back to the same value.
+func tripleQuote(s, indent string) string {
+	var b strings.Builder
+	b.WriteString("\"\"\"\n")
+	for _, l := range strings.Split(s, "\n") {
+		if l == "" {
+			b.WriteString("\n")
+		} else {
+			b.WriteString(indent + "  " + l + "\n")
+		}
+	}
+	b.WriteString(indent + "\"\"\"")
 	return b.String()
 }
 

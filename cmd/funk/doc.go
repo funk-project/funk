@@ -42,16 +42,53 @@ func cmdDoc(args []string) error {
 		}
 		fns := byPkg[p]
 		sort.Slice(fns, func(i, j int) bool { return fns[i].Name < fns[j].Name })
-		fmt.Printf("\n## %s\n\n", p)
+		fmt.Printf("\n## %s\n", p)
 		for _, f := range fns {
 			kind := "atomic · " + f.Engine
 			if f.Composite() {
 				kind = "composite"
 			}
-			fmt.Printf("- **`%s`** — %s  \n  `%s` · *%s*\n", f.Name, f.Doc, signature(f), kind)
+			// The doc carries its own `# Title` heading (and `### description`);
+			// print it as the section header, falling back to the fn name.
+			if f.Doc != "" {
+				fmt.Printf("\n%s\n", f.Doc)
+			} else {
+				fmt.Printf("\n### `%s`\n", f.Name)
+			}
+			fmt.Printf("\n`%s` · *%s*\n", signature(f), kind)
+			printPorts("Inputs", f.In)
+			printPorts("Outputs", f.Out)
+			if f.Examples != "" {
+				fmt.Printf("\n**Examples**\n\n%s\n", f.Examples)
+			}
 		}
 	}
 	return nil
+}
+
+// printPorts renders a function's input/output ports as a markdown list, showing
+// each port's type and (when present) its description.
+func printPorts(label string, ports []funk.Port) {
+	if len(ports) == 0 {
+		return
+	}
+	fmt.Printf("\n**%s**\n\n", label)
+	for _, p := range ports {
+		t := p.Type
+		if t == "" {
+			t = "Any"
+		}
+		if p.Doc != "" {
+			fmt.Printf("- `%s` `%s` — %s\n", p.Name, t, oneLine(p.Doc))
+		} else {
+			fmt.Printf("- `%s` `%s`\n", p.Name, t)
+		}
+	}
+}
+
+// oneLine flattens a (possibly multi-line) port description for a markdown bullet.
+func oneLine(s string) string {
+	return strings.Join(strings.Fields(s), " ")
 }
 
 func signature(f *funk.Fn) string {

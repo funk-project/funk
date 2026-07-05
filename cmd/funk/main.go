@@ -222,9 +222,10 @@ func cmdList(args []string) error {
 		if f.Composite() {
 			kind = "composite"
 		}
-		label := f.Doc
+		doc, _, _ := strings.Cut(f.Doc, "\n") // first line only — doc may be markdown
+		label := doc
 		if f.Display != "" && f.Display != f.Name {
-			label = "“" + f.Display + "” — " + f.Doc
+			label = "“" + f.Display + "” — " + doc
 		}
 		fmt.Printf("%-28s %-12s %s\n", f.Address(), kind, label)
 	}
