@@ -52,6 +52,20 @@ func TestReactiveLiftPerItem(t *testing.T) {
 	}
 }
 
+// map applies its function to EACH item — even a List-taking reducer over a
+// stream of windows (regression: `(f xs)` used to consume the whole stream when f
+// was non-scalar, so batchSums errored "fold: not a number").
+func TestMapAppliesReducerPerItem(t *testing.T) {
+	lib := loadStd(t)
+	res := Run(lib, "batchSums", map[string]interface{}{"n": 6.0}, ExecOpts{})
+	if !res.OK {
+		t.Fatal(res.Error)
+	}
+	if got := numList(t, res.Value); !reflect.DeepEqual(got, []float64{6, 15}) {
+		t.Fatalf("batchSums(6) = %v, want [6 15] (sum of each window of 3)", got)
+	}
+}
+
 // zip pairs two driving streams 1:1.
 func TestReactiveZipFiring(t *testing.T) {
 	lib := loadRx(t, `fn zipAdd { in () out (r Stream<Num>) body (add (range 1 3) (range 10 12)) }`)

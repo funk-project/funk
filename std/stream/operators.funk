@@ -15,16 +15,18 @@ fn map {
   name "Map"
   doc """
     # Map
-    ### Apply `f` to every item of a stream, producing a new stream — the reactive lift (docs/07 §5).
+    ### Apply `f` to every item of a stream, producing a new stream.
   """
   in  (xs Stream (doc "The input stream"))
-      (f Fn (doc "The scalar function fired on each item"))
+      (f Fn (doc "The function applied to each item (any arity — a scalar or a whole List)"))
   out (r Stream (doc "A stream of the results of `f` applied to each item"))
   examples """
     - `(map (range 1 3) maths.double)` → stream `2, 4, 6`
     - `(map (range 1 4) maths.inc)` → stream `2, 3, 4, 5`
   """
-  body (f xs)
+  body
+    (each xs (item)
+      (yield (f item)))
 }
 
 fn filter {
