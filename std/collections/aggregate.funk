@@ -30,7 +30,7 @@ fn sum {
     # Sum
     ### Sum of a list or stream of numbers (`fold` with `add` from `0`).
   """
-  in  (xs List (doc "The numbers to add up"))
+  in  (xs (List Num) (doc "The numbers to add up"))
   out (r Num (doc "The total of every item in `xs`"))
   examples """
     - `(sum (range 1 5))` → `15`
@@ -62,7 +62,7 @@ fn product {
     # Product
     ### Product of a list or stream of numbers (`fold` with `mul` from `1`).
   """
-  in  (xs List (doc "The numbers to multiply together"))
+  in  (xs (List Num) (doc "The numbers to multiply together"))
   out (r Num (doc "The product of every item in `xs`"))
   examples """
     - `(product (range 1 4))` → `24`
@@ -78,7 +78,7 @@ fn mean {
     # Mean
     ### Arithmetic mean of a list — its `sum` divided by its `count`, written in funk.
   """
-  in  (xs List (doc "The numbers to average"))
+  in  (xs (List Num) (doc "The numbers to average"))
   out (r Num (doc "The mean of `xs`, `sum / count`"))
   examples """
     - `(mean (range 1 5))` → `3`

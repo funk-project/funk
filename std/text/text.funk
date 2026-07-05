@@ -12,7 +12,7 @@ fn split {
   """
   in  (a Str (doc "The string to split"))
       (sep Str (doc "The separator to split on"))
-  out (r List (doc "The list of substrings between separators"))
+  out (r (List Str) (doc "The list of substrings between separators"))
   examples """
     - `(split "a,b,c" ",")` → `["a","b","c"]`
     - `(split "hello" "l")` → `["he","","o"]`
@@ -130,7 +130,7 @@ fn words {
     ### Split a string on runs of whitespace into a list of words, discarding empty entries.
   """
   in  (a Str (doc "The string to tokenize"))
-  out (r List (doc "The list of whitespace-separated words"))
+  out (r (List Str) (doc "The list of whitespace-separated words"))
   examples """
     - `(words "foo bar baz")` → `["foo","bar","baz"]`
     - `(words "  a   b ")` → `["a","b"]`

@@ -10,7 +10,7 @@ fn median {
     # Median
     ### Middle value of a list; the mean of the two middle values when the count is even.
   """
-  in  (xs List (doc "The list of numbers"))
+  in  (xs (List Num) (doc "The list of numbers"))
   out (r Num (doc "The median value"))
   examples """
     - `(median [3, 1, 2])` → `2`
@@ -26,7 +26,7 @@ fn mode {
     # Mode
     ### Most common value in a list.
   """
-  in  (xs List (doc "The list of values"))
+  in  (xs (List Num) (doc "The list of values"))
   out (r Any (doc "The value that appears most often"))
   examples """
     - `(mode [1, 1, 2, 3])` → `1`
@@ -42,7 +42,7 @@ fn variance {
     # Variance
     ### Sample variance of a list of numbers (divides by `n - 1`).
   """
-  in  (xs List (doc "The list of numbers"))
+  in  (xs (List Num) (doc "The list of numbers"))
   out (r Num (doc "The sample variance"))
   examples """
     - `(variance [2, 4, 6])` → `4`
@@ -58,7 +58,7 @@ fn stdev {
     # Standard Deviation
     ### Sample standard deviation — the square root of the sample `variance`.
   """
-  in  (xs List (doc "The list of numbers"))
+  in  (xs (List Num) (doc "The list of numbers"))
   out (r Num (doc "The sample standard deviation"))
   examples """
     - `(stdev [2, 4, 6])` → `2`
@@ -74,7 +74,7 @@ fn pmin {
     # Minimum
     ### Smallest value in a list.
   """
-  in  (xs List (doc "The list of numbers"))
+  in  (xs (List Num) (doc "The list of numbers"))
   out (r Num (doc "The minimum value"))
   examples """
     - `(pmin [3, 1, 2])` → `1`
@@ -90,7 +90,7 @@ fn pmax {
     # Maximum
     ### Largest value in a list.
   """
-  in  (xs List (doc "The list of numbers"))
+  in  (xs (List Num) (doc "The list of numbers"))
   out (r Num (doc "The maximum value"))
   examples """
     - `(pmax [3, 1, 2])` → `3`
@@ -106,7 +106,7 @@ fn range {
     # Range
     ### Spread of a list — the difference between its largest and smallest values.
   """
-  in  (xs List (doc "The list of numbers"))
+  in  (xs (List Num) (doc "The list of numbers"))
   out (r Num (doc "`max(xs) - min(xs)`"))
   examples """
     - `(range [3, 1, 7, 2])` → `6`
@@ -123,7 +123,7 @@ fn percentile {
     ### The `p`-th percentile (0–100) of a list, using linear interpolation between adjacent ranks.
   """
   in  (p Num (doc "The percentile to compute, from 0 to 100"))
-      (xs List (doc "The list of numbers"))
+      (xs (List Num) (doc "The list of numbers"))
   out (r Num (doc "The value at the `p`-th percentile"))
   examples """
     - `(percentile 50 [1, 2, 3, 4])` → `2.5`
