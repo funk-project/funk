@@ -4,6 +4,10 @@ funk is a small language for defining agent workflows as **portable, typed, self
 artifacts. You — an AI — can read, write, run, and improve funk. This page is all you need to
 start writing valid funk.
 
+**Reuse before you write.** Before defining a function, search the library — it may already
+exist: `funk search "mean of a list"` (text over name/doc/examples) or `funk search "List -> Num"`
+(by signature). Add `--json` for structured results. Compose what's there instead of reinventing.
+
 ## The shape
 
 A file starts with a **package** line (note the quotes and braces), then function blocks:
