@@ -53,6 +53,16 @@ fn bump {
 
 A plain `use "pkg"` without `as` is an error. A full address (`funk/std/maths/add`) always works.
 
+**Reuse a function under a new name** with `alias` — it delegates to the target and inherits its
+signature:
+
+```
+fn myMul {
+  alias maths.mul
+  name "My Multiply"
+}
+```
+
 ## Entry points — `main`
 
 A file is **run** through a function marked `main` — a bare flag field, on its own line:

@@ -74,6 +74,7 @@ type Fn struct {
 	File     string    // source file this fn was loaded from ("" if from a string)
 	Uses     []UseSpec // the `use` imports of this fn's file (scopes call resolution)
 	Main     bool      // marked `main` — a runnable entry point (`funk run file.funk`)
+	Alias    string    // `alias TARGET` — this fn delegates to TARGET (resolved by Finalize)
 	Pos      Pos       // position of the `fn` keyword, for diagnostics
 }
 
@@ -242,6 +243,7 @@ func FnFromBlock(b Block, pkg string) (*Fn, error) {
 	f.Doc = b.FieldStr("doc")
 	f.Examples = b.FieldStr("examples")
 	_, f.Main = b.Field("main") // presence of a bare `main` field ⇒ runnable entry point
+	f.Alias = b.FieldStr("alias")
 	f.Engine = b.FieldStr("engine")
 	if in, ok := b.Field("in"); ok {
 		f.In = inPortsFromField(in)
@@ -295,6 +297,9 @@ func FnFromBlock(b Block, pkg string) (*Fn, error) {
 	}
 	if f.Src != "" && f.Body != nil {
 		return nil, &ParseError{Pos: b.Pos, Msg: fmt.Sprintf("fn %q has both src and body (must be exactly one)", f.Name)}
+	}
+	if f.Alias != "" && (f.Src != "" || f.Body != nil) {
+		return nil, &ParseError{Pos: b.Pos, Msg: fmt.Sprintf("fn %q has both alias and src/body (an alias is the whole definition)", f.Name)}
 	}
 	return f, nil
 }
@@ -475,6 +480,44 @@ func (l *Library) LoadFile(path string) error {
 		return err
 	}
 	return l.loadString(string(src), path)
+}
+
+// Finalize resolves alias functions after all files are loaded. An `alias TARGET`
+// field makes a fn delegate to TARGET: it inherits TARGET's signature (and doc/
+// examples/name if it declared none) and its body becomes a call to TARGET's
+// address — so it is a normal composite everywhere else (run, check, graph). Safe
+// to call more than once.
+func (l *Library) Finalize() error {
+	for _, f := range l.Fns {
+		if f.Alias == "" || f.Body != nil {
+			continue
+		}
+		target, ok := l.ResolveIn(f, f.Alias)
+		if !ok {
+			return fmt.Errorf("fn %q: alias target %q not found", f.Name, f.Alias)
+		}
+		if f.In == nil {
+			f.In = target.In
+		}
+		if f.Out == nil {
+			f.Out = target.Out
+		}
+		if f.Doc == "" {
+			f.Doc = target.Doc
+		}
+		if f.Examples == "" {
+			f.Examples = target.Examples
+		}
+		if f.Display == "" {
+			f.Display = target.DisplayName()
+		}
+		args := make([]Node, len(f.In))
+		for i, p := range f.In {
+			args[i] = Atom{Kind: "id", Value: p.Name}
+		}
+		f.Body = Form{Head: target.Address(), Args: args} // delegate by address
+	}
+	return nil
 }
 
 // LoadDir walks a directory tree and loads every .funk file.

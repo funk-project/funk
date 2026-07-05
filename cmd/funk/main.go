@@ -141,6 +141,9 @@ func loadLibrary(extra []string) (*funk.Library, error) {
 			return nil, err
 		}
 	}
+	if err := lib.Finalize(); err != nil {
+		return nil, err
+	}
 	return lib, nil
 }
 
