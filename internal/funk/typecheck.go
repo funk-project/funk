@@ -35,7 +35,7 @@ var coreForms = map[string]bool{
 	"range": true, "nats": true, "repeat": true,
 	"take": true, "collect": true, "tick": true, "scan": true, "merge": true,
 	"each": true, "yield": true, "fold": true,
-	"on-error": true, "retry": true,
+	"on-error": true, "retry": true, "with": true,
 }
 
 // Check statically validates every composite function in the library:
@@ -241,6 +241,17 @@ func checkForm(lib *Library, fn *Fn, f Form, scope map[string]bool) []Issue {
 			issues = append(issues, checkNode(lib, fn, f.Args[0], scope)...)
 			issues = append(issues, checkNode(lib, fn, f.Args[1], scope)...)
 		}
+	case "with":
+		// (with (kind.alias value)… body) — check binding values + the body; the
+		// binding heads are resource keys, not calls.
+		if len(f.Args) >= 1 {
+			for _, b := range f.Args[:len(f.Args)-1] {
+				if pair, ok := b.(Form); ok && len(pair.Args) == 1 {
+					issues = append(issues, checkNode(lib, fn, pair.Args[0], scope)...)
+				}
+			}
+			issues = append(issues, checkNode(lib, fn, f.Args[len(f.Args)-1], scope)...)
+		}
 	default:
 		// a call. If the head is a bound variable it holds a function value —
 		// its target and arity are known only at runtime, so skip that check.
@@ -390,7 +401,7 @@ func inferForm(lib *Library, fn *Fn, f Form, env map[string]string, issues *[]Is
 			inferType(lib, fn, a, env, issues)
 		}
 		return ""
-	case "flush", "set", "exit", "for-each", "while", "on-error", "retry",
+	case "flush", "set", "exit", "for-each", "while", "on-error", "retry", "with",
 		"map", "filter", "take", "merge", "scan", "fold", "each", "yield":
 		for _, a := range f.Args {
 			inferType(lib, fn, a, env, issues)

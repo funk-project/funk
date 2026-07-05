@@ -121,6 +121,17 @@ func collectCalls(n Node, seen map[string]bool) {
 		}
 		return
 	}
+	// a with's bindings are (kind.alias value) — the head is a resource key, not a
+	// call; recurse only the values and the body.
+	if f.Head == "with" && len(f.Args) >= 1 {
+		for _, b := range f.Args[:len(f.Args)-1] {
+			if pair, ok := b.(Form); ok && len(pair.Args) == 1 {
+				collectCalls(pair.Args[0], seen)
+			}
+		}
+		collectCalls(f.Args[len(f.Args)-1], seen)
+		return
+	}
 	// skip a let/for-each binder form (it is not a call)
 	for i, a := range f.Args {
 		if (f.Head == "let" || f.Head == "for-each") && i == 0 {

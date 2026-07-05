@@ -442,6 +442,8 @@ func (e *evalEnv) evalForm(f Form) (interface{}, error) {
 		return e.evalOnError(f.Args)
 	case "retry":
 		return e.evalRetry(f.Args)
+	case "with":
+		return e.evalWith(f)
 	case "break":
 		return nil, errBreak
 	case "continue":
@@ -775,6 +777,36 @@ func (e *evalEnv) evalRetry(args []Node) (interface{}, error) {
 		}
 	}
 	return nil, lastErr
+}
+
+// (with (kind.alias value)… body) — run body with extra/overridden resource
+// bindings (docs/05: per-call binding). Each binding is a `(kind.alias value)`
+// form; the last arg is the body evaluated with those bindings merged over the
+// current ones.
+func (e *evalEnv) evalWith(f Form) (interface{}, error) {
+	if len(f.Args) < 1 {
+		return nil, fmt.Errorf("with: (with (kind.alias value)… body)")
+	}
+	binds, body := f.Args[:len(f.Args)-1], f.Args[len(f.Args)-1]
+	merged := map[string]string{}
+	for k, v := range e.opts.Bindings {
+		merged[k] = v
+	}
+	for _, b := range binds {
+		pair, ok := b.(Form)
+		if !ok || pair.Head == "" || len(pair.Args) != 1 {
+			return nil, fmt.Errorf("with: each binding must be (kind.alias value)")
+		}
+		v, err := e.eval(pair.Args[0])
+		if err != nil {
+			return nil, err
+		}
+		merged[pair.Head] = fmt.Sprint(v)
+	}
+	c := e.child()
+	c.opts = e.opts
+	c.opts.Bindings = merged
+	return c.eval(body)
 }
 
 // (window stream size [every slide] [by field] …) — windowing (docs/04 §7).

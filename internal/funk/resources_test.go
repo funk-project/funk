@@ -130,6 +130,27 @@ fn leak { in () out (r Str) needs { secret token } body (flush (r (id needs.secr
 	}
 }
 
+// `with` binds a resource for one call, overriding any outer --bind (docs/05).
+func TestWithPerCallBinding(t *testing.T) {
+	lib := NewLibrary()
+	if err := lib.LoadString(`package "t/w" {
+  version 0.0.1
+}
+fn peek   { in () out (r Str) needs { config site Str } body (flush (r needs.config.site)) }
+fn caller { in () out (r Str) body (with (config.site "inner") (peek)) }`); err != nil {
+		t.Fatal(err)
+	}
+	// with no outer binding
+	if res := Run(lib, "caller", nil, ExecOpts{}); !res.OK || res.Value != "inner" {
+		t.Fatalf("with binding = %v (%s), want inner", res.Value, res.Error)
+	}
+	// with overrides an outer --bind
+	res := Run(lib, "caller", nil, ExecOpts{Bindings: map[string]string{"config.site": "outer"}})
+	if !res.OK || res.Value != "inner" {
+		t.Fatalf("with should override the outer binding: got %v", res.Value)
+	}
+}
+
 // End-to-end: a python body reads injected config + secret via needs['kind']['alias'].
 func TestPythonNeedsInjection(t *testing.T) {
 	if _, err := exec.LookPath("python3"); err != nil {

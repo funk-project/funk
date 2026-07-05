@@ -152,6 +152,17 @@ fn clamp {
 
 `funk doc` renders all of this; `funk introspect` exposes it as JSON for an IDE.
 
+## Per-call resource binding — `with`
+
+Bind (or override) a resource for one call with `(with (kind.alias value)… body)`:
+
+```
+(with (config.site "example.com") (siteGreeting))   ; siteGreeting runs with that config
+```
+
+Each binding is a `(kind.alias value)` form; the last argument is the body. A `with` binding wins
+over an outer `--bind`.
+
 A scalar function applied to a **stream** fires **per item** — the reactive lift. So `map` is
 just `(f xs)`; you rarely write loops.
 
