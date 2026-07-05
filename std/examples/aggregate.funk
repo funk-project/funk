@@ -7,6 +7,7 @@ package "funk/std/examples" {
 }
 
 fn runningSum {
+  name "Running Sum"
   doc """
     # Running Sum
     ### Running (cumulative) sum of `1..n`, emitted as a stream — a stateful `scan` fold with `maths.add` from `0`.
@@ -21,6 +22,7 @@ fn runningSum {
 }
 
 fn runningMax {
+  name "Running Max"
   doc """
     # Running Max
     ### Running maximum of `1..n`, emitted as a stream — a stateful `scan` fold with `maths.max` from `0`.
@@ -35,6 +37,7 @@ fn runningMax {
 }
 
 fn mergedCount {
+  name "Merged Count"
   doc """
     # Merged Count
     ### How many items result from `merge`-ing two copies of the range `1..n` into one stream (always `2n`).

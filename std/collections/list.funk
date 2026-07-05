@@ -5,8 +5,9 @@ package "funk/std/collections" {
 }
 
 fn isEmpty? {
+  name "Is Empty"
   doc """
-    # Is Empty?
+    # Is Empty
     ### True if the list has no items.
   """
   in  (a List (doc "The list to test"))
@@ -22,6 +23,7 @@ fn isEmpty? {
 }
 
 fn first {
+  name "First"
   doc """
     # First
     ### The first item of a list.
@@ -39,6 +41,7 @@ fn first {
 }
 
 fn last {
+  name "Last"
   doc """
     # Last
     ### The last item of a list.

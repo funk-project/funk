@@ -5,6 +5,7 @@ package "funk/std/datetime" {
 }
 
 fn now {
+  name "Now"
   doc """
     # Now
     ### The current time as a Unix timestamp (seconds since the 1970 epoch, UTC).
@@ -21,8 +22,9 @@ fn now {
 }
 
 fn parseIso {
+  name "Parse ISO"
   doc """
-    # Parse Iso
+    # Parse ISO
     ### Parse an ISO-8601 date/time string into a Unix timestamp.
   """
   in  (a Str (doc "An ISO-8601 formatted string, e.g. `2024-01-01T00:00:00+00:00`"))
@@ -39,8 +41,9 @@ fn parseIso {
 }
 
 fn formatIso {
+  name "Format ISO"
   doc """
-    # Format Iso
+    # Format ISO
     ### Format a Unix timestamp as an ISO-8601 string in UTC.
   """
   in  (t Time (doc "A Unix timestamp in seconds"))
@@ -57,6 +60,7 @@ fn formatIso {
 }
 
 fn addSeconds {
+  name "Add Seconds"
   doc """
     # Add Seconds
     ### Add `n` seconds to a Unix timestamp.
@@ -75,6 +79,7 @@ fn addSeconds {
 }
 
 fn dayOfWeek {
+  name "Day Of Week"
   doc """
     # Day Of Week
     ### The day of the week for a timestamp, with Monday=0 through Sunday=6 (UTC).
@@ -93,8 +98,9 @@ fn dayOfWeek {
 }
 
 fn isoWeek {
+  name "ISO Week"
   doc """
-    # Iso Week
+    # ISO Week
     ### The ISO-8601 week number (1-53) for a timestamp (UTC).
   """
   in  (t Time (doc "A Unix timestamp in seconds"))

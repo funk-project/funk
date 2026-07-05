@@ -5,8 +5,9 @@ package "funk/std/logic" {
 }
 
 fn and {
+  name "Logical And"
   doc """
-    # And
+    # Logical And
     ### Logical **and** of two booleans; short-circuits, returning `b` only when `a` is `true`.
   """
   in  (a Bool (doc "The left operand (evaluated first)"))
@@ -21,8 +22,9 @@ fn and {
 }
 
 fn or {
+  name "Logical Or"
   doc """
-    # Or
+    # Logical Or
     ### Logical **or** of two booleans; short-circuits, returning `b` only when `a` is `false`.
   """
   in  (a Bool (doc "The left operand (evaluated first)"))
@@ -37,8 +39,9 @@ fn or {
 }
 
 fn not {
+  name "Logical Not"
   doc """
-    # Not
+    # Logical Not
     ### Logical negation of a boolean.
   """
   in  (a Bool (doc "The boolean to negate"))

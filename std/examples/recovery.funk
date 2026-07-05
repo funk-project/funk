@@ -7,8 +7,9 @@ package "funk/std/examples" {
 }
 
 fn safeDiv {
+  name "Safe Divide"
   doc """
-    # Safe Div
+    # Safe Divide
     ### Divide `a` by `b`; on any error (e.g. divide-by-zero) fall back to `0` via `on-error`.
   """
   in  (a Num (doc "The dividend"))
@@ -24,8 +25,9 @@ fn safeDiv {
 }
 
 fn divOrDefault {
+  name "Divide Or Default"
   doc """
-    # Div Or Default
+    # Divide Or Default
     ### Divide `a` by `b`; on any error return the supplied `fallback` instead.
   """
   in  (a Num (doc "The dividend"))

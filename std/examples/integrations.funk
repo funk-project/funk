@@ -6,6 +6,7 @@ package "funk/std/examples" {
 }
 
 fn createIssue {
+  name "Create Issue"
   doc """
     # Create Issue
     ### Open a GitHub issue titled `title` (illustrative) — declares the `github`, `secret`, and `config` resources it `needs` and the network host it may reach.
@@ -31,6 +32,7 @@ fn createIssue {
 }
 
 fn triage {
+  name "Triage"
   doc """
     # Triage
     ### A composite that calls `createIssue`; its `needs` and `effects` aggregate up from the callee.

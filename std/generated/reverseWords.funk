@@ -1,4 +1,5 @@
 fn reverse_words {
+  name "Reverse Words"
   doc """
     # Reverse Words
     ### Reverse the order of whitespace-separated words in a string.

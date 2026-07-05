@@ -7,6 +7,7 @@ package "funk/std/examples" {
 }
 
 fn ticks {
+  name "Ticks"
   doc """
     # Ticks
     ### Emit the numbers `0, 1, …, n-1`, one every 200ms — a real-time source bounded by `take`.
@@ -21,6 +22,7 @@ fn ticks {
 }
 
 fn liveSquares {
+  name "Live Squares"
   doc """
     # Live Squares
     ### Emit the square of each tick, one every 200ms, for the first `n` ticks.

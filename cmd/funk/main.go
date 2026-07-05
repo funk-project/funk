@@ -210,6 +210,25 @@ func cmdFmt(args []string) error {
 	return nil
 }
 
+// docSummary pulls a one-line description from a fn's markdown doc: the text of
+// the `### …` line (the convention), else the first non-heading line.
+func docSummary(doc string) string {
+	for _, l := range strings.Split(doc, "\n") {
+		s := strings.TrimSpace(l)
+		if strings.HasPrefix(s, "### ") {
+			return strings.TrimSpace(s[4:])
+		}
+	}
+	for _, l := range strings.Split(doc, "\n") {
+		s := strings.TrimSpace(l)
+		if s != "" && !strings.HasPrefix(s, "#") {
+			return s
+		}
+	}
+	first, _, _ := strings.Cut(doc, "\n")
+	return first
+}
+
 func cmdList(args []string) error {
 	files, rest := takeFlag(args, "-f")
 	_ = rest
@@ -222,10 +241,9 @@ func cmdList(args []string) error {
 		if f.Composite() {
 			kind = "composite"
 		}
-		doc, _, _ := strings.Cut(f.Doc, "\n") // first line only — doc may be markdown
-		label := doc
+		label := docSummary(f.Doc)
 		if f.Display != "" && f.Display != f.Name {
-			label = "“" + f.Display + "” — " + doc
+			label = "“" + f.Display + "” — " + docSummary(f.Doc)
 		}
 		fmt.Printf("%-28s %-12s %s\n", f.Address(), kind, label)
 	}

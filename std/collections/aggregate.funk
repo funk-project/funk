@@ -9,8 +9,9 @@ package "funk/std/collections" {
 }
 
 fn incAcc {
+  name "Increment Accumulator"
   doc """
-    # Inc Acc
+    # Increment Accumulator
     ### Fold step that adds one to the accumulator, ignoring the item — powers `count`.
   """
   in  (a Num (doc "The running accumulator"))
@@ -24,6 +25,7 @@ fn incAcc {
 }
 
 fn sum {
+  name "Sum"
   doc """
     # Sum
     ### Sum of a list or stream of numbers (`fold` with `add` from `0`).
@@ -39,6 +41,7 @@ fn sum {
 }
 
 fn count {
+  name "Count"
   doc """
     # Count
     ### Number of items in a list or stream (`fold` incrementing once per item).
@@ -54,6 +57,7 @@ fn count {
 }
 
 fn product {
+  name "Product"
   doc """
     # Product
     ### Product of a list or stream of numbers (`fold` with `mul` from `1`).
@@ -69,6 +73,7 @@ fn product {
 }
 
 fn mean {
+  name "Mean"
   doc """
     # Mean
     ### Arithmetic mean of a list — its `sum` divided by its `count`, written in funk.

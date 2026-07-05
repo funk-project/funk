@@ -4,6 +4,7 @@ package funk
 // (docs/01, property #4). The agent reads this about itself.
 type Introspection struct {
 	Name       string   `json:"name"`
+	Display    string   `json:"display,omitempty"` // the `name` field — a human label
 	Address    string   `json:"address"`
 	Doc        string   `json:"doc,omitempty"`
 	Examples   string   `json:"examples,omitempty"`
@@ -27,6 +28,7 @@ func Introspect(lib *Library, ref string) (*Introspection, bool) {
 	}
 	in := &Introspection{
 		Name:     f.Name,
+		Display:  f.Display,
 		Address:  f.Address(),
 		Doc:      f.Doc,
 		Examples: f.Examples,

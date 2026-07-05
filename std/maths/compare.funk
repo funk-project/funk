@@ -5,8 +5,9 @@ package "funk/std/maths" {
 }
 
 fn gt {
+  name "Greater Than"
   doc """
-    # Gt
+    # Greater Than
     ### Test whether `a` is strictly greater than `b`.
   """
   in  (a Num (doc "The left operand"))
@@ -23,8 +24,9 @@ fn gt {
 }
 
 fn lt {
+  name "Less Than"
   doc """
-    # Lt
+    # Less Than
     ### Test whether `a` is strictly less than `b`.
   """
   in  (a Num (doc "The left operand"))
@@ -41,8 +43,9 @@ fn lt {
 }
 
 fn gte {
+  name "Greater Than Or Equal"
   doc """
-    # Gte
+    # Greater Than Or Equal
     ### Test whether `a` is greater than or equal to `b`.
   """
   in  (a Num (doc "The left operand"))
@@ -59,8 +62,9 @@ fn gte {
 }
 
 fn lte {
+  name "Less Than Or Equal"
   doc """
-    # Lte
+    # Less Than Or Equal
     ### Test whether `a` is less than or equal to `b`.
   """
   in  (a Num (doc "The left operand"))
@@ -77,8 +81,9 @@ fn lte {
 }
 
 fn eq {
+  name "Equals"
   doc """
-    # Eq
+    # Equals
     ### Test whether `a` equals `b`.
   """
   in  (a Num (doc "The left operand"))
@@ -95,8 +100,9 @@ fn eq {
 }
 
 fn neq {
+  name "Not Equal"
   doc """
-    # Neq
+    # Not Equal
     ### Test whether `a` does not equal `b`.
   """
   in  (a Num (doc "The left operand"))

@@ -6,6 +6,7 @@ package "funk/std/collections" {
 }
 
 fn reverse {
+  name "Reverse"
   doc """
     # Reverse
     ### Reverse the order of a list.
@@ -23,6 +24,7 @@ fn reverse {
 }
 
 fn sort {
+  name "Sort"
   doc """
     # Sort
     ### Sort a list into ascending order.
@@ -40,6 +42,7 @@ fn sort {
 }
 
 fn unique {
+  name "Unique"
   doc """
     # Unique
     ### Distinct items of a list, preserving first-seen order.
@@ -61,6 +64,7 @@ fn unique {
 }
 
 fn take {
+  name "Take"
   doc """
     # Take
     ### The first `n` items of a list.
@@ -79,6 +83,7 @@ fn take {
 }
 
 fn drop {
+  name "Drop"
   doc """
     # Drop
     ### A list without its first `n` items.
@@ -97,6 +102,7 @@ fn drop {
 }
 
 fn flatten {
+  name "Flatten"
   doc """
     # Flatten
     ### Flatten a list of lists by one level, leaving non-list items in place.
@@ -120,8 +126,9 @@ fn flatten {
 }
 
 fn zip2 {
+  name "Zip Two"
   doc """
-    # Zip2
+    # Zip Two
     ### Pairwise zip two lists into a list of `[x, y]` pairs, stopping at the shorter list.
   """
   in  (a List (doc "The first list, giving each pair's left item"))
@@ -138,8 +145,9 @@ fn zip2 {
 }
 
 fn contains? {
+  name "Contains"
   doc """
-    # Contains?
+    # Contains
     ### True if the list contains the given item.
   """
   in  (a List    (doc "The list to search"))

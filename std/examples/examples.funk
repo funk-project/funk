@@ -7,6 +7,7 @@ package "funk/std/examples" {
 }
 
 fn analyze {
+  name "Analyze"
   doc """
     # Analyze
     ### Mean of the last 100 items of a stream, or `exit`s with `no data` when the stream is empty.
@@ -24,6 +25,7 @@ fn analyze {
 }
 
 fn bump {
+  name "Bump"
   doc """
     # Bump
     ### Add `100` to `x` when `x > 5`, otherwise pass `x` through unchanged — the condition gates the add.

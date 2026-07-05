@@ -8,6 +8,7 @@ package "funk/std/examples" {
 }
 
 fn secretPeek {
+  name "Secret Peek"
   doc """
     # Secret Peek
     ### Show a `config` value alongside a masked `secret` — both injected at runtime into the python body, which keeps only the first three characters of the secret.
@@ -29,6 +30,7 @@ fn secretPeek {
 }
 
 fn siteGreeting {
+  name "Site Greeting"
   doc """
     # Site Greeting
     ### Greet using an injected `config` value, read as `needs.config.site` in a funk body.

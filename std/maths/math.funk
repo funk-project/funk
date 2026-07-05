@@ -7,8 +7,9 @@ package "funk/std/maths" {
 }
 
 fn add {
+  name "Addition"
   doc """
-    # Add
+    # Addition
     ### Add two numbers.
   """
   in  (a Num (doc "First addend"))
@@ -27,8 +28,9 @@ fn add {
 }
 
 fn sub {
+  name "Subtraction"
   doc """
-    # Sub
+    # Subtraction
     ### Subtract `b` from `a`.
   """
   in  (a Num (doc "The minuend"))
@@ -45,8 +47,9 @@ fn sub {
 }
 
 fn mul {
+  name "Multiplication"
   doc """
-    # Mul
+    # Multiplication
     ### Multiply two numbers.
   """
   in  (a Num (doc "First factor"))
@@ -63,8 +66,9 @@ fn mul {
 }
 
 fn div {
+  name "Division"
   doc """
-    # Div
+    # Division
     ### Divide `a` by `b`. Errors on division by zero.
   """
   in  (a Num (doc "The dividend"))
@@ -81,8 +85,9 @@ fn div {
 }
 
 fn mod {
+  name "Modulo"
   doc """
-    # Mod
+    # Modulo
     ### Remainder of `a` divided by `b`.
   """
   in  (a Num (doc "The dividend"))
@@ -99,8 +104,9 @@ fn mod {
 }
 
 fn neg {
+  name "Negation"
   doc """
-    # Neg
+    # Negation
     ### Negate a number (flip its sign).
   """
   in  (a Num (doc "The number to negate"))
@@ -116,8 +122,9 @@ fn neg {
 }
 
 fn abs {
+  name "Absolute Value"
   doc """
-    # Abs
+    # Absolute Value
     ### Absolute value (distance from zero).
   """
   in  (a Num (doc "The number"))
@@ -133,8 +140,9 @@ fn abs {
 }
 
 fn sqrt {
+  name "Square Root"
   doc """
-    # Sqrt
+    # Square Root
     ### Square root of a non-negative number.
   """
   in  (a Num (doc "The radicand (must be ≥ 0)"))
@@ -150,8 +158,9 @@ fn sqrt {
 }
 
 fn pow {
+  name "Power"
   doc """
-    # Pow
+    # Power
     ### Raise `a` to the power `b`.
   """
   in  (a Num (doc "The base"))
@@ -168,8 +177,9 @@ fn pow {
 }
 
 fn min {
+  name "Minimum"
   doc """
-    # Min
+    # Minimum
     ### The smaller of two numbers.
   """
   in  (a Num (doc "First number"))
@@ -186,8 +196,9 @@ fn min {
 }
 
 fn max {
+  name "Maximum"
   doc """
-    # Max
+    # Maximum
     ### The larger of two numbers.
   """
   in  (a Num (doc "First number"))

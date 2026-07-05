@@ -12,6 +12,7 @@ package "funk/std/stream" {
 }
 
 fn map {
+  name "Map"
   doc """
     # Map
     ### Apply `f` to every item of a stream, producing a new stream — the reactive lift (docs/07 §5).
@@ -27,6 +28,7 @@ fn map {
 }
 
 fn filter {
+  name "Filter"
   doc """
     # Filter
     ### Keep only the stream items for which `f` returns true, defined in funk via `each`/`yield`.
@@ -45,6 +47,7 @@ fn filter {
 }
 
 fn mapSum {
+  name "Map Sum"
   doc """
     # Map Sum
     ### Sum of the doubles of `1..n`, computed with the funk-defined `map`.
@@ -61,6 +64,7 @@ fn mapSum {
 }
 
 fn filterCount {
+  name "Filter Count"
   doc """
     # Filter Count
     ### Count of the even numbers in `1..n`, computed with the funk-defined `filter`.

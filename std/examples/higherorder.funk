@@ -7,6 +7,7 @@ package "funk/std/examples" {
 }
 
 fn applyTwice {
+  name "Apply Twice"
   doc """
     # Apply Twice
     ### Apply the function `f` to `x` twice — `f(f(x))` — demonstrating a function passed as a first-class value.
@@ -23,6 +24,7 @@ fn applyTwice {
 }
 
 fn quadruple {
+  name "Quadruple"
   doc """
     # Quadruple
     ### Multiply `x` by four by passing `maths.double` to `applyTwice` (double, then double again).
@@ -39,8 +41,9 @@ fn quadruple {
 }
 
 fn compose2 {
+  name "Compose Two"
   doc """
-    # Compose2
+    # Compose Two
     ### Compose two functions: apply `g` to `x`, then `f` to that result — `f(g(x))`.
   """
   in  (f Fn (doc "The outer function, applied second"))
@@ -56,8 +59,9 @@ fn compose2 {
 }
 
 fn incThenSquare {
+  name "Increment Then Square"
   doc """
-    # Inc Then Square
+    # Increment Then Square
     ### Increment `x` then square it — `square(inc(x))` — built with `compose2`.
   """
   in  (x Num (doc "The number to increment then square"))

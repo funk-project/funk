@@ -7,8 +7,9 @@ package "funk/std/examples" {
 }
 
 fn celsiusToF {
+  name "Celsius To Fahrenheit"
   doc """
-    # Celsius To F
+    # Celsius To Fahrenheit
     ### Convert a temperature in Celsius to Fahrenheit (`c * 1.8 + 32`).
   """
   in  (c Num (doc "The temperature in degrees Celsius"))
@@ -23,6 +24,7 @@ fn celsiusToF {
 }
 
 fn slugify {
+  name "Slugify"
   doc """
     # Slugify
     ### Turn a title into a URL slug: lowercase it, collapse each run of non-alphanumeric characters into a single hyphen, and trim leading/trailing hyphens.
@@ -41,6 +43,7 @@ fn slugify {
 }
 
 fn initials {
+  name "Initials"
   doc """
     # Initials
     ### The uppercased first letter of each whitespace-separated word, joined together.
@@ -59,6 +62,7 @@ fn initials {
 }
 
 fn wordCount {
+  name "Word Count"
   doc """
     # Word Count
     ### How many whitespace-separated words a sentence contains.

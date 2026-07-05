@@ -5,6 +5,7 @@ package "funk/std/maths" {
 }
 
 fn double {
+  name "Double"
   doc """
     # Double
     ### Multiply a number by two.
@@ -22,6 +23,7 @@ fn double {
 }
 
 fn square {
+  name "Square"
   doc """
     # Square
     ### Multiply a number by itself.
@@ -39,8 +41,9 @@ fn square {
 }
 
 fn inc {
+  name "Increment"
   doc """
-    # Inc
+    # Increment
     ### Add one to a number.
   """
   in  (a Num (doc "The number to increment"))
@@ -56,8 +59,9 @@ fn inc {
 }
 
 fn even? {
+  name "Is Even"
   doc """
-    # Even?
+    # Is Even
     ### Test whether a number is even.
   """
   in  (a Num (doc "The number to test"))

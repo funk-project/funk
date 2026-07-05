@@ -11,6 +11,7 @@ package "funk/std/skills" {
 }
 
 fn architect {
+  name "Architect"
   doc """
     # Architect
     ### Turn a task description into a concise, single-function `funk` design (name, ports, engine, approach).
@@ -28,6 +29,7 @@ fn architect {
 }
 
 fn programmer {
+  name "Programmer"
   doc """
     # Programmer
     ### Turn a function design into a single valid `.funk` `fn` block.
@@ -55,6 +57,7 @@ fn programmer {
 }
 
 fn reviewer {
+  name "Reviewer"
   doc """
     # Reviewer
     ### Review a `.funk` function for correctness and clarity, ending with a `PASS`/`NEEDS-WORK` verdict.
@@ -72,6 +75,7 @@ fn reviewer {
 }
 
 fn tester {
+  name "Tester"
   doc """
     # Tester
     ### Propose concrete test cases for a `.funk` function and give a `LIKELY-CORRECT`/`SUSPECT` verdict.
@@ -89,6 +93,7 @@ fn tester {
 }
 
 fn reflect {
+  name "Reflect"
   doc """
     # Reflect
     ### Self-analyze a function against a report and rewrite its source if the report reveals a problem.
@@ -108,6 +113,7 @@ fn reflect {
 
 ; The core generation pipeline, expressed IN funk: task -> design -> code.
 fn generate {
+  name "Generate"
   doc """
     # Generate
     ### Generate a `funk` function from a task by chaining `architect` then `programmer`.

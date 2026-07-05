@@ -6,8 +6,9 @@ package "funk/std/examples" {
 }
 
 fn powTwoLE {
+  name "Power Of Two At Most"
   doc """
-    # Pow Two LE
+    # Power Of Two At Most
     ### The largest power of two less than or equal to `n`, computed via a `while` loop that doubles until the next double would exceed `n`.
   """
   in  (n Num (doc "The upper bound (inclusive)"))
@@ -25,6 +26,7 @@ fn powTwoLE {
 }
 
 fn countUp {
+  name "Count Up"
   doc """
     # Count Up
     ### Count up from `0` to `n`, returning `n` — a minimal `while` loop that increments while `s < n`.

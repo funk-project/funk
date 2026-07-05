@@ -5,6 +5,7 @@ package "funk/std/stats" {
 }
 
 fn median {
+  name "Median"
   doc """
     # Median
     ### Middle value of a list; the mean of the two middle values when the count is even.
@@ -23,6 +24,7 @@ fn median {
 }
 
 fn mode {
+  name "Mode"
   doc """
     # Mode
     ### Most common value in a list.
@@ -41,6 +43,7 @@ fn mode {
 }
 
 fn variance {
+  name "Variance"
   doc """
     # Variance
     ### Sample variance of a list of numbers (divides by `n - 1`).
@@ -59,8 +62,9 @@ fn variance {
 }
 
 fn stdev {
+  name "Standard Deviation"
   doc """
-    # Stdev
+    # Standard Deviation
     ### Sample standard deviation — the square root of the sample `variance`.
   """
   in  (xs List (doc "The list of numbers"))
@@ -77,8 +81,9 @@ fn stdev {
 }
 
 fn pmin {
+  name "Minimum"
   doc """
-    # Pmin
+    # Minimum
     ### Smallest value in a list.
   """
   in  (xs List (doc "The list of numbers"))
@@ -94,8 +99,9 @@ fn pmin {
 }
 
 fn pmax {
+  name "Maximum"
   doc """
-    # Pmax
+    # Maximum
     ### Largest value in a list.
   """
   in  (xs List (doc "The list of numbers"))
@@ -111,6 +117,7 @@ fn pmax {
 }
 
 fn range {
+  name "Range"
   doc """
     # Range
     ### Spread of a list — the difference between its largest and smallest values.
@@ -128,6 +135,7 @@ fn range {
 }
 
 fn percentile {
+  name "Percentile"
   doc """
     # Percentile
     ### The `p`-th percentile (0–100) of a list, using linear interpolation between adjacent ranks.

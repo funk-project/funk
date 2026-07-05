@@ -5,6 +5,7 @@ package "funk/std/mathx" {
 }
 
 fn floor {
+  name "Floor"
   doc """
     # Floor
     ### Round `a` down to the largest integer that is `≤ a`.
@@ -23,8 +24,9 @@ fn floor {
 }
 
 fn ceil {
+  name "Ceiling"
   doc """
-    # Ceil
+    # Ceiling
     ### Round `a` up to the smallest integer that is `≥ a`.
   """
   in  (a Num (doc "The number to round up"))
@@ -41,6 +43,7 @@ fn ceil {
 }
 
 fn round {
+  name "Round"
   doc """
     # Round
     ### Round `a` to `n` decimal places.
@@ -59,8 +62,9 @@ fn round {
 }
 
 fn log {
+  name "Natural Log"
   doc """
-    # Log
+    # Natural Log
     ### Natural logarithm (base `e`) of `a`.
   """
   in  (a Num (doc "The argument (must be `> 0`)"))
@@ -77,8 +81,9 @@ fn log {
 }
 
 fn log10 {
+  name "Log Base 10"
   doc """
-    # Log10
+    # Log Base 10
     ### Base-10 logarithm of `a`.
   """
   in  (a Num (doc "The argument (must be `> 0`)"))
@@ -95,8 +100,9 @@ fn log10 {
 }
 
 fn exp {
+  name "Exponential"
   doc """
-    # Exp
+    # Exponential
     ### `e` raised to the power `a`.
   """
   in  (a Num (doc "The exponent"))
@@ -113,8 +119,9 @@ fn exp {
 }
 
 fn sin {
+  name "Sine"
   doc """
-    # Sin
+    # Sine
     ### Sine of `a`, where `a` is in radians.
   """
   in  (a Num (doc "The angle in radians"))
@@ -131,8 +138,9 @@ fn sin {
 }
 
 fn cos {
+  name "Cosine"
   doc """
-    # Cos
+    # Cosine
     ### Cosine of `a`, where `a` is in radians.
   """
   in  (a Num (doc "The angle in radians"))
@@ -149,8 +157,9 @@ fn cos {
 }
 
 fn tan {
+  name "Tangent"
   doc """
-    # Tan
+    # Tangent
     ### Tangent of `a`, where `a` is in radians.
   """
   in  (a Num (doc "The angle in radians"))
@@ -167,6 +176,7 @@ fn tan {
 }
 
 fn factorial {
+  name "Factorial"
   doc """
     # Factorial
     ### Factorial of a non-negative integer `a` (the product `1 × 2 × … × a`).
@@ -185,8 +195,9 @@ fn factorial {
 }
 
 fn gcd {
+  name "Greatest Common Divisor"
   doc """
-    # Gcd
+    # Greatest Common Divisor
     ### Greatest common divisor of integers `a` and `b`.
   """
   in  (a Num (doc "The first integer"))
@@ -204,6 +215,7 @@ fn gcd {
 }
 
 fn clamp {
+  name "Clamp"
   doc """
     # Clamp
     ### Constrain `x` to the inclusive range `[lo, hi]`.

@@ -10,6 +10,7 @@ package "funk/std/examples" {
 }
 
 fn evens {
+  name "Evens"
   doc """
     # Evens
     ### The first `n` even numbers, produced by lazily doubling an infinite source of naturals and bounding it with `take`.
@@ -24,6 +25,7 @@ fn evens {
 }
 
 fn squares {
+  name "Squares"
   doc """
     # Squares
     ### The squares of each number in `1..n`, mapped over the range.
@@ -38,6 +40,7 @@ fn squares {
 }
 
 fn firstEvens {
+  name "First Evens"
   doc """
     # First Evens
     ### The first `n` even naturals, `filter`ed from an infinite source of naturals and bounded with `take`.
@@ -52,8 +55,9 @@ fn firstEvens {
 }
 
 fn sumSquares {
+  name "Sum Of Squares"
   doc """
-    # Sum Squares
+    # Sum Of Squares
     ### The sum of the squares of `1..n` — map to squares, `collect` into a list, then `sum`.
   """
   in  (n Num (doc "Upper bound of the range `1..n`"))
@@ -66,6 +70,7 @@ fn sumSquares {
 }
 
 fn batchSums {
+  name "Batch Sums"
   doc """
     # Batch Sums
     ### The sum of each tumbling `window` of 3 over `1..n` — a windowed stream aggregate; a trailing partial window is summed too.
@@ -80,6 +85,7 @@ fn batchSums {
 }
 
 fn slidingSums {
+  name "Sliding Sums"
   doc """
     # Sliding Sums
     ### The sum of each SLIDING `window` of 3 (step 1) over `1..n` — overlapping windows, only full windows emitted.

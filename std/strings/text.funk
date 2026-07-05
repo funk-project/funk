@@ -5,8 +5,9 @@ package "funk/std/strings" {
 }
 
 fn concat {
+  name "Concatenate"
   doc """
-    # Concat
+    # Concatenate
     ### Concatenate two strings into one.
   """
   in  (a Str (doc "The left string"))
@@ -23,8 +24,9 @@ fn concat {
 }
 
 fn upper {
+  name "Uppercase"
   doc """
-    # Upper
+    # Uppercase
     ### Convert all characters in a string to uppercase.
   """
   in  (a Str (doc "The string to convert"))
@@ -40,8 +42,9 @@ fn upper {
 }
 
 fn lower {
+  name "Lowercase"
   doc """
-    # Lower
+    # Lowercase
     ### Convert all characters in a string to lowercase.
   """
   in  (a Str (doc "The string to convert"))
@@ -57,6 +60,7 @@ fn lower {
 }
 
 fn trim {
+  name "Trim"
   doc """
     # Trim
     ### Remove leading and trailing whitespace from a string.
@@ -74,6 +78,7 @@ fn trim {
 }
 
 fn length {
+  name "Length"
   doc """
     # Length
     ### The number of characters in a string.

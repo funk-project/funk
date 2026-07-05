@@ -5,6 +5,7 @@ package "funk/std/text" {
 }
 
 fn split {
+  name "Split"
   doc """
     # Split
     ### Split a string into a list of substrings around each occurrence of `sep`.
@@ -23,6 +24,7 @@ fn split {
 }
 
 fn join {
+  name "Join"
   doc """
     # Join
     ### Join a list of values into a single string, placing `sep` between each element.
@@ -41,6 +43,7 @@ fn join {
 }
 
 fn replace {
+  name "Replace"
   doc """
     # Replace
     ### Replace every occurrence of `old` with `new` in the string `a`.
@@ -60,8 +63,9 @@ fn replace {
 }
 
 fn contains? {
+  name "Contains"
   doc """
-    # Contains?
+    # Contains
     ### Return `true` if the string `a` contains the substring `sub`.
   """
   in  (a Str (doc "The string to search in"))
@@ -78,8 +82,9 @@ fn contains? {
 }
 
 fn startsWith? {
+  name "Starts With"
   doc """
-    # Starts With?
+    # Starts With
     ### Return `true` if the string `a` begins with `prefix`.
   """
   in  (a Str (doc "The string to test"))
@@ -96,8 +101,9 @@ fn startsWith? {
 }
 
 fn endsWith? {
+  name "Ends With"
   doc """
-    # Ends With?
+    # Ends With
     ### Return `true` if the string `a` ends with `suffix`.
   """
   in  (a Str (doc "The string to test"))
@@ -114,6 +120,7 @@ fn endsWith? {
 }
 
 fn reverse {
+  name "Reverse"
   doc """
     # Reverse
     ### Reverse the order of the characters in a string.
@@ -131,6 +138,7 @@ fn reverse {
 }
 
 fn words {
+  name "Words"
   doc """
     # Words
     ### Split a string on runs of whitespace into a list of words, discarding empty entries.
@@ -148,6 +156,7 @@ fn words {
 }
 
 fn capitalize {
+  name "Capitalize"
   doc """
     # Capitalize
     ### Capitalize the first character of a string and lowercase the rest.
@@ -165,6 +174,7 @@ fn capitalize {
 }
 
 fn repeat {
+  name "Repeat"
   doc """
     # Repeat
     ### Repeat a string `n` times, concatenated end to end.
