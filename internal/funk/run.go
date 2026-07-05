@@ -825,12 +825,33 @@ func (e *evalEnv) evalWindow(args []Node) (interface{}, error) {
 	if a, ok := args[1].(Atom); ok {
 		if dur, ok := parseDuration(a.Value); ok {
 			field := "time"
+			var slide, lateness float64
 			for i := 2; i+1 < len(args); i++ {
-				if kw, ok := args[i].(Atom); ok && kw.Value == "by" {
+				kw, ok := args[i].(Atom)
+				if !ok {
+					continue
+				}
+				switch kw.Value {
+				case "by":
 					if fld, ok := args[i+1].(Atom); ok {
 						field = fld.Value
 					}
+				case "every":
+					if d, ok := args[i+1].(Atom); ok {
+						if s, ok := parseDuration(d.Value); ok {
+							slide = s
+						}
+					}
+				case "lateness":
+					if d, ok := args[i+1].(Atom); ok {
+						if l, ok := parseDuration(d.Value); ok {
+							lateness = l
+						}
+					}
 				}
+			}
+			if slide > 0 { // sliding event-time window
+				return e.slideTimeWindow(e.asStream(coll), dur, slide, lateness, field), nil
 			}
 			return e.timeWindow(e.asStream(coll), dur, field), nil
 		}

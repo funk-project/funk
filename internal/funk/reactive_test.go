@@ -78,6 +78,26 @@ func TestReactiveZipFiring(t *testing.T) {
 	}
 }
 
+// Sliding event-time windows: each event (its value is its event-time) joins every
+// overlapping window; a window emits once the watermark passes its end.
+func TestSlidingEventTimeWindow(t *testing.T) {
+	lib := loadRx(t, `fn sw { in (n Num) out (r Stream) body (window (range 0 n) 4s every 2s) }`)
+	res := Run(lib, "sw", map[string]interface{}{"n": 5.0}, ExecOpts{})
+	if !res.OK {
+		t.Fatal(res.Error)
+	}
+	got, ok := res.Value.([]interface{})
+	want := [][]float64{{0, 1, 2, 3}, {2, 3, 4, 5}, {4, 5}}
+	if !ok || len(got) != len(want) {
+		t.Fatalf("sw = %#v, want %d windows", res.Value, len(want))
+	}
+	for i, w := range got {
+		if g := numList(t, w); !reflect.DeepEqual(g, want[i]) {
+			t.Fatalf("window %d = %v, want %v", i, g, want[i])
+		}
+	}
+}
+
 // Named multi-output + flush, then destructured and re-wired by the caller.
 func TestMultiOutputWiring(t *testing.T) {
 	lib := loadRx(t, `

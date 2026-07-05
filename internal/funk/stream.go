@@ -3,6 +3,7 @@ package funk
 import (
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -354,6 +355,73 @@ func (e *evalEnv) timeWindow(in Stream, dur float64, field string) Stream {
 		sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
 		for _, k := range keys {
 			if !emit(k) {
+				return
+			}
+		}
+	}()
+	return out
+}
+
+// slideTimeWindow emits SLIDING event-time windows of length `dur` every `slide`
+// (docs/04 §7). Each event at time t joins every window `[start, start+dur)` that
+// contains it (starts aligned to `slide`); a window emits, in start order, once
+// the watermark (largest event-time seen) passes `start + dur + lateness`. A late
+// event whose windows have already closed is dropped (the default).
+func (e *evalEnv) slideTimeWindow(in Stream, dur, slide, lateness float64, field string) Stream {
+	out := make(Stream)
+	if slide <= 0 {
+		slide = dur
+	}
+	go func() {
+		defer close(out)
+		windows := map[int64][]interface{}{} // start-bucket (s where start = s*slide) → items
+		var watermark float64
+		emitReady := func() bool {
+			var ready []int64
+			for s := range windows {
+				if float64(s)*slide+dur+lateness <= watermark {
+					ready = append(ready, s)
+				}
+			}
+			sort.Slice(ready, func(i, j int) bool { return ready[i] < ready[j] })
+			for _, s := range ready {
+				items := windows[s]
+				delete(windows, s)
+				if !e.send(out, items) {
+					return false
+				}
+			}
+			return true
+		}
+		for v := range in {
+			t := eventTime(v, field)
+			if t > watermark {
+				watermark = t
+			}
+			// windows containing t: start in (t-dur, t], aligned to slide.
+			first := int64(math.Floor((t-dur)/slide)) + 1
+			last := int64(math.Floor(t / slide))
+			for s := first; s <= last; s++ {
+				if s < 0 {
+					continue
+				}
+				if float64(s)*slide+dur+lateness <= watermark {
+					continue // window already closed ⇒ this event is late for it, drop
+				}
+				windows[s] = append(windows[s], v)
+			}
+			if !emitReady() {
+				return
+			}
+		}
+		// drain: emit every remaining window in ascending start order.
+		keys := make([]int64, 0, len(windows))
+		for s := range windows {
+			keys = append(keys, s)
+		}
+		sort.Slice(keys, func(i, j int) bool { return keys[i] < keys[j] })
+		for _, s := range keys {
+			if !e.send(out, windows[s]) {
 				return
 			}
 		}

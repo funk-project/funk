@@ -201,9 +201,11 @@ The spec runs ahead of the engine; this table is the contract for the **referenc
 | Recovery — `(on-error …)` · `(retry …)` | **Experimental** |
 | `needs` / `effects` blocks; injection via `--bind` / env; trace redaction | **Experimental** |
 | `funk get <url>[@ref]` (clone/pin a package by URL+ref, resolve by bare name) | **Experimental** |
-| `window` extras — `every` on **event-time** · `lateness` · `on-late` | **Proposal** |
-| `use "<addr>" <semver> as <alias>` (namespaced/versioned resolution) | **Proposal** |
-| Secret **broker** / **egress** control; `with { … }` / project `object` | **Proposal** |
+| `window … every` on **event-time** (sliding) · `lateness` | **Experimental** |
+| `window` extras — `on-late` handler | **Proposal** |
+| `use "pkg" as <alias>` (local aliased/namespaced imports) · `alias TARGET` · `(with …)` per-call binding | **Experimental** |
+| `use "<addr>" <semver> as <alias>` (versioned resolution + lockfile) | **Proposal** |
+| Secret **broker** / **egress** control; project `object` blocks | **Proposal** |
 
 ## 7. Streams — the reactive core
 
