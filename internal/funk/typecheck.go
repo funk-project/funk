@@ -277,6 +277,44 @@ func checkTypes(lib *Library, f *Fn) []Issue {
 
 // baseScalar returns the type if it is a plain scalar element type, else "".
 // Stream<…>, List, Json, Any, and "" are NOT plain scalars — we don't judge them.
+// splitType parses a rendered type into its outer constructor and element:
+// "List<Num>" → ("List","Num"); "Num" → ("Num",""); "List" → ("List","").
+func splitType(t string) (base, elem string) {
+	if i := strings.IndexByte(t, '<'); i >= 0 && strings.HasSuffix(t, ">") {
+		return t[:i], t[i+1 : len(t)-1]
+	}
+	return t, ""
+}
+
+// connMismatch reports a type mismatch on a connection (a producer's type flowing
+// into a consumer input port), conservatively — an unknown/`Any` side is always
+// compatible, and the reactive lift (a `Stream<E>` driving a scalar `E` port) is
+// honoured. It flags: scalar↔scalar mismatch; a lift whose element differs from the
+// scalar port; and same-constructor collections with differing concrete elements.
+func connMismatch(prod, cons string) (want, got string, bad bool) {
+	if prod == "" || cons == "" || prod == "Any" || cons == "Any" {
+		return "", "", false
+	}
+	pb, pe := splitType(prod)
+	cb, ce := splitType(cons)
+	concrete := func(s string) bool { return s != "" && s != "Any" }
+	switch {
+	case pb == "Stream" && baseScalar(cb) != "" && ce == "": // reactive lift into a scalar port
+		if concrete(pe) && pe != cb {
+			return cb, pe, true
+		}
+	case baseScalar(pb) != "" && baseScalar(cb) != "" && pe == "" && ce == "": // scalar ↔ scalar
+		if pb != cb {
+			return cb, pb, true
+		}
+	case pb == cb && concrete(pe) && concrete(ce): // same collection, compare elements
+		if pe != ce {
+			return cons, prod, true
+		}
+	}
+	return "", "", false
+}
+
 func baseScalar(t string) string {
 	switch t {
 	case "Num", "Str", "Bool", "Time", "Bytes":
@@ -372,11 +410,10 @@ func inferForm(lib *Library, fn *Fn, f Form, env map[string]string, issues *[]Is
 			if i >= len(callee.In) {
 				continue
 			}
-			prod, cons := baseScalar(at), baseScalar(callee.In[i].Type)
-			if prod != "" && cons != "" && prod != cons {
+			if want, got, bad := connMismatch(at, callee.In[i].Type); bad {
 				*issues = append(*issues, issueAt(fn, f.Pos, fmt.Sprintf(
 					"connection type mismatch: %q input %q wants %s but gets %s",
-					f.Head, callee.In[i].Name, cons, prod)))
+					f.Head, callee.In[i].Name, want, got)))
 			}
 		}
 		if len(callee.Out) == 1 {
