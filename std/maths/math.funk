@@ -11,9 +11,9 @@ fn add {
     # Add
     ### Add two numbers.
   """
-  in  (a Num (doc "first addend"))
-      (b Num (doc "second addend"))
-  out (r Num (doc "the sum `a + b`"))
+  in  (a Num (doc "First addend"))
+      (b Num (doc "Second addend"))
+  out (r Num (doc "The sum `a + b`"))
   examples """
     - `(add 40 2)` → `42`
     - `(add -1 1)` → `0`
@@ -31,9 +31,9 @@ fn sub {
     # Sub
     ### Subtract `b` from `a`.
   """
-  in  (a Num (doc "the minuend"))
-      (b Num (doc "the subtrahend"))
-  out (r Num (doc "the difference `a - b`"))
+  in  (a Num (doc "The minuend"))
+      (b Num (doc "The subtrahend"))
+  out (r Num (doc "The difference `a - b`"))
   examples """
     - `(sub 5 3)` → `2`
     - `(sub 0 4)` → `-4`
@@ -49,9 +49,9 @@ fn mul {
     # Mul
     ### Multiply two numbers.
   """
-  in  (a Num (doc "first factor"))
-      (b Num (doc "second factor"))
-  out (r Num (doc "the product `a * b`"))
+  in  (a Num (doc "First factor"))
+      (b Num (doc "Second factor"))
+  out (r Num (doc "The product `a * b`"))
   examples """
     - `(mul 6 7)` → `42`
     - `(mul -2 3)` → `-6`
@@ -67,9 +67,9 @@ fn div {
     # Div
     ### Divide `a` by `b`. Errors on division by zero.
   """
-  in  (a Num (doc "the dividend"))
-      (b Num (doc "the divisor (must be non-zero)"))
-  out (r Num (doc "the quotient `a / b`"))
+  in  (a Num (doc "The dividend"))
+      (b Num (doc "The divisor (must be non-zero)"))
+  out (r Num (doc "The quotient `a / b`"))
   examples """
     - `(div 10 2)` → `5`
     - `(div 7 2)` → `3.5`
@@ -85,9 +85,9 @@ fn mod {
     # Mod
     ### Remainder of `a` divided by `b`.
   """
-  in  (a Num (doc "the dividend"))
-      (b Num (doc "the divisor"))
-  out (r Num (doc "the remainder `a mod b`"))
+  in  (a Num (doc "The dividend"))
+      (b Num (doc "The divisor"))
+  out (r Num (doc "The remainder `a mod b`"))
   examples """
     - `(mod 10 3)` → `1`
     - `(mod 8 4)` → `0`
@@ -103,7 +103,7 @@ fn neg {
     # Neg
     ### Negate a number (flip its sign).
   """
-  in  (a Num (doc "the number to negate"))
+  in  (a Num (doc "The number to negate"))
   out (r Num (doc "`-a`"))
   examples """
     - `(neg 5)` → `-5`
@@ -120,7 +120,7 @@ fn abs {
     # Abs
     ### Absolute value (distance from zero).
   """
-  in  (a Num (doc "the number"))
+  in  (a Num (doc "The number"))
   out (r Num (doc "`|a|`, always non-negative"))
   examples """
     - `(abs -7)` → `7`
@@ -137,8 +137,8 @@ fn sqrt {
     # Sqrt
     ### Square root of a non-negative number.
   """
-  in  (a Num (doc "the radicand (must be ≥ 0)"))
-  out (r Num (doc "the non-negative square root of `a`"))
+  in  (a Num (doc "The radicand (must be ≥ 0)"))
+  out (r Num (doc "The non-negative square root of `a`"))
   examples """
     - `(sqrt 9)` → `3`
     - `(sqrt 2)` → `1.414…`
@@ -154,8 +154,8 @@ fn pow {
     # Pow
     ### Raise `a` to the power `b`.
   """
-  in  (a Num (doc "the base"))
-      (b Num (doc "the exponent"))
+  in  (a Num (doc "The base"))
+      (b Num (doc "The exponent"))
   out (r Num (doc "`a` raised to the `b`"))
   examples """
     - `(pow 2 10)` → `1024`
@@ -172,9 +172,9 @@ fn min {
     # Min
     ### The smaller of two numbers.
   """
-  in  (a Num (doc "first number"))
-      (b Num (doc "second number"))
-  out (r Num (doc "whichever of `a`, `b` is smaller"))
+  in  (a Num (doc "First number"))
+      (b Num (doc "Second number"))
+  out (r Num (doc "Whichever of `a`, `b` is smaller"))
   examples """
     - `(min 3 8)` → `3`
     - `(min -1 -4)` → `-4`
@@ -190,9 +190,9 @@ fn max {
     # Max
     ### The larger of two numbers.
   """
-  in  (a Num (doc "first number"))
-      (b Num (doc "second number"))
-  out (r Num (doc "whichever of `a`, `b` is larger"))
+  in  (a Num (doc "First number"))
+      (b Num (doc "Second number"))
+  out (r Num (doc "Whichever of `a`, `b` is larger"))
   examples """
     - `(max 3 8)` → `8`
     - `(max -1 -4)` → `-1`

@@ -9,7 +9,7 @@ fn now {
     # Now
     ### The current time as a Unix timestamp (seconds since the 1970 epoch, UTC).
   """
-  out (r Time (doc "the current Unix timestamp in seconds"))
+  out (r Time (doc "The current Unix timestamp in seconds"))
   examples """
     - `(now)` → `1751673600.0`
     - `(now)` → `1751673601.5`
@@ -25,8 +25,8 @@ fn parseIso {
     # Parse Iso
     ### Parse an ISO-8601 date/time string into a Unix timestamp.
   """
-  in  (a Str (doc "an ISO-8601 formatted string, e.g. `2024-01-01T00:00:00+00:00`"))
-  out (r Time (doc "the corresponding Unix timestamp in seconds"))
+  in  (a Str (doc "An ISO-8601 formatted string, e.g. `2024-01-01T00:00:00+00:00`"))
+  out (r Time (doc "The corresponding Unix timestamp in seconds"))
   examples """
     - `(parseIso "1970-01-01T00:00:00+00:00")` → `0`
     - `(parseIso "2024-01-01T00:00:00+00:00")` → `1704067200`
@@ -43,8 +43,8 @@ fn formatIso {
     # Format Iso
     ### Format a Unix timestamp as an ISO-8601 string in UTC.
   """
-  in  (t Time (doc "a Unix timestamp in seconds"))
-  out (r Str (doc "the timestamp rendered as an ISO-8601 string in UTC"))
+  in  (t Time (doc "A Unix timestamp in seconds"))
+  out (r Str (doc "The timestamp rendered as an ISO-8601 string in UTC"))
   examples """
     - `(formatIso 0)` → `"1970-01-01T00:00:00+00:00"`
     - `(formatIso 1704067200)` → `"2024-01-01T00:00:00+00:00"`
@@ -61,9 +61,9 @@ fn addSeconds {
     # Add Seconds
     ### Add `n` seconds to a Unix timestamp.
   """
-  in  (t Time (doc "the base Unix timestamp in seconds"))
-      (n Num (doc "the number of seconds to add (may be negative)"))
-  out (r Time (doc "the timestamp `t + n`"))
+  in  (t Time (doc "The base Unix timestamp in seconds"))
+      (n Num (doc "The number of seconds to add (may be negative)"))
+  out (r Time (doc "The timestamp `t + n`"))
   examples """
     - `(addSeconds 1000 60)` → `1060`
     - `(addSeconds 100 -40)` → `60`
@@ -79,8 +79,8 @@ fn dayOfWeek {
     # Day Of Week
     ### The day of the week for a timestamp, with Monday=0 through Sunday=6 (UTC).
   """
-  in  (t Time (doc "a Unix timestamp in seconds"))
-  out (r Num (doc "the weekday index, `0` (Monday) through `6` (Sunday)"))
+  in  (t Time (doc "A Unix timestamp in seconds"))
+  out (r Num (doc "The weekday index, `0` (Monday) through `6` (Sunday)"))
   examples """
     - `(dayOfWeek 0)` → `3`
     - `(dayOfWeek 1704067200)` → `0`
@@ -97,8 +97,8 @@ fn isoWeek {
     # Iso Week
     ### The ISO-8601 week number (1-53) for a timestamp (UTC).
   """
-  in  (t Time (doc "a Unix timestamp in seconds"))
-  out (r Num (doc "the ISO week number, `1` through `53`"))
+  in  (t Time (doc "A Unix timestamp in seconds"))
+  out (r Num (doc "The ISO week number, `1` through `53`"))
   examples """
     - `(isoWeek 0)` → `1`
     - `(isoWeek 1704067200)` → `1`

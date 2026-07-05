@@ -9,8 +9,8 @@ fn jsonParse {
     # Json Parse
     ### Parse a JSON string into a `Json` value (object, array, number, string, boolean, or null).
   """
-  in  (a Str (doc "a JSON-encoded string"))
-  out (r Json (doc "the decoded value"))
+  in  (a Str (doc "A JSON-encoded string"))
+  out (r Json (doc "The decoded value"))
   examples """
     - `(jsonParse "[1, 2]")` → `[1, 2]`
     - `(jsonParse "{\"a\": 1}")` → `{"a": 1}`
@@ -27,8 +27,8 @@ fn jsonStringify {
     # Json Stringify
     ### Serialize a `Json` value to a compact JSON string.
   """
-  in  (a Json (doc "the value to serialize"))
-  out (r Str (doc "the JSON-encoded string"))
+  in  (a Json (doc "The value to serialize"))
+  out (r Str (doc "The JSON-encoded string"))
   examples """
     - `(jsonStringify [1, 2])` → `"[1,2]"`
     - `(jsonStringify {"a": 1})` → `"{\"a\":1}"`
@@ -45,8 +45,8 @@ fn base64Encode {
     # Base64 Encode
     ### Base64-encode a UTF-8 string.
   """
-  in  (a Str (doc "the UTF-8 string to encode"))
-  out (r Str (doc "the base64-encoded (ASCII) representation of `a`"))
+  in  (a Str (doc "The UTF-8 string to encode"))
+  out (r Str (doc "The base64-encoded (ASCII) representation of `a`"))
   examples """
     - `(base64Encode "hi")` → `"aGk="`
     - `(base64Encode "funk")` → `"ZnVuaw=="`
@@ -63,8 +63,8 @@ fn base64Decode {
     # Base64 Decode
     ### Decode a base64 string back into a UTF-8 string.
   """
-  in  (a Str (doc "the base64-encoded string to decode"))
-  out (r Str (doc "the decoded UTF-8 string"))
+  in  (a Str (doc "The base64-encoded string to decode"))
+  out (r Str (doc "The decoded UTF-8 string"))
   examples """
     - `(base64Decode "aGk=")` → `"hi"`
     - `(base64Decode "ZnVuaw==")` → `"funk"`
@@ -81,8 +81,8 @@ fn urlEncode {
     # Url Encode
     ### Percent-encode a string so it is safe to use in a URL (all reserved characters escaped).
   """
-  in  (a Str (doc "the string to percent-encode"))
-  out (r Str (doc "the percent-encoded string"))
+  in  (a Str (doc "The string to percent-encode"))
+  out (r Str (doc "The percent-encoded string"))
   examples """
     - `(urlEncode "a b&c")` → `"a%20b%26c"`
     - `(urlEncode "x/y")` → `"x%2Fy"`
@@ -99,8 +99,8 @@ fn urlDecode {
     # Url Decode
     ### Decode a percent-encoded URL string back to its original text.
   """
-  in  (a Str (doc "the percent-encoded string to decode"))
-  out (r Str (doc "the decoded string"))
+  in  (a Str (doc "The percent-encoded string to decode"))
+  out (r Str (doc "The decoded string"))
   examples """
     - `(urlDecode "a%20b")` → `"a b"`
     - `(urlDecode "x%2Fy")` → `"x/y"`

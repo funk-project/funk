@@ -9,8 +9,8 @@ fn and {
     # And
     ### Logical **and** of two booleans; short-circuits, returning `b` only when `a` is `true`.
   """
-  in  (a Bool (doc "the left operand (evaluated first)"))
-      (b Bool (doc "the right operand, returned when `a` is `true`"))
+  in  (a Bool (doc "The left operand (evaluated first)"))
+      (b Bool (doc "The right operand, returned when `a` is `true`"))
   out (r Bool (doc "`true` if both `a` and `b` are `true`, else `false`"))
   examples """
     - `(and true false)` → `false`
@@ -25,8 +25,8 @@ fn or {
     # Or
     ### Logical **or** of two booleans; short-circuits, returning `b` only when `a` is `false`.
   """
-  in  (a Bool (doc "the left operand (evaluated first)"))
-      (b Bool (doc "the right operand, returned when `a` is `false`"))
+  in  (a Bool (doc "The left operand (evaluated first)"))
+      (b Bool (doc "The right operand, returned when `a` is `false`"))
   out (r Bool (doc "`true` if either `a` or `b` is `true`, else `false`"))
   examples """
     - `(or false true)` → `true`
@@ -41,7 +41,7 @@ fn not {
     # Not
     ### Logical negation of a boolean.
   """
-  in  (a Bool (doc "the boolean to negate"))
+  in  (a Bool (doc "The boolean to negate"))
   out (r Bool (doc "`true` if `a` is `false`, else `false`"))
   examples """
     - `(not false)` → `true`

@@ -3,7 +3,7 @@ fn reverse_words {
     # Reverse Words
     ### Reverse the order of whitespace-separated words in a string.
   """
-  in (s Str (doc "the input string whose words will be reversed"))
+  in (s Str (doc "The input string whose words will be reversed"))
   out (r Str (doc "`s` with its words in reverse order, single-space separated"))
   examples """
     - `(reverse_words "hello world foo")` → `"foo world hello"`

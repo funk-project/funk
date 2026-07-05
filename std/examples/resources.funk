@@ -34,7 +34,7 @@ fn siteGreeting {
     ### Greet using an injected `config` value, read as `needs.config.site` in a funk body.
   """
   in  ()
-  out (r Str (doc "the string `\"hello from \"` followed by the injected `config.site`"))
+  out (r Str (doc "The string `\"hello from \"` followed by the injected `config.site`"))
   examples """
     - with `config.site=example.com` → `hello from example.com`
     - with `config.site=funk.dev` → `hello from funk.dev`

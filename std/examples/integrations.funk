@@ -10,8 +10,8 @@ fn createIssue {
     # Create Issue
     ### Open a GitHub issue titled `title` (illustrative) — declares the `github`, `secret`, and `config` resources it `needs` and the network host it may reach.
   """
-  in  (title Str (doc "the issue title"))
-  out (r Json (doc "a JSON object echoing the opened title, e.g. `{\"opened\": title}`"))
+  in  (title Str (doc "The issue title"))
+  out (r Json (doc "A JSON object echoing the opened title, e.g. `{\"opened\": title}`"))
   examples """
     - `(createIssue "Fix bug")` → `{"opened": "Fix bug"}`
     - `(createIssue "Release v1")` → `{"opened": "Release v1"}`
@@ -35,8 +35,8 @@ fn triage {
     # Triage
     ### A composite that calls `createIssue`; its `needs` and `effects` aggregate up from the callee.
   """
-  in  (title Str (doc "the issue title, forwarded to `createIssue`"))
-  out (r Json (doc "the JSON returned by `createIssue`"))
+  in  (title Str (doc "The issue title, forwarded to `createIssue`"))
+  out (r Json (doc "The JSON returned by `createIssue`"))
   examples """
     - `(triage "Fix bug")` → `{"opened": "Fix bug"}`
     - `(triage "Release v1")` → `{"opened": "Release v1"}`

@@ -13,9 +13,9 @@ fn incAcc {
     # Inc Acc
     ### Fold step that adds one to the accumulator, ignoring the item — powers `count`.
   """
-  in  (a Num (doc "the running accumulator"))
-      (b Any (doc "the current item (ignored)"))
-  out (r Num (doc "the accumulator plus one, `a + 1`"))
+  in  (a Num (doc "The running accumulator"))
+      (b Any (doc "The current item (ignored)"))
+  out (r Num (doc "The accumulator plus one, `a + 1`"))
   examples """
     - `(incAcc 5 99)` → `6`
     - `(incAcc 0 "x")` → `1`
@@ -28,8 +28,8 @@ fn sum {
     # Sum
     ### Sum of a list or stream of numbers (`fold` with `add` from `0`).
   """
-  in  (xs List (doc "the numbers to add up"))
-  out (r Num (doc "the total of every item in `xs`"))
+  in  (xs List (doc "The numbers to add up"))
+  out (r Num (doc "The total of every item in `xs`"))
   examples """
     - `(sum (range 1 5))` → `15`
     - `(sum [1, 2, 3, 4])` → `10`
@@ -43,8 +43,8 @@ fn count {
     # Count
     ### Number of items in a list or stream (`fold` incrementing once per item).
   """
-  in  (xs List (doc "the list or stream to measure"))
-  out (r Num (doc "how many items `xs` contains"))
+  in  (xs List (doc "The list or stream to measure"))
+  out (r Num (doc "How many items `xs` contains"))
   examples """
     - `(count (range 1 5))` → `5`
     - `(count [7, 8, 9])` → `3`
@@ -58,8 +58,8 @@ fn product {
     # Product
     ### Product of a list or stream of numbers (`fold` with `mul` from `1`).
   """
-  in  (xs List (doc "the numbers to multiply together"))
-  out (r Num (doc "the product of every item in `xs`"))
+  in  (xs List (doc "The numbers to multiply together"))
+  out (r Num (doc "The product of every item in `xs`"))
   examples """
     - `(product (range 1 4))` → `24`
     - `(product [2, 5])` → `10`
@@ -73,8 +73,8 @@ fn mean {
     # Mean
     ### Arithmetic mean of a list — its `sum` divided by its `count`, written in funk.
   """
-  in  (xs List (doc "the numbers to average"))
-  out (r Num (doc "the mean of `xs`, `sum / count`"))
+  in  (xs List (doc "The numbers to average"))
+  out (r Num (doc "The mean of `xs`, `sum / count`"))
   examples """
     - `(mean (range 1 5))` → `3`
     - `(mean [2, 4, 6])` → `4`

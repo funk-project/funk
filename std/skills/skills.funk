@@ -15,8 +15,8 @@ fn architect {
     # Architect
     ### Turn a task description into a concise, single-function `funk` design (name, ports, engine, approach).
   """
-  in  (task Str (doc "a natural-language description of the task to design a function for"))
-  out (design Str (doc "a terse design for one function: name, input ports, output port, engine, and approach"))
+  in  (task Str (doc "A natural-language description of the task to design a function for"))
+  out (design Str (doc "A terse design for one function: name, input ports, output port, engine, and approach"))
   examples """
     - `(architect "reverse the words in a string")` → `reverseWords / in (s Str) / out (r Str) / python / split, reverse, join`
     - `(architect "add two numbers")` → `add / in (a Num) (b Num) / out (r Num) / python / return a + b`
@@ -32,8 +32,8 @@ fn programmer {
     # Programmer
     ### Turn a function design into a single valid `.funk` `fn` block.
   """
-  in  (design Str (doc "a function design, e.g. the output of `architect`"))
-  out (code Str (doc "one complete `fn` block implementing the design"))
+  in  (design Str (doc "A function design, e.g. the output of `architect`"))
+  out (code Str (doc "One complete `fn` block implementing the design"))
   examples """
     - `(programmer "add / in (a Num) (b Num) / out (r Num) / python")` → `fn add { doc "..." in (a Num) (b Num) out (r Num) engine python src "return a + b" }`
     - `(programmer "<design for upper>")` → `fn upper { ... src "return s.upper()" }`
@@ -59,8 +59,8 @@ fn reviewer {
     # Reviewer
     ### Review a `.funk` function for correctness and clarity, ending with a `PASS`/`NEEDS-WORK` verdict.
   """
-  in  (code Str (doc "the `fn` block to review"))
-  out (review Str (doc "a short bulleted review ending with a `PASS` or `NEEDS-WORK` verdict line"))
+  in  (code Str (doc "The `fn` block to review"))
+  out (review Str (doc "A short bulleted review ending with a `PASS` or `NEEDS-WORK` verdict line"))
   examples """
     - `(reviewer "fn add { ... src \"return a + b\" }")` → `- Python is correct ... Verdict: PASS`
     - `(reviewer "fn div { ... src \"return a / b\" }")` → `- No zero-divisor guard ... Verdict: NEEDS-WORK`
@@ -76,7 +76,7 @@ fn tester {
     # Tester
     ### Propose concrete test cases for a `.funk` function and give a `LIKELY-CORRECT`/`SUSPECT` verdict.
   """
-  in  (code Str (doc "the `fn` block to test"))
+  in  (code Str (doc "The `fn` block to test"))
   out (verdict Str (doc "2-3 input->expected-output test cases followed by a `LIKELY-CORRECT` or `SUSPECT` verdict"))
   examples """
     - `(tester "fn add { ... src \"return a + b\" }")` → `add 2 3 -> 5 ... Verdict: LIKELY-CORRECT`
@@ -93,9 +93,9 @@ fn reflect {
     # Reflect
     ### Self-analyze a function against a report and rewrite its source if the report reveals a problem.
   """
-  in  (code Str (doc "the `fn` block to analyze"))
-      (report Str (doc "a report about the function — an error, review, or run result"))
-  out (code Str (doc "a corrected `fn` block if the report shows a problem, otherwise the same block unchanged"))
+  in  (code Str (doc "The `fn` block to analyze"))
+      (report Str (doc "A report about the function — an error, review, or run result"))
+  out (code Str (doc "A corrected `fn` block if the report shows a problem, otherwise the same block unchanged"))
   examples """
     - `(reflect "fn div { ... }" "error: division by zero")` → `fn div { ... src "if b == 0: raise ... return a / b" }`
     - `(reflect "fn add { ... }" "Verdict: PASS")` → `fn add { ... }` (unchanged)
@@ -112,8 +112,8 @@ fn generate {
     # Generate
     ### Generate a `funk` function from a task by chaining `architect` then `programmer`.
   """
-  in  (task Str (doc "a natural-language description of the function to generate"))
-  out (code Str (doc "the generated `fn` block"))
+  in  (task Str (doc "A natural-language description of the function to generate"))
+  out (code Str (doc "The generated `fn` block"))
   examples """
     - `(generate "reverse the words in a string")` → `fn reverseWords { ... src "return ' '.join(reversed(s.split()))" }`
     - `(generate "square a number")` → `fn square { ... src "return n * n" }`

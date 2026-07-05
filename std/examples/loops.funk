@@ -10,8 +10,8 @@ fn powTwoLE {
     # Pow Two LE
     ### The largest power of two less than or equal to `n`, computed via a `while` loop that doubles until the next double would exceed `n`.
   """
-  in  (n Num (doc "the upper bound (inclusive)"))
-  out (r Num (doc "the greatest power of two `≤ n`"))
+  in  (n Num (doc "The upper bound (inclusive)"))
+  out (r Num (doc "The greatest power of two `≤ n`"))
   examples """
     - `(powTwoLE 100)` → `64`
     - `(powTwoLE 1000)` → `512`
@@ -29,7 +29,7 @@ fn countUp {
     # Count Up
     ### Count up from `0` to `n`, returning `n` — a minimal `while` loop that increments while `s < n`.
   """
-  in  (n Num (doc "the target value to count up to"))
+  in  (n Num (doc "The target value to count up to"))
   out (r Num (doc "`n` (the final counter value)"))
   examples """
     - `(countUp 5)` → `5`

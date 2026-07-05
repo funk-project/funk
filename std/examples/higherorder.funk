@@ -11,8 +11,8 @@ fn applyTwice {
     # Apply Twice
     ### Apply the function `f` to `x` twice — `f(f(x))` — demonstrating a function passed as a first-class value.
   """
-  in  (f Fn (doc "the function to apply, taking and returning one `Num`"))
-      (x Num (doc "the starting value"))
+  in  (f Fn (doc "The function to apply, taking and returning one `Num`"))
+      (x Num (doc "The starting value"))
   out (r Num (doc "`f` applied to `x`, then to that result"))
   examples """
     - `(applyTwice double 5)` → `20`
@@ -27,7 +27,7 @@ fn quadruple {
     # Quadruple
     ### Multiply `x` by four by passing `maths.double` to `applyTwice` (double, then double again).
   """
-  in  (x Num (doc "the number to quadruple"))
+  in  (x Num (doc "The number to quadruple"))
   out (r Num (doc "`x * 4`"))
   examples """
     - `(quadruple 5)` → `20`
@@ -43,9 +43,9 @@ fn compose2 {
     # Compose2
     ### Compose two functions: apply `g` to `x`, then `f` to that result — `f(g(x))`.
   """
-  in  (f Fn (doc "the outer function, applied second"))
-      (g Fn (doc "the inner function, applied first"))
-      (x Num (doc "the starting value"))
+  in  (f Fn (doc "The outer function, applied second"))
+      (g Fn (doc "The inner function, applied first"))
+      (x Num (doc "The starting value"))
   out (r Num (doc "`f` applied to `g(x)`"))
   examples """
     - `(compose2 square inc 4)` → `25`
@@ -60,7 +60,7 @@ fn incThenSquare {
     # Inc Then Square
     ### Increment `x` then square it — `square(inc(x))` — built with `compose2`.
   """
-  in  (x Num (doc "the number to increment then square"))
+  in  (x Num (doc "The number to increment then square"))
   out (r Num (doc "`(x + 1)²`"))
   examples """
     - `(incThenSquare 4)` → `25`

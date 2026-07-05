@@ -39,7 +39,11 @@ fn mergedCount {
     # Merged Count
     ### How many items result from `merge`-ing two copies of the range `1..n` into one stream (always `2n`).
   """
-  in  (n Num (doc "upper bound of each range `1..n` being merged"))
+  in  (
+    n Num (
+      doc "upper bound of each range `1..n` being merged"
+    )
+  )
   out (r Num (doc "the total number of items across both merged ranges"))
   examples """
     - `(mergedCount 4)` → `8`

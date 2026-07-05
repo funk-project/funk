@@ -10,8 +10,8 @@ fn reverse {
     # Reverse
     ### Reverse the order of a list.
   """
-  in  (a List (doc "the list to reverse"))
-  out (r List (doc "a new list with `a`'s items in reverse order"))
+  in  (a List (doc "The list to reverse"))
+  out (r List (doc "A new list with `a`'s items in reverse order"))
   examples """
     - `(reverse [1, 2, 3])` → `[3, 2, 1]`
     - `(reverse [])` → `[]`
@@ -27,8 +27,8 @@ fn sort {
     # Sort
     ### Sort a list into ascending order.
   """
-  in  (a List (doc "the list to sort"))
-  out (r List (doc "a new list with `a`'s items in ascending order"))
+  in  (a List (doc "The list to sort"))
+  out (r List (doc "A new list with `a`'s items in ascending order"))
   examples """
     - `(sort [3, 1, 2])` → `[1, 2, 3]`
     - `(sort [5])` → `[5]`
@@ -44,7 +44,7 @@ fn unique {
     # Unique
     ### Distinct items of a list, preserving first-seen order.
   """
-  in  (a List (doc "the list to deduplicate"))
+  in  (a List (doc "The list to deduplicate"))
   out (r List (doc "`a` with later duplicate items removed"))
   examples """
     - `(unique [1, 1, 2, 3, 3])` → `[1, 2, 3]`
@@ -65,9 +65,9 @@ fn take {
     # Take
     ### The first `n` items of a list.
   """
-  in  (a List (doc "the source list"))
-      (n Num  (doc "how many leading items to keep"))
-  out (r List (doc "at most the first `n` items of `a`"))
+  in  (a List (doc "The source list"))
+      (n Num  (doc "How many leading items to keep"))
+  out (r List (doc "At most the first `n` items of `a`"))
   examples """
     - `(take [1, 2, 3, 4] 2)` → `[1, 2]`
     - `(take [1, 2] 5)` → `[1, 2]`
@@ -83,8 +83,8 @@ fn drop {
     # Drop
     ### A list without its first `n` items.
   """
-  in  (a List (doc "the source list"))
-      (n Num  (doc "how many leading items to discard"))
+  in  (a List (doc "The source list"))
+      (n Num  (doc "How many leading items to discard"))
   out (r List (doc "`a` with its first `n` items removed"))
   examples """
     - `(drop [1, 2, 3, 4] 2)` → `[3, 4]`
@@ -101,7 +101,7 @@ fn flatten {
     # Flatten
     ### Flatten a list of lists by one level, leaving non-list items in place.
   """
-  in  (a List (doc "the list to flatten one level"))
+  in  (a List (doc "The list to flatten one level"))
   out (r List (doc "`a` with any nested lists spliced in, one level deep"))
   examples """
     - `(flatten [[1, 2], [3], 4])` → `[1, 2, 3, 4]`
@@ -124,9 +124,9 @@ fn zip2 {
     # Zip2
     ### Pairwise zip two lists into a list of `[x, y]` pairs, stopping at the shorter list.
   """
-  in  (a List (doc "the first list, giving each pair's left item"))
-      (b List (doc "the second list, giving each pair's right item"))
-  out (r List (doc "a list of `[x, y]` pairs drawn positionally from `a` and `b`"))
+  in  (a List (doc "The first list, giving each pair's left item"))
+      (b List (doc "The second list, giving each pair's right item"))
+  out (r List (doc "A list of `[x, y]` pairs drawn positionally from `a` and `b`"))
   examples """
     - `(zip2 [1, 2, 3] [4, 5, 6])` → `[[1, 4], [2, 5], [3, 6]]`
     - `(zip2 [1, 2, 3] [4])` → `[[1, 4]]`
@@ -142,8 +142,8 @@ fn contains? {
     # Contains?
     ### True if the list contains the given item.
   """
-  in  (a List    (doc "the list to search"))
-      (item Any  (doc "the item to look for"))
+  in  (a List    (doc "The list to search"))
+      (item Any  (doc "The item to look for"))
   out (r Bool (doc "`true` if `item` is an element of `a`, else `false`"))
   examples """
     - `(contains? [1, 2, 3] 2)` → `true`

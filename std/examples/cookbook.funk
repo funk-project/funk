@@ -11,8 +11,8 @@ fn celsiusToF {
     # Celsius To F
     ### Convert a temperature in Celsius to Fahrenheit (`c * 1.8 + 32`).
   """
-  in  (c Num (doc "the temperature in degrees Celsius"))
-  out (r Num (doc "the same temperature in degrees Fahrenheit"))
+  in  (c Num (doc "The temperature in degrees Celsius"))
+  out (r Num (doc "The same temperature in degrees Fahrenheit"))
   examples """
     - `(celsiusToF 100)` → `212`
     - `(celsiusToF 0)` → `32`
@@ -27,8 +27,8 @@ fn slugify {
     # Slugify
     ### Turn a title into a URL slug: lowercase it, collapse each run of non-alphanumeric characters into a single hyphen, and trim leading/trailing hyphens.
   """
-  in  (s Str (doc "the title or phrase to slugify"))
-  out (r Str (doc "the lowercase, hyphen-separated slug"))
+  in  (s Str (doc "The title or phrase to slugify"))
+  out (r Str (doc "The lowercase, hyphen-separated slug"))
   examples """
     - `(slugify "Hello, World!")` → `"hello-world"`
     - `(slugify "The Machine Is No Longer a Black Box!")` → `"the-machine-is-no-longer-a-black-box"`
@@ -45,8 +45,8 @@ fn initials {
     # Initials
     ### The uppercased first letter of each whitespace-separated word, joined together.
   """
-  in  (s Str (doc "the phrase to take initials from"))
-  out (r Str (doc "the concatenated, uppercased initials"))
+  in  (s Str (doc "The phrase to take initials from"))
+  out (r Str (doc "The concatenated, uppercased initials"))
   examples """
     - `(initials "funk over fear")` → `"FOF"`
     - `(initials "north by northwest")` → `"NBN"`
@@ -63,8 +63,8 @@ fn wordCount {
     # Word Count
     ### How many whitespace-separated words a sentence contains.
   """
-  in  (s Str (doc "the sentence to count words in"))
-  out (r Num (doc "the number of words in `s`"))
+  in  (s Str (doc "The sentence to count words in"))
+  out (r Num (doc "The number of words in `s`"))
   examples """
     - `(wordCount "hello world")` → `2`
     - `(wordCount "a language for the plans AIs make")` → `7`

@@ -9,8 +9,8 @@ fn gt {
     # Gt
     ### Test whether `a` is strictly greater than `b`.
   """
-  in  (a Num (doc "the left operand"))
-      (b Num (doc "the right operand"))
+  in  (a Num (doc "The left operand"))
+      (b Num (doc "The right operand"))
   out (r Bool (doc "`true` if `a > b`, else `false`"))
   examples """
     - `(gt 5 3)` → `true`
@@ -27,8 +27,8 @@ fn lt {
     # Lt
     ### Test whether `a` is strictly less than `b`.
   """
-  in  (a Num (doc "the left operand"))
-      (b Num (doc "the right operand"))
+  in  (a Num (doc "The left operand"))
+      (b Num (doc "The right operand"))
   out (r Bool (doc "`true` if `a < b`, else `false`"))
   examples """
     - `(lt 3 5)` → `true`
@@ -45,8 +45,8 @@ fn gte {
     # Gte
     ### Test whether `a` is greater than or equal to `b`.
   """
-  in  (a Num (doc "the left operand"))
-      (b Num (doc "the right operand"))
+  in  (a Num (doc "The left operand"))
+      (b Num (doc "The right operand"))
   out (r Bool (doc "`true` if `a >= b`, else `false`"))
   examples """
     - `(gte 3 3)` → `true`
@@ -63,8 +63,8 @@ fn lte {
     # Lte
     ### Test whether `a` is less than or equal to `b`.
   """
-  in  (a Num (doc "the left operand"))
-      (b Num (doc "the right operand"))
+  in  (a Num (doc "The left operand"))
+      (b Num (doc "The right operand"))
   out (r Bool (doc "`true` if `a <= b`, else `false`"))
   examples """
     - `(lte 3 3)` → `true`
@@ -81,8 +81,8 @@ fn eq {
     # Eq
     ### Test whether `a` equals `b`.
   """
-  in  (a Num (doc "the left operand"))
-      (b Num (doc "the right operand"))
+  in  (a Num (doc "The left operand"))
+      (b Num (doc "The right operand"))
   out (r Bool (doc "`true` if `a == b`, else `false`"))
   examples """
     - `(eq 4 4)` → `true`
@@ -99,8 +99,8 @@ fn neq {
     # Neq
     ### Test whether `a` does not equal `b`.
   """
-  in  (a Num (doc "the left operand"))
-      (b Num (doc "the right operand"))
+  in  (a Num (doc "The left operand"))
+      (b Num (doc "The right operand"))
   out (r Bool (doc "`true` if `a != b`, else `false`"))
   examples """
     - `(neq 1 2)` → `true`

@@ -9,9 +9,9 @@ fn split {
     # Split
     ### Split a string into a list of substrings around each occurrence of `sep`.
   """
-  in  (a Str (doc "the string to split"))
-      (sep Str (doc "the separator to split on"))
-  out (r List (doc "the list of substrings between separators"))
+  in  (a Str (doc "The string to split"))
+      (sep Str (doc "The separator to split on"))
+  out (r List (doc "The list of substrings between separators"))
   examples """
     - `(split "a,b,c" ",")` → `["a","b","c"]`
     - `(split "hello" "l")` → `["he","","o"]`
@@ -27,9 +27,9 @@ fn join {
     # Join
     ### Join a list of values into a single string, placing `sep` between each element.
   """
-  in  (xs List (doc "the list of values to join"))
-      (sep Str (doc "the separator inserted between elements"))
-  out (r Str (doc "the concatenated string"))
+  in  (xs List (doc "The list of values to join"))
+      (sep Str (doc "The separator inserted between elements"))
+  out (r Str (doc "The concatenated string"))
   examples """
     - `(join ["a","b","c"] "-")` → `"a-b-c"`
     - `(join ["x","y"] ", ")` → `"x, y"`
@@ -45,10 +45,10 @@ fn replace {
     # Replace
     ### Replace every occurrence of `old` with `new` in the string `a`.
   """
-  in  (a Str (doc "the string to search in"))
-      (old Str (doc "the substring to replace"))
-      (new Str (doc "the replacement substring"))
-  out (r Str (doc "the string with all replacements applied"))
+  in  (a Str (doc "The string to search in"))
+      (old Str (doc "The substring to replace"))
+      (new Str (doc "The replacement substring"))
+  out (r Str (doc "The string with all replacements applied"))
   examples """
     - `(replace "banana" "a" "o")` → `"bonono"`
     - `(replace "a-b-c" "-" "+")` → `"a+b+c"`
@@ -64,8 +64,8 @@ fn contains? {
     # Contains?
     ### Return `true` if the string `a` contains the substring `sub`.
   """
-  in  (a Str (doc "the string to search in"))
-      (sub Str (doc "the substring to look for"))
+  in  (a Str (doc "The string to search in"))
+      (sub Str (doc "The substring to look for"))
   out (r Bool (doc "`true` if `sub` occurs in `a`, else `false`"))
   examples """
     - `(contains? "hello" "ell")` → `true`
@@ -82,8 +82,8 @@ fn startsWith? {
     # Starts With?
     ### Return `true` if the string `a` begins with `prefix`.
   """
-  in  (a Str (doc "the string to test"))
-      (prefix Str (doc "the prefix to check for"))
+  in  (a Str (doc "The string to test"))
+      (prefix Str (doc "The prefix to check for"))
   out (r Bool (doc "`true` if `a` starts with `prefix`, else `false`"))
   examples """
     - `(startsWith? "hello" "he")` → `true`
@@ -100,8 +100,8 @@ fn endsWith? {
     # Ends With?
     ### Return `true` if the string `a` ends with `suffix`.
   """
-  in  (a Str (doc "the string to test"))
-      (suffix Str (doc "the suffix to check for"))
+  in  (a Str (doc "The string to test"))
+      (suffix Str (doc "The suffix to check for"))
   out (r Bool (doc "`true` if `a` ends with `suffix`, else `false`"))
   examples """
     - `(endsWith? "hello" "lo")` → `true`
@@ -118,8 +118,8 @@ fn reverse {
     # Reverse
     ### Reverse the order of the characters in a string.
   """
-  in  (a Str (doc "the string to reverse"))
-  out (r Str (doc "the string with its characters in reverse order"))
+  in  (a Str (doc "The string to reverse"))
+  out (r Str (doc "The string with its characters in reverse order"))
   examples """
     - `(reverse "hello")` → `"olleh"`
     - `(reverse "abc")` → `"cba"`
@@ -135,8 +135,8 @@ fn words {
     # Words
     ### Split a string on runs of whitespace into a list of words, discarding empty entries.
   """
-  in  (a Str (doc "the string to tokenize"))
-  out (r List (doc "the list of whitespace-separated words"))
+  in  (a Str (doc "The string to tokenize"))
+  out (r List (doc "The list of whitespace-separated words"))
   examples """
     - `(words "foo bar baz")` → `["foo","bar","baz"]`
     - `(words "  a   b ")` → `["a","b"]`
@@ -152,8 +152,8 @@ fn capitalize {
     # Capitalize
     ### Capitalize the first character of a string and lowercase the rest.
   """
-  in  (a Str (doc "the string to capitalize"))
-  out (r Str (doc "the string with an uppercase first character and lowercase remainder"))
+  in  (a Str (doc "The string to capitalize"))
+  out (r Str (doc "The string with an uppercase first character and lowercase remainder"))
   examples """
     - `(capitalize "hello world")` → `"Hello world"`
     - `(capitalize "ABC")` → `"Abc"`
@@ -169,9 +169,9 @@ fn repeat {
     # Repeat
     ### Repeat a string `n` times, concatenated end to end.
   """
-  in  (a Str (doc "the string to repeat"))
-      (n Num (doc "the number of repetitions"))
-  out (r Str (doc "the string `a` repeated `n` times"))
+  in  (a Str (doc "The string to repeat"))
+      (n Num (doc "The number of repetitions"))
+  out (r Str (doc "The string `a` repeated `n` times"))
   examples """
     - `(repeat "ab" 3)` → `"ababab"`
     - `(repeat "x" 0)` → `""`

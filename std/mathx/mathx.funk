@@ -9,8 +9,8 @@ fn floor {
     # Floor
     ### Round `a` down to the largest integer that is `≤ a`.
   """
-  in  (a Num (doc "the number to round down"))
-  out (r Num (doc "the greatest integer `≤ a`"))
+  in  (a Num (doc "The number to round down"))
+  out (r Num (doc "The greatest integer `≤ a`"))
   examples """
     - `(floor 3.7)` → `3`
     - `(floor -2.5)` → `-3`
@@ -27,8 +27,8 @@ fn ceil {
     # Ceil
     ### Round `a` up to the smallest integer that is `≥ a`.
   """
-  in  (a Num (doc "the number to round up"))
-  out (r Num (doc "the smallest integer `≥ a`"))
+  in  (a Num (doc "The number to round up"))
+  out (r Num (doc "The smallest integer `≥ a`"))
   examples """
     - `(ceil 3.2)` → `4`
     - `(ceil -2.5)` → `-2`
@@ -45,8 +45,8 @@ fn round {
     # Round
     ### Round `a` to `n` decimal places.
   """
-  in  (a Num (doc "the number to round"))
-      (n Num (doc "the number of decimal places to keep"))
+  in  (a Num (doc "The number to round"))
+      (n Num (doc "The number of decimal places to keep"))
   out (r Num (doc "`a` rounded to `n` decimal places"))
   examples """
     - `(round 3.14159 2)` → `3.14`
@@ -63,8 +63,8 @@ fn log {
     # Log
     ### Natural logarithm (base `e`) of `a`.
   """
-  in  (a Num (doc "the argument (must be `> 0`)"))
-  out (r Num (doc "the natural logarithm `ln(a)`"))
+  in  (a Num (doc "The argument (must be `> 0`)"))
+  out (r Num (doc "The natural logarithm `ln(a)`"))
   examples """
     - `(log 1)` → `0`
     - `(log 2.718281828)` → `0.999…`
@@ -81,8 +81,8 @@ fn log10 {
     # Log10
     ### Base-10 logarithm of `a`.
   """
-  in  (a Num (doc "the argument (must be `> 0`)"))
-  out (r Num (doc "the base-10 logarithm `log₁₀(a)`"))
+  in  (a Num (doc "The argument (must be `> 0`)"))
+  out (r Num (doc "The base-10 logarithm `log₁₀(a)`"))
   examples """
     - `(log10 1000)` → `3`
     - `(log10 1)` → `0`
@@ -99,7 +99,7 @@ fn exp {
     # Exp
     ### `e` raised to the power `a`.
   """
-  in  (a Num (doc "the exponent"))
+  in  (a Num (doc "The exponent"))
   out (r Num (doc "`e` raised to the `a`"))
   examples """
     - `(exp 0)` → `1`
@@ -117,8 +117,8 @@ fn sin {
     # Sin
     ### Sine of `a`, where `a` is in radians.
   """
-  in  (a Num (doc "the angle in radians"))
-  out (r Num (doc "the sine of `a`, in the range `[-1, 1]`"))
+  in  (a Num (doc "The angle in radians"))
+  out (r Num (doc "The sine of `a`, in the range `[-1, 1]`"))
   examples """
     - `(sin 0)` → `0`
     - `(sin 1)` → `0.841…`
@@ -135,8 +135,8 @@ fn cos {
     # Cos
     ### Cosine of `a`, where `a` is in radians.
   """
-  in  (a Num (doc "the angle in radians"))
-  out (r Num (doc "the cosine of `a`, in the range `[-1, 1]`"))
+  in  (a Num (doc "The angle in radians"))
+  out (r Num (doc "The cosine of `a`, in the range `[-1, 1]`"))
   examples """
     - `(cos 0)` → `1`
     - `(cos 1)` → `0.540…`
@@ -153,8 +153,8 @@ fn tan {
     # Tan
     ### Tangent of `a`, where `a` is in radians.
   """
-  in  (a Num (doc "the angle in radians"))
-  out (r Num (doc "the tangent of `a`"))
+  in  (a Num (doc "The angle in radians"))
+  out (r Num (doc "The tangent of `a`"))
   examples """
     - `(tan 0)` → `0`
     - `(tan 1)` → `1.557…`
@@ -171,7 +171,7 @@ fn factorial {
     # Factorial
     ### Factorial of a non-negative integer `a` (the product `1 × 2 × … × a`).
   """
-  in  (a Num (doc "a non-negative integer"))
+  in  (a Num (doc "A non-negative integer"))
   out (r Num (doc "`a!`, the factorial of `a`"))
   examples """
     - `(factorial 5)` → `120`
@@ -189,9 +189,9 @@ fn gcd {
     # Gcd
     ### Greatest common divisor of integers `a` and `b`.
   """
-  in  (a Num (doc "the first integer"))
-      (b Num (doc "the second integer"))
-  out (r Num (doc "the largest integer that divides both `a` and `b`"))
+  in  (a Num (doc "The first integer"))
+      (b Num (doc "The second integer"))
+  out (r Num (doc "The largest integer that divides both `a` and `b`"))
   examples """
     - `(gcd 12 8)` → `4`
     - `(gcd 17 5)` → `1`
@@ -208,9 +208,9 @@ fn clamp {
     # Clamp
     ### Constrain `x` to the inclusive range `[lo, hi]`.
   """
-  in  (x Num (doc "the value to clamp"))
-      (lo Num (doc "the lower bound"))
-      (hi Num (doc "the upper bound"))
+  in  (x Num (doc "The value to clamp"))
+      (lo Num (doc "The lower bound"))
+      (hi Num (doc "The upper bound"))
   out (r Num (doc "`x` limited to the range `[lo, hi]`"))
   examples """
     - `(clamp 5 0 10)` → `5`
