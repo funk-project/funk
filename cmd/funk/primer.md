@@ -6,7 +6,9 @@ start writing valid funk.
 
 **Reuse before you write.** Before defining a function, search the library — it may already
 exist: `funk search "mean of a list"` (text over name/doc/examples) or `funk search "List -> Num"`
-(by signature). Add `--json` for structured results. Compose what's there instead of reinventing.
+(by signature). Add `--json` for structured results. With an embedding endpoint (a local Ollama is
+free), `funk index` then `funk search --semantic "…"` ranks by meaning, not just words. Compose
+what's there instead of reinventing.
 
 ## The shape
 

@@ -43,6 +43,8 @@ func main() {
 		err = cmdList(args)
 	case "search", "find":
 		err = cmdSearch(args)
+	case "index":
+		err = cmdIndex(args)
 	case "types":
 		err = cmdTypes(args)
 	case "check":
@@ -83,8 +85,11 @@ usage:
   funk parse <file>          parse a .funk file, print the AST (JSON)
   funk fmt [-w] <file>       format a .funk file canonically (-w writes)
   funk list [-f path]        list loaded functions
-  funk search [--json] <query | in… -> out>   find a function to reuse — by text
-                             (name/doc/examples) or by signature (e.g. Num Num -> Bool)
+  funk search [--json] [--semantic] <query | in… -> out>   find a function to reuse
+                             — by text (name/doc/examples), signature (Num Num -> Bool),
+                             or --semantic (embedding-ranked; needs funk index first)
+  funk index [-f path]       build the semantic search index (embeds every function
+                             via FUNK_EMBED_URL — e.g. a local Ollama, free)
   funk types [-f path]       list loaded types
   funk check [-f path]       static-check every composite function
   funk test [-f path]        run inline 'test (is (call) expected)' assertions

@@ -17,6 +17,7 @@ import (
 func cmdSearch(args []string) error {
 	files, rest := takeFlag(args, "-f")
 	asJSON, rest := takeBool(rest, "--json")
+	semantic, rest := takeBool(rest, "--semantic")
 	limits, rest := takeFlag(rest, "--limit")
 	limit := 20
 	if len(limits) > 0 {
@@ -25,15 +26,23 @@ func cmdSearch(args []string) error {
 		}
 	}
 	if len(rest) == 0 {
-		return fmt.Errorf("search: usage: funk search [--json] [--limit N] <query | in… -> out>")
+		return fmt.Errorf("search: usage: funk search [--json] [--semantic] [--limit N] <query | in… -> out>")
 	}
 	query := strings.Join(rest, " ")
-	lib, err := loadLibrary(files)
-	if err != nil {
-		return err
-	}
 
-	rows := searchResults(lib, query, limit)
+	var rows []searchRow
+	if semantic { // embedding-ranked; needs an index (funk index) + FUNK_EMBED_URL
+		var err error
+		if rows, err = searchSemantic(query, limit); err != nil {
+			return err
+		}
+	} else {
+		lib, err := loadLibrary(files)
+		if err != nil {
+			return err
+		}
+		rows = searchResults(lib, query, limit)
+	}
 	if asJSON {
 		b, _ := json.MarshalIndent(rows, "", "  ")
 		fmt.Println(string(b))
