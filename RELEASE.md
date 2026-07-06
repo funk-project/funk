@@ -1,6 +1,36 @@
 # funk — launch
 
-## v0.1 — "trust it for small, real workflows" (ready to tag)
+## v0.2 — "reusable, discoverable, reproducible"
+
+41 commits since v0.1.0. funk grew from "runs a workflow" into "a library an AI reads, searches,
+and composes".
+
+**Modules & reproducibility**
+- Scoped imports: `use "pkg" as alias` — no implicit global namespace; a bare name resolves only
+  within its own package, cross-package calls are qualified `alias.fn`.
+- `funk get <url>@<constraint>` resolves semver (`v1` / `latest` → best tag) and records a
+  content-hash in `funk.lock`; the cache is verified on load (go.sum-style integrity).
+- Manifest-driven: `use "url" "v1.2.0" as ml` + `funk get` (no args) installs every versioned dep.
+
+**Language & ergonomics**
+- `main` entry points; `alias TARGET` (named reuse); `(with …)` per-call resource binding;
+  parameterized types `(List Num)` + an element-aware connection checker.
+- Docs as data: triple-quoted `"""` markdown (dedented), per-port `(doc …)`, an `examples` field,
+  and a human `name` on every function.
+
+**Discovery (for AIs)** — `funk search` (by text or signature `Num Num -> Bool`) + funkd `/search`:
+reuse before you write.
+
+**Streaming** — sliding event-time windows (`window … Ns every Ms`, watermark + drop-late); fixed
+`map` to apply its function per item (any arity).
+
+**Stdlib & tooling** — every std function documented (doc / ports / examples / name); the
+VS Code / TextMate grammar updated for all new syntax. 138 Go tests; `go test` + `funk check` +
+`funk test` green.
+
+**Tag:** `git tag v0.2.0 && git push origin main --tags`.
+
+## v0.1 — "trust it for small, real workflows" (tagged)
 
 The bar over v0.0.1: a newcomer can write, check, and run funk without surprises, and a
 credential does not leak by accident. What landed since the first public cut:
