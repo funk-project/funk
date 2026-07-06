@@ -38,6 +38,13 @@ func cmdGet(args []string) error {
 		return fmt.Errorf("get: usage: funk get <git-url-or-path>[@ref] [name]")
 	}
 	url, ref := splitRef(args[0])
+	if isConstraint(ref) { // resolve a partial `v1` / `latest` to the best tag
+		resolved, err := resolveVersion(url, ref)
+		if err != nil {
+			return fmt.Errorf("get: %w", err)
+		}
+		ref = resolved
+	}
 	name := deriveName(url)
 	if len(args) > 1 {
 		name = args[1]
@@ -59,15 +66,13 @@ func cmdGet(args []string) error {
 			if out, err := exec.Command("git", "-C", dst, "checkout", ref).CombinedOutput(); err != nil {
 				return fmt.Errorf("get: checkout %s failed: %s", ref, strings.TrimSpace(string(out)))
 			}
-			fmt.Fprintf(os.Stderr, "updated %s → %s\n", tag, dst)
-			return nil
+			return recordLock(dst, name, ref, fmt.Sprintf("updated %s → %s", tag, dst))
 		}
 		out, err := exec.Command("git", "-C", dst, "pull", "--ff-only").CombinedOutput()
 		if err != nil {
 			return fmt.Errorf("get: update failed: %s", strings.TrimSpace(string(out)))
 		}
-		fmt.Fprintf(os.Stderr, "updated %s → %s\n", name, dst)
-		return nil
+		return recordLock(dst, name, ref, fmt.Sprintf("updated %s → %s", name, dst))
 	}
 
 	if ref != "" {
@@ -83,15 +88,27 @@ func cmdGet(args []string) error {
 			}
 			_ = out
 		}
-		fmt.Fprintf(os.Stderr, "fetched %s → %s\n", tag, dst)
-		return nil
+		return recordLock(dst, name, ref, fmt.Sprintf("fetched %s → %s", tag, dst))
 	}
 
 	out, err := exec.Command("git", "clone", "--depth", "1", url, dst).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("get: clone failed: %s", strings.TrimSpace(string(out)))
 	}
-	fmt.Fprintf(os.Stderr, "fetched %s → %s\n", name, dst)
+	return recordLock(dst, name, ref, fmt.Sprintf("fetched %s → %s", name, dst))
+}
+
+// recordLock prints the fetch message and, for a version tag, records the
+// package's content hash in the lockfile (go.sum-style reproducibility).
+func recordLock(dst, name, ref, msg string) error {
+	fmt.Fprintln(os.Stderr, msg)
+	if _, ok := parseSemver(ref); ok {
+		h, err := hashPkg(dst)
+		if err != nil {
+			return err
+		}
+		return writeLockEntry(lockPath(), name+"@"+ref, h)
+	}
 	return nil
 }
 

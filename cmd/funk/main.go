@@ -97,8 +97,10 @@ usage:
                              programmer→check→reflect), adds it to std/generated
   funk serve [--addr :7777]  run funkd (HTTP: /run streams NDJSON, /functions,
                              /introspect)
-  funk get <url>[@ref] [name]   fetch a package (git repo) into ~/.funk/pkg;
-                             @ref pins a tag/branch/commit
+  funk get <url>[@ref] [name]   fetch a package (git repo) into ~/.funk/pkg.
+                             @ref pins a tag/branch/commit; a version (v1.2.0) or
+                             constraint (v1, latest) resolves to the best semver tag
+                             and records a content-hash in funk.lock (verified on load)
 
 env:
   FUNK_STD      path to the std library (default: ./std)
@@ -140,6 +142,9 @@ func loadLibrary(extra []string) (*funk.Library, error) {
 		if err != nil {
 			return nil, err
 		}
+	}
+	if err := verifyLock(lockPath(), cacheDir()); err != nil {
+		return nil, err
 	}
 	if err := lib.Finalize(); err != nil {
 		return nil, err
