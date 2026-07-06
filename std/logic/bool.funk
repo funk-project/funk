@@ -53,3 +53,54 @@ fn not {
   body (if a (flush (r false)) (flush (r true)))
   test (is (not false) true)
 }
+
+fn nand {
+  name "Logical Nand"
+  doc """
+    # Logical Nand
+    ### Negated `and` — `false` only when both `a` and `b` are `true`.
+  """
+  in  (a Bool (doc "The left operand"))
+      (b Bool (doc "The right operand"))
+  out (r Bool (doc "`false` if both are `true`, else `true`"))
+  examples """
+    - `(nand true true)` → `false`
+    - `(nand true false)` → `true`
+  """
+  body (flush (r (not (and a b))))
+  test (is (nand true true) false)
+}
+
+fn nor {
+  name "Logical Nor"
+  doc """
+    # Logical Nor
+    ### Negated `or` — `true` only when both `a` and `b` are `false`.
+  """
+  in  (a Bool (doc "The left operand"))
+      (b Bool (doc "The right operand"))
+  out (r Bool (doc "`true` if both are `false`, else `false`"))
+  examples """
+    - `(nor false false)` → `true`
+    - `(nor true false)` → `false`
+  """
+  body (flush (r (not (or a b))))
+  test (is (nor false false) true)
+}
+
+fn xor {
+  name "Logical Xor"
+  doc """
+    # Logical Xor
+    ### Exclusive or — `true` when exactly one of `a`, `b` is `true`.
+  """
+  in  (a Bool (doc "The left operand"))
+      (b Bool (doc "The right operand"))
+  out (r Bool (doc "`true` when `a` and `b` differ, else `false`"))
+  examples """
+    - `(xor true false)` → `true`
+    - `(xor true true)` → `false`
+  """
+  body (if a (flush (r (not b))) (flush (r b)))
+  test (is (xor true true) false)
+}
