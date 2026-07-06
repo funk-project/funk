@@ -8,12 +8,13 @@ The grammar lives in `vscode/` as a TextMate grammar — the same files drive **
 - `vscode/language-configuration.json` — comments (`;`), brackets, auto-closing
 - `vscode/package.json` — the manifest (language id + grammar wiring)
 
-It highlights: `fn`/`type`/`package` blocks; fields (`doc`, `name`, `in`, `out`,
-`examples`, `use … as`, `needs`, `effects`, `test`, …); core forms
-(`if`/`let`/`while`/`for-each`/`on-error`/`retry`/`set`/`flush`/…); stream operators
+It highlights: `fn`/`type`/`package` blocks; fields (`doc`, `name`, `examples`, `main`,
+`alias`, `in`, `out`, `use … as`, `needs`, `effects`, `test`, …); core forms
+(`if`/`let`/`while`/`for-each`/`on-error`/`retry`/`with`/`set`/`flush`/…); stream operators
 (`map`/`filter`/`scan`/`fold`/`window`/`each`/`yield`/…); types and port specs
-(`min`/`max`/`default`/`zip`/`latest`); the alias in a qualified cross-package call
-(`(maths.add …)`); and **triple-quoted `"""…"""` doc blocks with embedded markdown**.
+(`min`/`max`/`default`/`zip`/`latest`) and window modifiers (`every`/`by`/`lateness`); the alias
+in a qualified cross-package call (`(maths.add …)`); and **triple-quoted `"""…"""` doc blocks
+with embedded markdown**.
 
 ## IntelliJ / GoLand / any JetBrains IDE
 
@@ -55,7 +56,7 @@ step toward it: the position data now rides on every AST node.
 For local development, symlink (or copy) the extension folder into your extensions dir:
 
 ```sh
-ln -s "$(pwd)/editors/vscode" ~/.vscode/extensions/funk-lang-0.0.2
+ln -s "$(pwd)/editors/vscode" ~/.vscode/extensions/funk-lang-0.0.3
 ```
 
 Reload VS Code (**Developer: Reload Window**). To publish it as a real extension later,

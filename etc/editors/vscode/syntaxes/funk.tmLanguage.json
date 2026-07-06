@@ -12,6 +12,7 @@
     { "include": "#control" },
     { "include": "#reactive" },
     { "include": "#spec" },
+    { "include": "#window-mod" },
     { "include": "#qualified" },
     { "include": "#type" },
     { "include": "#engine" },
@@ -53,12 +54,12 @@
     },
     "field": {
       "comment": "field heads inside an fn / type / package block",
-      "match": "\\b(package|version|name|doc|examples|in|out|engine|src|body|test|needs|effects|requires|import|use|as)\\b",
+      "match": "\\b(package|version|name|doc|examples|main|alias|in|out|engine|src|body|test|needs|effects|requires|import|use|as)\\b",
       "name": "keyword.other.funk"
     },
     "control": {
       "comment": "the composite core forms",
-      "match": "\\b(do|let|if|while|for-each|on-error|retry|set|flush|return|exit|break|continue|is)\\b",
+      "match": "\\b(do|let|if|while|for-each|on-error|retry|with|set|flush|return|exit|break|continue|is)\\b",
       "name": "keyword.control.funk"
     },
     "reactive": {
@@ -70,6 +71,11 @@
       "comment": "port specs inside (name Type spec…)",
       "match": "(?<=\\()(min|max|default|zip|latest)\\b",
       "name": "support.function.builtin.funk"
+    },
+    "window-mod": {
+      "comment": "window modifier keywords: (window xs 5s every 2s by field lateness 1s)",
+      "match": "\\b(every|by|lateness)\\b",
+      "name": "keyword.other.funk"
     },
     "qualified": {
       "comment": "the alias in a qualified cross-package call (use … as): (alias.fn …)",
