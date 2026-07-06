@@ -66,6 +66,18 @@ func TestMapAppliesReducerPerItem(t *testing.T) {
 	}
 }
 
+// A stream flowing into a List port is materialized once, so the body can read it
+// more than once (a bare stream is single-use) — and it serializes to an engine.
+func TestStreamIntoListPortMaterialized(t *testing.T) {
+	lib := loadRx(t, `
+fn twice { in (xs (List Num)) out (r Num) body (flush (r (add (fold xs add 0) (fold xs add 0)))) }
+fn drive { in (n Num) out (r Num) body (flush (r (twice (range 1 n)))) }`)
+	res := Run(lib, "drive", map[string]interface{}{"n": 3.0}, ExecOpts{})
+	if !res.OK || mustNum(t, res.Value) != 12 {
+		t.Fatalf("drive(3) = %v (%s), want 12 (sum 6 read twice)", res.Value, res.Error)
+	}
+}
+
 // zip pairs two driving streams 1:1.
 func TestReactiveZipFiring(t *testing.T) {
 	lib := loadRx(t, `fn zipAdd { in () out (r Stream<Num>) body (add (range 1 3) (range 10 12)) }`)

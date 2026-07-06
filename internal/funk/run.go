@@ -966,9 +966,15 @@ func scalarPort(callee *Fn, i int) bool {
 func (e *evalEnv) bindInputs(callee *Fn, vals []interface{}) (map[string]interface{}, error) {
 	inputs := map[string]interface{}{}
 	for i, v := range vals {
-		name := fmt.Sprintf("_%d", i)
+		name, ptype := fmt.Sprintf("_%d", i), ""
 		if i < len(callee.In) {
-			name = callee.In[i].Name
+			name, ptype = callee.In[i].Name, callee.In[i].Type
+		}
+		// A stream flowing into a non-Stream port (List / Json / scalar / Any) is
+		// materialized once here, so it serializes to an atomic engine and can be
+		// read more than once inside the body (a bare stream is single-use).
+		if s, ok := v.(Stream); ok && !strings.HasPrefix(ptype, "Stream") {
+			v = drain(s)
 		}
 		inputs[name] = v
 	}
