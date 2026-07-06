@@ -36,8 +36,22 @@ func cmdMake(args []string) error {
 		return err
 	}
 
+	// Reuse before you write: hand the generator the library functions most
+	// relevant to the task, so it composes instead of reinventing.
+	gen := task
+	if rows := searchResults(lib, task, 8); len(rows) > 0 {
+		var b strings.Builder
+		b.WriteString(task)
+		b.WriteString("\n\nReusable funk functions already in the library — COMPOSE these by full address (e.g. `(funk/std/maths/add x 1)`) instead of reinventing them:\n")
+		for _, r := range rows {
+			fmt.Fprintf(&b, "- %s : %s — %s\n", r.Address, r.Signature, r.Doc)
+		}
+		gen = b.String()
+		fmt.Fprintf(os.Stderr, "· found %d reusable functions to offer the generator\n", len(rows))
+	}
+
 	fmt.Fprintln(os.Stderr, "· architect → programmer: generating…")
-	res := funk.Run(lib, "generate", map[string]interface{}{"task": task}, llm)
+	res := funk.Run(lib, "generate", map[string]interface{}{"task": gen}, llm)
 	if !res.OK {
 		return fmt.Errorf("generate: %s", res.Error)
 	}

@@ -23,7 +23,15 @@ fn architect {
     - `(architect "add two numbers")` → `add / in (a Num) (b Num) / out (r Num) / python / return a + b`
   """
   engine claude
-  src "You are a software architect for `funk`, a workflow language. Given a task, produce a TERSE design for ONE function: a snake or camelCase name, the inputs as (name Type), the single output (r Type), the engine (python for logic), and a one-line approach. Types are Num Str Bool List Json. Output only the design, no prose."
+  src """
+    You are a software architect for funk, a workflow language. The task may list
+    reusable funk functions already in the library. Produce a TERSE design for ONE
+    function: a snake or camelCase name, the inputs as (name Type), the single
+    output (r Type), and a one-line approach.
+    If the listed reusable functions can cover the logic, design a COMPOSITE that
+    calls them (name the addresses to compose). Otherwise design an atomic python fn.
+    Types are Num Str Bool List Json. Output only the design, no prose.
+  """
 }
 
 fn programmer {
@@ -39,7 +47,33 @@ fn programmer {
     - `(programmer "<design for upper>")` → `fn upper { ... src "return s.upper()" }`
   """
   engine claude
-  src "You write functions in `funk`. Output ONLY one `fn` block, no markdown, no fences, no prose. Template:\n\nfn NAME {\n  doc \"one line\"\n  in (arg Type) ...\n  out (r Type)\n  engine python\n  src \"PYTHON\"\n}\n\nRules: Types are Num Str Bool List Json. engine is python. The src is a double-quoted Python body where each input port is already a local variable and you must `return` the result; escape newlines inside src as \\n and quotes as \\\". Keep it correct and minimal. Produce the fn block for the given design."
+  src """
+    You write functions in funk. Output ONLY one fn block — no markdown, no fences, no prose.
+
+    If the design composes existing functions, write a COMPOSITE fn that calls them
+    BY FULL ADDRESS and emits with flush:
+
+    fn NAME {
+      doc "one line"
+      in (x Num)
+      out (r Num)
+      body (flush (r (funk/std/maths/add x 1)))
+    }
+
+    Otherwise write an ATOMIC python fn:
+
+    fn NAME {
+      doc "one line"
+      in (a Num)
+      out (r Num)
+      engine python
+      src "return a + 1"
+    }
+
+    Types are Num Str Bool List Json. In a python src each input port is already a
+    local variable and you must return the result; escape newlines as \n and quotes
+    as \". Prefer composing library functions over reinventing. Keep it minimal.
+  """
 }
 
 fn reviewer {
