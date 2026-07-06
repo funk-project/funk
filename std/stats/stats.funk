@@ -2,6 +2,8 @@
 
 package "funk/std/stats" {
   version 0.0.1
+  use "funk/std/collections" as collections
+  use "funk/std/maths" as maths
 }
 
 fn median {
@@ -131,4 +133,20 @@ fn percentile {
   """
   engine python
   src "s = sorted(xs)\nif not s:\n    return 0\nif len(s) == 1:\n    return s[0]\nk = (len(s) - 1) * (p / 100.0)\nlo = int(k)\nhi = min(lo + 1, len(s) - 1)\nreturn s[lo] + (s[hi] - s[lo]) * (k - lo)"
+}
+
+fn cv {
+  name "Coefficient Of Variation"
+  doc """
+    # Coefficient Of Variation
+    ### Standard deviation as a percentage of the mean — a scale-free measure of spread.
+  """
+  in  (xs (List Num) (doc "The sample of numbers"))
+  out (r Num (doc "`stdev(xs) / mean(xs) * 100`"))
+  examples """
+    - `(cv (range 1 3))` → `50` (mean 2, stdev 1)
+    - `(cv (range 2 6))` → `~39.5` (more spread relative to the mean)
+  """
+  body (flush (r (maths.mul (maths.div (stdev xs) (collections.mean xs)) 100)))
+  test (is (cv (range 1 3)) 50)
 }
