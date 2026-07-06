@@ -97,10 +97,12 @@ usage:
                              programmer→check→reflect), adds it to std/generated
   funk serve [--addr :7777]  run funkd (HTTP: /run streams NDJSON, /functions,
                              /introspect)
-  funk get <url>[@ref] [name]   fetch a package (git repo) into ~/.funk/pkg.
+  funk get [<url>[@ref] [name]]  fetch a package (git repo) into ~/.funk/pkg.
                              @ref pins a tag/branch/commit; a version (v1.2.0) or
                              constraint (v1, latest) resolves to the best semver tag
-                             and records a content-hash in funk.lock (verified on load)
+                             and records a content-hash in funk.lock (verified on load).
+                             With NO args, installs every versioned `use "url" "vX" as a`
+                             dependency declared in the current dir's .funk files
 
 env:
   FUNK_STD      path to the std library (default: ./std)

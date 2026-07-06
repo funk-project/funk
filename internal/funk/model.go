@@ -83,9 +83,10 @@ type Fn struct {
 // aliased import requires callers to qualify them as `alias.fn` and hides the bare
 // name (docs/03 — a reference is an address; `as` gives it a local handle).
 type UseSpec struct {
-	Pkg   string // e.g. "funk/std/maths"
-	Alias string // "" ⇒ plain import (an error — every `use` must be aliased); else the qualifier, e.g. "maths"
-	Pos   Pos    // position of the `use` field, for diagnostics
+	Pkg     string // e.g. "funk/std/maths"
+	Version string // optional quoted version/constraint for a remote dep: use "url" "v1.2.0" as ml
+	Alias   string // "" ⇒ plain import (an error — every `use` must be aliased); else the qualifier, e.g. "maths"
+	Pos     Pos    // position of the `use` field, for diagnostics
 }
 
 // Composite reports whether the function is composed of other functions.
@@ -420,11 +421,26 @@ func parseUses(pkg Block) []UseSpec {
 			continue
 		}
 		spec := UseSpec{Pkg: atomStr(fields[i].Values[0]), Pos: fields[i].Pos}
+		if len(fields[i].Values) >= 2 { // use "url" "v1.2.0" as alias — a versioned remote dep
+			spec.Version = atomStr(fields[i].Values[1])
+		}
 		if i+1 < len(fields) && fields[i+1].Key == "as" && len(fields[i+1].Values) == 1 {
 			spec.Alias = atomStr(fields[i+1].Values[0])
 			i++
 		}
 		out = append(out, spec)
+	}
+	return out
+}
+
+// Uses returns the `use` imports declared in a program's package block(s) — used
+// by `funk get` to fetch versioned dependencies from a manifest.
+func Uses(prog Program) []UseSpec {
+	var out []UseSpec
+	for _, b := range prog {
+		if b.Head == "package" {
+			out = append(out, parseUses(b)...)
+		}
 	}
 	return out
 }

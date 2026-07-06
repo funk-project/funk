@@ -102,6 +102,29 @@ func TestResolveVersion(t *testing.T) {
 	}
 }
 
+func TestGetManifest(t *testing.T) {
+	r := makeRepo(t)
+	proj := t.TempDir()
+	os.WriteFile(filepath.Join(proj, "app.funk"), []byte(
+		"package \"app\" {\n  version 0.1.0\n  use \""+r+"\" \"v1\" as dep\n}\nfn f { main in () out (r Num) body (flush (r 1)) }"), 0o644)
+	cache := t.TempDir()
+	t.Setenv("FUNK_CACHE", cache)
+	t.Setenv("FUNK_LOCK", filepath.Join(proj, "funk.lock"))
+	old, _ := os.Getwd()
+	if err := os.Chdir(proj); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(old)
+
+	if err := cmdGet(nil); err != nil {
+		t.Fatalf("get (manifest): %v", err)
+	}
+	// the versioned dep (v1 → v1.1.0) was fetched and locked
+	if readLock(filepath.Join(proj, "funk.lock"))[deriveName(r)+"@v1.1.0"] == "" {
+		t.Fatalf("manifest dep not locked: %v", readLock(filepath.Join(proj, "funk.lock")))
+	}
+}
+
 func TestGetLocksAndVerifies(t *testing.T) {
 	r := makeRepo(t)
 	cache := t.TempDir()

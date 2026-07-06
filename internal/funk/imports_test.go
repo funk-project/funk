@@ -143,6 +143,28 @@ fn viaAlias { in (x Num) out (r Num) body (flush (r (applyF m.inc x))) }`)
 	}
 }
 
+// A versioned remote import parses the quoted version: use "url" "v1.2.0" as ml.
+func TestVersionedUseParses(t *testing.T) {
+	lib := NewLibrary()
+	if err := lib.LoadString(`package "app" {
+  version 0.1.0
+  use "github.com/u/lib" "v1.2.0" as ml
+}
+fn f { in () out (r Num) body (flush (r 1)) }`); err != nil {
+		t.Fatal(err)
+	}
+	f, _ := lib.Lookup("f")
+	var got *UseSpec
+	for i := range f.Uses {
+		if f.Uses[i].Alias == "ml" {
+			got = &f.Uses[i]
+		}
+	}
+	if got == nil || got.Pkg != "github.com/u/lib" || got.Version != "v1.2.0" {
+		t.Fatalf("versioned use not parsed: %+v", f.Uses)
+	}
+}
+
 func TestUnknownAliasMemberIsRejected(t *testing.T) {
 	lib := loadTwo(t, `package "test/app" {
   version 0.0.1
