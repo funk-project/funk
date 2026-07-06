@@ -36,18 +36,32 @@ func cmdMake(args []string) error {
 		return err
 	}
 
-	// Reuse before you write: hand the generator the library functions most
-	// relevant to the task, so it composes instead of reinventing.
+	// Reuse before you write. Rank the library for this task (semantic when an
+	// index + embeddings endpoint are configured, else text/signature).
+	cands, semantic := reuseCandidates(lib, task, 8)
+
+	// Whole-reuse: if the top match already covers the task, don't generate a
+	// near-duplicate — return the existing function. Gated on a strong semantic
+	// score and confirmed by the `covers` judge, so it never reuses the wrong one.
+	if semantic && len(cands) > 0 && cands[0].Score >= reuseExactThreshold {
+		if top := cands[0]; judgeCovers(lib, task, top, llm) {
+			fmt.Fprintf(os.Stderr, "· reuse: %s already covers this (%.2f) — not generating\n", top.Address, top.Score)
+			fmt.Printf("; %s already implements this task — reuse it directly\n; %s\n; %s\n", top.Address, top.Signature, top.Doc)
+			return nil
+		}
+	}
+
+	// Otherwise prime the generator so it composes these instead of reinventing.
 	gen := task
-	if rows := searchResults(lib, task, 8); len(rows) > 0 {
+	if len(cands) > 0 {
 		var b strings.Builder
 		b.WriteString(task)
 		b.WriteString("\n\nReusable funk functions already in the library — COMPOSE these by full address (e.g. `(funk/std/maths/add x 1)`) instead of reinventing them:\n")
-		for _, r := range rows {
+		for _, r := range cands {
 			fmt.Fprintf(&b, "- %s : %s — %s\n", r.Address, r.Signature, r.Doc)
 		}
 		gen = b.String()
-		fmt.Fprintf(os.Stderr, "· found %d reusable functions to offer the generator\n", len(rows))
+		fmt.Fprintf(os.Stderr, "· offering %d reusable functions to the generator\n", len(cands))
 	}
 
 	fmt.Fprintln(os.Stderr, "· architect → programmer: generating…")
@@ -70,12 +84,16 @@ func cmdMake(args []string) error {
 	const maxAttempts = 3
 	var lastReport string
 	for attempt := 1; attempt <= maxAttempts; attempt++ {
-		name := forcedName
-		if name == "" {
-			name = fnName(code)
+		// The gate keys off the fn's OWN name (from the code); forcedName only names
+		// the file. Keying the check/test/index off forcedName would let them pass
+		// vacuously whenever the generator names the fn differently.
+		actual := fnName(code)
+		if actual == "" {
+			actual = "generated"
 		}
-		if name == "" {
-			name = "generated"
+		file := forcedName
+		if file == "" {
+			file = actual
 		}
 
 		// 1) does it parse?
@@ -89,7 +107,7 @@ func cmdMake(args []string) error {
 		}
 
 		// 2) write it into the library and static-check
-		path := filepath.Join("std", "generated", name+".funk")
+		path := filepath.Join("std", "generated", file+".funk")
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			return err
 		}
@@ -104,13 +122,14 @@ func cmdMake(args []string) error {
 			code = reflectFix(lib, code, lastReport, llm)
 			continue
 		}
-		issues := issuesFor(funk.Check(checkLib), name)
-		if fails := testFailures(checkLib, name); len(issues) == 0 && len(fails) > 0 {
+		issues := issuesFor(funk.Check(checkLib), actual)
+		if fails := testFailures(checkLib, actual); len(issues) == 0 && len(fails) > 0 {
 			issues = fails
 		}
 		if len(issues) == 0 {
 			success = true
 			fmt.Fprintf(os.Stderr, "· attempt %d: check + tests OK ✓\n", attempt)
+			indexUpsert(checkLib, actual) // incremental reindex; no-op without an index
 			fmt.Printf("%s\n\n; written to %s — reviewer/tester below\n", code, path)
 			opinion(checkLib, code, llm)
 			return nil
@@ -123,6 +142,21 @@ func cmdMake(args []string) error {
 		}
 	}
 	return fmt.Errorf("gave up after %d attempts; last issue: %s", maxAttempts, lastReport)
+}
+
+// reuseExactThreshold is the cosine above which the top match is a candidate for
+// whole-reuse — high enough that only near-identical intents reach the judge.
+const reuseExactThreshold = 0.80
+
+// judgeCovers asks the `covers` skill whether an existing function already fully
+// satisfies the task, so make can reuse it instead of generating a duplicate.
+func judgeCovers(lib *funk.Library, task string, c scoredRow, llm funk.ExecOpts) bool {
+	cand := fmt.Sprintf("%s : %s — %s", c.Address, c.Signature, c.Doc)
+	r := funk.Run(lib, "covers", map[string]interface{}{"task": task, "candidate": cand}, llm)
+	if !r.OK {
+		return false
+	}
+	return strings.HasPrefix(strings.ToUpper(strings.TrimSpace(fmt.Sprint(r.Value))), "YES")
 }
 
 func reflectFix(lib *funk.Library, code, report string, llm funk.ExecOpts) string {

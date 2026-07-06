@@ -106,6 +106,83 @@ type embedIndex struct {
 	Entries []embedEntry `json:"entries"`
 }
 
+// scoredRow is a search result carrying its rank score (cosine, for semantic).
+type scoredRow struct {
+	searchRow
+	Score float64 `json:"score,omitempty"`
+}
+
+// hasEmbedIndex reports whether a semantic index file exists to search/maintain.
+func hasEmbedIndex() bool {
+	_, err := os.Stat(embedIndexPath())
+	return err == nil
+}
+
+// reuseCandidates ranks the library for a task so a generator can compose instead
+// of reinventing: semantic when an index + embeddings endpoint are configured,
+// otherwise text/signature. The bool reports whether the scores are semantic
+// (cosine), so callers can threshold on them (a text score has no such scale).
+func reuseCandidates(lib *funk.Library, task string, limit int) ([]scoredRow, bool) {
+	if hasEmbedIndex() && os.Getenv("FUNK_EMBED_URL") != "" {
+		if rows, err := searchSemanticScored(task, limit); err == nil {
+			return rows, true
+		} else {
+			fmt.Fprintf(os.Stderr, "· semantic search unavailable (%v) — using text search\n", err)
+		}
+	}
+	syn := searchResults(lib, task, limit)
+	out := make([]scoredRow, len(syn))
+	for i, r := range syn {
+		out[i] = scoredRow{searchRow: r}
+	}
+	return out, false
+}
+
+// indexUpsert refreshes the semantic index for one function after it is written,
+// so a freshly generated fn is immediately discoverable (incremental reindex). It
+// is a silent no-op when there is no index / embeddings endpoint to maintain.
+func indexUpsert(lib *funk.Library, name string) error {
+	if !hasEmbedIndex() || os.Getenv("FUNK_EMBED_URL") == "" {
+		return nil
+	}
+	f, ok := lib.Lookup(name)
+	if !ok {
+		return fmt.Errorf("indexUpsert: no function %q", name)
+	}
+	b, err := os.ReadFile(embedIndexPath())
+	if err != nil {
+		return err
+	}
+	var idx embedIndex
+	if err := json.Unmarshal(b, &idx); err != nil {
+		return err
+	}
+	vecs, err := embedTexts([]string{searchText(f)})
+	if err != nil {
+		return err
+	}
+	entry := embedEntry{
+		searchRow: searchRow{f.Address(), f.Name, f.Display, signature(f), docSummary(f.Doc)},
+		Vec:       vecs[0],
+	}
+	replaced := false
+	for i := range idx.Entries {
+		if idx.Entries[i].Address == entry.Address {
+			idx.Entries[i], replaced = entry, true
+			break
+		}
+	}
+	if !replaced {
+		idx.Entries = append(idx.Entries, entry)
+	}
+	nb, _ := json.Marshal(idx)
+	if err := os.WriteFile(embedIndexPath(), nb, 0o644); err != nil {
+		return err
+	}
+	fmt.Fprintf(os.Stderr, "· reindexed %s (%d in index)\n", entry.Address, len(idx.Entries))
+	return nil
+}
+
 // cmdIndex embeds every loaded function and writes the semantic index.
 func cmdIndex(args []string) error {
 	files, _ := takeFlag(args, "-f")
@@ -136,8 +213,9 @@ func cmdIndex(args []string) error {
 	return nil
 }
 
-// searchSemantic embeds the query and ranks the index by cosine similarity.
-func searchSemantic(query string, limit int) ([]searchRow, error) {
+// searchSemanticScored embeds the query and ranks the index by cosine similarity,
+// keeping each row's score.
+func searchSemanticScored(query string, limit int) ([]scoredRow, error) {
 	b, err := os.ReadFile(embedIndexPath())
 	if err != nil {
 		return nil, fmt.Errorf("no index at %s — run `funk index` first (%w)", embedIndexPath(), err)
@@ -150,21 +228,26 @@ func searchSemantic(query string, limit int) ([]searchRow, error) {
 	if err != nil {
 		return nil, err
 	}
-	type scored struct {
-		row   searchRow
-		score float64
-	}
-	ranked := make([]scored, len(idx.Entries))
+	ranked := make([]scoredRow, len(idx.Entries))
 	for i, e := range idx.Entries {
-		ranked[i] = scored{e.searchRow, cosine(qv[0], e.Vec)}
+		ranked[i] = scoredRow{e.searchRow, cosine(qv[0], e.Vec)}
 	}
-	sort.Slice(ranked, func(i, j int) bool { return ranked[i].score > ranked[j].score })
+	sort.Slice(ranked, func(i, j int) bool { return ranked[i].Score > ranked[j].Score })
 	if limit > 0 && len(ranked) > limit {
 		ranked = ranked[:limit]
 	}
-	rows := make([]searchRow, len(ranked))
-	for i, r := range ranked {
-		rows[i] = r.row
+	return ranked, nil
+}
+
+// searchSemantic embeds the query and ranks the index by cosine similarity.
+func searchSemantic(query string, limit int) ([]searchRow, error) {
+	scored, err := searchSemanticScored(query, limit)
+	if err != nil {
+		return nil, err
+	}
+	rows := make([]searchRow, len(scored))
+	for i, s := range scored {
+		rows[i] = s.searchRow
 	}
 	return rows, nil
 }

@@ -125,6 +125,23 @@ fn reflect {
   src "You improve `funk` source. You are given a `fn` block and a report (an error, review, or run result). If the report shows a problem, output a CORRECTED `fn` block; if it is already fine, output the SAME block unchanged. Output ONLY the fn block — no markdown, no fences, no prose. Keep engine python; escape newlines in src as \\n and quotes as \\\"."
 }
 
+fn covers {
+  name "Covers"
+  doc """
+    # Covers
+    ### The reuse gate — decide whether an existing function already fully satisfies a task, so `make` reuses instead of generating a duplicate.
+  """
+  in  (task Str (doc "The task description"))
+      (candidate Str (doc "An existing function as `address : signature — doc`"))
+  out (verdict Str (doc "`YES` if the candidate already satisfies the task, else `NO`"))
+  examples """
+    - `(covers "the average of a list" ".../mean : (List Num) -> Num — arithmetic mean")` → `YES`
+    - `(covers "the average of the squares" ".../mean : (List Num) -> Num — arithmetic mean")` → `NO`
+  """
+  engine claude
+  src "You are the reuse gate for `funk`. Given a TASK and a CANDIDATE function (address, signature, doc), answer YES only if calling that candidate as-is fully satisfies the task — same computation, same result. If it is merely related, partial, or would need extra work, answer NO. Output ONLY YES or NO."
+}
+
 ; The core generation pipeline, expressed IN funk: task -> design -> code.
 fn generate {
   name "Generate"
