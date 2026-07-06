@@ -59,6 +59,12 @@ leak by accident. Not "production platform" — "a language you can rely on for 
       integration creds, the body reaches them by alias via `FUNK_BROKER`, host allowlist enforced
       (all verified live). **Remaining:** docker→broker routing, transparent HTTPS proxy (§5b),
       short-lived tokens, vault provider.
+- [x] **Reuse in the loop** — `funk make` composes the library instead of reinventing: it offers
+      the task's most relevant functions (semantic ranking when an embedding index is configured,
+      else text/signature), and a **whole-reuse gate** (`covers` judge) returns an existing
+      function when one already satisfies the task rather than generating a near-duplicate.
+      Generated funk that passes the gate is **reindexed incrementally**, so it is discoverable at
+      once. **Remaining:** the cross-library discovery in v0.3+ below.
 - [x] **Recovery forms** — `(on-error <body> (e) <handler>)` and `(retry <body> <n> [backoff
       <dur>])`, implemented + tested (Experimental). *Landed early.*
 - [~] **Full `window`** — sliding **count** windows (`every <slide>`) are in + tested;
@@ -67,7 +73,15 @@ leak by accident. Not "production platform" — "a language you can rely on for 
 ## v0.3+ — "live pipelines & shared state"
 
 - [ ] **Persistent streaming workers** — today a python `map` spawns a subprocess per item.
-- [ ] **Volumes / stateful streaming** — shared and persistent state semantics (docs/05).
+- [ ] **Cross-library discovery / registry** — search today sees only the *loaded* library, so the
+      reuse loop can only compose what was already imported; every new lib is invisible until
+      `funk get` pulls it. A hosted, searchable **package registry** — a semantic + signature index
+      over *published* libraries, each result resolvable to `use "<addr>" <semver> as <alias>` — is
+      what lets reuse scale past one project. Infra, not in-repo; builds on the module resolution
+      in v0.2.
+- [ ] **Volumes / stateful streaming** — shared and persistent state semantics (docs/05). Today a
+      `volume` need is declared and injected like `config`/`env` (a string value); there is **no
+      real mount, persistence, or shared state** yet — see the explanation the CLI honours below.
 - [ ] **`with { … }` / project `object` blocks** — per-call binding grammar (docs/05).
 - [ ] **Hot-mutation** — edit a running plan.
 
