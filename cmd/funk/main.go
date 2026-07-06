@@ -101,7 +101,7 @@ usage:
                              @ref pins a tag/branch/commit; a version (v1.2.0) or
                              constraint (v1, latest) resolves to the best semver tag
                              and records a content-hash in funk.lock (verified on load).
-                             With NO args, installs every versioned `use "url" "vX" as a`
+                             With NO args, installs every versioned use "url" "vX" as a
                              dependency declared in the current dir's .funk files
 
 env:
