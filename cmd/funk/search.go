@@ -171,12 +171,26 @@ func sigScore(f *funk.Fn, wantIn []string, wantOut string) int {
 	return score
 }
 
-// textScore scores a function against query tokens, weighting the name/display.
+// searchStop are words too common to be signal in a task query.
+var searchStop = map[string]bool{
+	"the": true, "a": true, "an": true, "of": true, "to": true, "in": true, "on": true,
+	"is": true, "for": true, "and": true, "or": true, "with": true, "by": true, "from": true,
+	"at": true, "be": true, "it": true, "that": true, "this": true, "into": true, "each": true,
+	"compute": true, "return": true, "returns": true, "get": true, "give": true, "make": true,
+	"create": true, "value": true, "values": true, "given": true, "using": true,
+}
+
+// textScore scores a function against query tokens, weighting the name/display and
+// ignoring stopwords / very short tokens (so a full-sentence task query ranks on
+// its meaningful words, not "the"/"of").
 func textScore(f *funk.Fn, toks []string) int {
 	name := strings.ToLower(f.Name + " " + f.Display)
-	full := strings.ToLower(f.Name + " " + f.Display + " " + f.Doc + " " + f.Examples)
+	full := name + " " + strings.ToLower(f.Doc+" "+f.Examples)
 	score := 0
 	for _, t := range toks {
+		if len(t) < 3 || searchStop[t] {
+			continue
+		}
 		switch {
 		case strings.Contains(name, t):
 			score += 3

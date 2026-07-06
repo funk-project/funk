@@ -45,6 +45,8 @@ func main() {
 		err = cmdSearch(args)
 	case "index":
 		err = cmdIndex(args)
+	case "context":
+		err = cmdContext(args)
 	case "types":
 		err = cmdTypes(args)
 	case "check":
@@ -90,6 +92,8 @@ usage:
                              or --semantic (embedding-ranked; needs funk index first)
   funk index [-f path]       build the semantic search index (embeds every function
                              via FUNK_EMBED_URL — e.g. a local Ollama, free)
+  funk context <task>        print a paste-ready brief for an AI: the primer + the
+                             existing functions worth reusing for the task
   funk types [-f path]       list loaded types
   funk check [-f path]       static-check every composite function
   funk test [-f path]        run inline 'test (is (call) expected)' assertions
