@@ -1,0 +1,38 @@
+; planHeader — the shared package block from a decompose plan (JSON).
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn planHeader {
+  name "Plan Header"
+  doc """
+    # Plan Header
+    ### The package header shared by every generated file, from a decompose plan.
+  """
+  examples """
+    # Examples:
+    (planHeader plan) → the shared package block (its name + version + use lines)
+  """
+  in  (plan Json)
+  out (header Str)
+  engine python
+  src """
+    import json, re
+    def _load(plan):
+        if not isinstance(plan, str):
+            return plan
+        s = plan.strip()
+        if s.startswith('```'):                       # strip a ```json … ``` fence
+            s = re.sub(r'^```[a-zA-Z]*[ \t]*\n?', '', s)
+            s = re.sub(r'\n?```\s*$', '', s).strip()
+        try:
+            return json.loads(s)
+        except Exception:                             # fall back to the outermost { … }
+            i, j = s.find('{'), s.rfind('}')
+            if i != -1 and j > i:
+                return json.loads(s[i:j+1])
+            raise
+    p = _load(plan)
+    return p['header']
+    """
+}

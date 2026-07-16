@@ -1,0 +1,45 @@
+; planFunctions / planHeader — pull the two parts out of decompose's JSON plan.
+; Field access lives in python (funk composites can't index a struct), so these
+; are the bridge between the AI's JSON and the typed scaffolder.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn planFunctions {
+  name "Plan Functions"
+  doc """
+    # Plan Functions
+    ### The list of FnSpecs from a decompose plan.
+  """
+  examples """
+    # Examples:
+    (planFunctions plan) → the plan's [ FnSpec, FnSpec, … ]
+  """
+  in  (plan Json)
+  out (functions List<FnSpec>)
+  engine python
+  src """
+    import json, re
+    def _load(plan):
+        if not isinstance(plan, str):
+            return plan
+        s = plan.strip()
+        if s.startswith('```'):                       # strip a ```json … ``` fence
+            s = re.sub(r'^```[a-zA-Z]*[ \t]*\n?', '', s)
+            s = re.sub(r'\n?```\s*$', '', s).strip()
+        try:
+            return json.loads(s)
+        except Exception:                             # fall back to the outermost { … }
+            i, j = s.find('{'), s.rfind('}')
+            if i != -1 and j > i:
+                return json.loads(s[i:j+1])
+            raise
+    p = _load(plan)
+    # A failed decompose/reflect can hand us None or a functions-less object —
+    # degrade to an empty plan (the gates then fail and the loop reflects)
+    # instead of crashing the whole forge run.
+    if not isinstance(p, dict):
+        return []
+    return p.get('functions', [])
+    """
+}

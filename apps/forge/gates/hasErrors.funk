@@ -1,0 +1,27 @@
+; hasErrors — true when a gate produced any output (so the forge only spends an AI
+; call on diagnosis when something actually broke).
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn hasErrors {
+  name "Has Errors"
+  doc """
+    # Has Errors
+    ### True when a gate's output is non-empty (some problem was reported).
+  """
+  examples """
+    # Examples:
+    (hasErrors "") → false
+    (hasErrors "boom") → true
+  """
+  in  (text Str)
+  out (present Bool)
+  engine python
+  src """
+    return text.strip() != ''
+    """
+  test (is (hasErrors "") false)
+  test (is (hasErrors "  ") false)
+  test (is (hasErrors "oops") true)
+}

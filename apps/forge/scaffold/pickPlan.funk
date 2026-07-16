@@ -1,0 +1,51 @@
+; pickPlan — a guard so a failed reflect never propagates a broken plan. `reflect`
+; is a model call; it can return null/garbage. pickPlan returns the reflected plan
+; ONLY when it parses to a real { functions: … } object, else falls back to the
+; current plan — so the loop degrades to a no-op instead of crashing planFunctions
+; on a None.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn pickPlan {
+  name "Pick Plan"
+  doc """
+    # Pick Plan
+    ### Keep a reflected plan only if it is a valid plan object, else keep the current one.
+  """
+  examples """
+    # Examples:
+    (pickPlan null plan) → plan          ; reflect failed → fall back
+    (pickPlan reflected plan) → reflected ; reflect gave a real plan
+  """
+  in  (candidate Json (doc "Reflected Plan Or Null"))
+      (fallback Json (doc "Current Plan"))
+  out (plan Json (doc "A Valid Plan"))
+  engine python
+  src """
+    import json, re
+    def valid(x):
+        if x is None:
+            return False
+        if isinstance(x, dict):
+            return 'functions' in x
+        if isinstance(x, str):
+            s = x.strip()
+            if s.startswith('```'):
+                s = re.sub(r'^```[a-zA-Z]*[ \t]*\n?', '', s)
+                s = re.sub(r'\n?```\s*$', '', s).strip()
+            try:
+                p = json.loads(s)
+            except Exception:
+                i, j = s.find('{'), s.rfind('}')
+                if i == -1 or j <= i:
+                    return False
+                try:
+                    p = json.loads(s[i:j + 1])
+                except Exception:
+                    return False
+            return isinstance(p, dict) and 'functions' in p
+        return False
+    return candidate if valid(candidate) else fallback
+    """
+}

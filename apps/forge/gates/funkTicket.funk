@@ -1,0 +1,40 @@
+; funkTicket — when diagnoseFunk decides a failure is funk's OWN fault, write the
+; ticket to disk (a `funk-tickets/` folder) so it becomes a review of funk instead
+; of a lost error. A no-op when it's a generated-code bug.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn funkTicket {
+  name "Funk Ticket"
+  doc """
+    # Funk Ticket
+    ### Write a funk-language review ticket to disk when a failure is funk's own fault.
+  """
+  examples """
+    # Examples:
+    (funkTicket { funkBug: false } dir) → ""
+    (funkTicket { funkBug: true, title: "…", body: "…" } dir) → "…/funk-tickets/….md"
+  """
+  in  (diagnosis Json (doc "Diagnosis From Diagnose Funk"))
+      (dir Str (doc "Target Project Folder"))
+  out (ticketPath Str (doc "Written Ticket Path"))
+  engine python
+  effects {
+    fs write "*"
+  }
+  src """
+    import os, json, re
+    d = json.loads(diagnosis) if isinstance(diagnosis, str) else diagnosis
+    if not d.get('funkBug'):
+        return ''
+    title = d.get('title', 'funk issue')
+    slug = re.sub(r'-+', '-', re.sub(r'[^a-z0-9]+', '-', title.lower())).strip('-') or 'ticket'
+    folder = os.path.join(dir, 'funk-tickets')
+    os.makedirs(folder, exist_ok=True)
+    path = os.path.join(folder, slug + '.md')
+    with open(path, 'w') as f:
+        f.write('# ' + title + chr(10) + chr(10) + d.get('body', ''))
+    return path
+    """
+}

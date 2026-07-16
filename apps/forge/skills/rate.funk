@@ -1,0 +1,43 @@
+; rate — a 0-10 quality score for a generated project against its task. Graded,
+; not pass/fail: it lets the forge stop when the work is GOOD ENOUGH rather than
+; after a fixed number of cycles. It reads the derived GRAPH (so it judges the
+; connections, not just the text) plus any check errors.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn rate {
+  name "Rate"
+  doc """
+    # Rate
+    ### Score 0-10 how well a generated project fulfils the task (correctness, connections, style).
+  """
+  examples """
+    # Examples:
+    (rate task graph "") → 9   ; correct, logical, idiomatic
+    (rate task graph "unknown function \"/\"") → 2   ; broken
+  """
+  in  (task Str)
+      (graph Str (doc "Derived Connection Trees"))
+      (errors Str (doc "Check And Style Errors"))
+  out (score Num)
+  engine claude
+  src """
+    Rate from 0 to 10 how well a generated funk project fulfils the TASK. You get
+    the derived GRAPHS (each reads top-down: `flush ◂ terminal` is the output, the
+    tree under a node are its arguments IN ORDER, leaves are inputs/constants) and
+    any check + style ERRORS.
+
+    Score:
+    - 0-3  there are check errors, or the output is not derived from the inputs.
+    - 4-6  it compiles, but a CONNECTION is illogical for the task: the wrong
+           function in a chain, arguments in the WRONG ORDER, an input that never
+           reaches the output, or a helper whose result is discarded.
+    - 7    correct and logical, but a STYLE issue (the ERRORS list a missing
+           `name`/`doc`/`examples`, a single-letter port, or a non-markdown doc).
+    - 8    correct, logical, and conformant to the house style.
+    - 9-10 also minimal and idiomatic (reuses the library where it can).
+
+    Output ONLY the number, nothing else.
+  """
+}

@@ -1,0 +1,28 @@
+; mkSpec — a constructor for FnSpec. funk has no struct literal (you can't write
+; `{name: …}` in source), so structs are built by an atomic that returns a dict.
+; `decompose` uses it to assemble the plan; tests use it to feed `renderFn`.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn mkSpec {
+  name "Make Spec"
+  doc """
+    # Make Spec
+    ### Build an FnSpec struct from its parts (funk has no struct literal).
+  """
+  examples """
+    # Examples:
+    (mkSpec "slug" "lib" "Slug" "# Slug\n### …" "" "(name Str)" "(stem Str)" "python" "return …")
+      → an FnSpec
+  """
+  in  (name Str) (kind Str) (title Str) (doc Str) (examples Str)
+      (ins Str) (outs Str) (engine Str) (src Str)
+  out (spec FnSpec)
+  engine python
+  src """
+    return {'name': name, 'kind': kind, 'title': title, 'doc': doc,
+            'examples': examples, 'in': ins, 'out': outs,
+            'engine': engine, 'src': src}
+    """
+}

@@ -1,0 +1,21 @@
+; FnSpec — the spec for ONE function the forge generates. `decompose` fills the
+; shape; `scaffold` uses kind+name (via scaffoldPath) to place the file. Shared
+; schema, referenced by bare name.
+package "funk/forge" {
+  version 0.1.0
+}
+
+type FnSpec {
+  name     Str    ; the fn identifier (e.g. "gatherFacts")
+  kind     Str    ; main | lib | gate | type  → drives the file's folder
+  title    Str    ; the display name, capitalised (the funk `name` field)
+  doc      Str    ; markdown: "# Title" on line 1, "### One sentence." on line 2
+  examples Str    ; markdown examples, e.g. "# Examples:\n(fn 2) → 4"
+  in       Str    ; input ports, descriptive names, e.g. "(numbers (List Num))"
+  out      Str    ; output ports, descriptive names, e.g. "(result Num)"
+  engine   Str    ; "python" | "claude" | "builtin" | "" (empty ⇒ composite/body)
+  src      Str    ; the body or engine src — empty until `write` fills it
+  requires Str    ; optional `requires { … }` block (python deps), "" when none
+  needs    Str    ; optional `needs { … }` block (injected config/secrets), "" when none
+  effects  Str    ; optional `effects { … }` block (fs/net IO), "" when none
+}

@@ -1,0 +1,31 @@
+; slug — a function name/title → a safe filename stem. Deterministic (atomic
+; python) with inline tests. The embedded `src` is written indented to match the
+; funk around it; funk dedents triple-quoted strings, so the engine gets clean
+; python.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn slug {
+  name "Slug"
+  doc """
+    # Slug
+    ### Lowercase a name and collapse runs of non-alphanumerics into single hyphens.
+  """
+  examples """
+    # Examples:
+    (slug "Decompose Task") → decompose-task
+    (slug "gatherFacts!!") → gatherfacts
+  """
+  in  (name Str)
+  out (stem Str)
+  engine python
+  src """
+    import re
+    stem = re.sub(r'[^a-z0-9]+', '-', name.lower())
+    stem = re.sub(r'-+', '-', stem)
+    return stem.strip('-')
+    """
+  test (is (slug "Decompose Task") "decompose-task")
+  test (is (slug "gatherFacts!!") "gatherfacts")
+}

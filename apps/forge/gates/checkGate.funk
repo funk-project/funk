@@ -1,0 +1,42 @@
+; checkGate — run `funk check` on a GENERATED project and return its errors
+; (empty string when clean). The deterministic net: unbound refs, unknown
+; functions, type/parse errors — the bulk of what an AI gets wrong. Feeds the
+; reflect loop. (funk running funk: a python atom shells out to the CLI.)
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn checkGate {
+  name "Check Gate"
+  doc """
+    # Check Gate
+    ### Run `funk check` on a generated project and return its errors (empty when clean).
+  """
+  examples """
+    # Examples:
+    (checkGate "/tmp/clean") → ""
+    (checkGate "/tmp/broken") → "mean.funk:10:19: unknown function \"/\""
+  """
+  in  (dir Str)
+  out (errors Str)
+  engine python
+  src """
+    import subprocess, os, shutil
+    funk = os.environ.get('FUNK_BIN') or shutil.which('funk') or 'funk'
+    p = subprocess.run([funk, 'check', '-f', dir], capture_output=True, text=True, timeout=60)
+    out = (p.stdout or '') + chr(10) + (p.stderr or '')
+    # keep only diagnostics that point at THIS project (drop std's own warnings)
+    keep = [l for l in out.splitlines() if dir in l]
+    # log the error count per check so the fix-until-green loop is observable.
+    # All runtime artefacts live under <project>/.agent-runner, never the root.
+    try:
+        import time
+        ar = os.path.join(dir, '.agent-runner')
+        os.makedirs(ar, exist_ok=True)
+        with open(os.path.join(ar, 'forge-check-log'), 'a') as _f:
+            _f.write(str(int(time.time())) + ' ' + str(len(keep)) + ' errors' + chr(10))
+    except Exception:
+        pass
+    return chr(10).join(keep).strip()
+    """
+}

@@ -1,0 +1,11 @@
+; Plan — the whole decomposition of a task into functions. `decompose(task)`
+; produces it; `scaffold` walks `functions` to write the files (main at the root,
+; the rest grouped by kind); `write` fills each FnSpec's `src`.
+package "funk/forge" {
+  version 0.1.0
+}
+
+type Plan {
+  task      Str            ; the original plain-language task
+  functions List<FnSpec>   ; the functions to generate (one main + the rest)
+}

@@ -1,0 +1,34 @@
+; scaffold — lay a whole project down from a list of specs: each function's file
+; is placed by `scaffoldPath` (main at the root, the rest grouped by kind) and
+; written by `writeFile`, with `renderFn` producing the source. The glue that
+; makes "run forge on a folder → main at root, the rest in subfolders" real.
+; A composite: it only passes whole specs around (funk composites can't pluck
+; struct fields), so the field work lives in scaffoldPath / renderFn (python).
+package "funk/forge" {
+  version 0.1.0
+  use "funk/std/strings" as strings
+}
+
+fn scaffold {
+  name "Scaffold"
+  doc """
+    # Scaffold
+    ### Write every function to its file under a directory — main at the root, the rest grouped by kind.
+  """
+  examples """
+    # Examples:
+    (scaffold functions "/tmp/stats" header) → /tmp/stats  (writes main.funk + lib/…)
+  """
+  in  (functions List<FnSpec>)
+      (dir Str)
+      (header Str (doc "Shared Package Block"))
+  out (projectDir Str)
+  body
+    (do
+      (cleanDir dir)
+      (for-each functions (spec)
+        (writeFile
+          (strings.concat dir (strings.concat "/" (scaffoldPath spec)))
+          (strings.concat header (strings.concat "\n\n" (renderFn spec)))))
+      (flush (projectDir dir)))
+}

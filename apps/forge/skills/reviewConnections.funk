@@ -1,0 +1,45 @@
+; reviewConnections — the connection critic. `funk check` catches unbound refs and
+; type errors, but it happily passes wiring that is logically WRONG for the task:
+; an input that never reaches the output, the wrong function in a chain, arguments
+; in the wrong order, a helper whose result is thrown away. Those are where we fail
+; most. This claude skill reads the DERIVED graph (projectGraph) against the task
+; and flags exactly those.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn reviewConnections {
+  name "Review Connections"
+  doc """
+    # Review Connections
+    ### Review a project's derived graph for connections that are illogical for the task.
+  """
+  examples """
+    # Examples:
+    (reviewConnections task graph) → OK
+    (reviewConnections task graph) → "range: (maths.sub (min …) (max …)) → swap to max − min"
+  """
+  in  (task Str (doc "Project Task"))
+      (graph Str (doc "Derived Connection Trees"))
+  out (issues Str (doc "Connection Problems Found"))
+  engine claude
+  src """
+    You review the DERIVED GRAPHS of a funk project against the task it must do.
+    Each graph reads top-down: `flush ◂ terminal` is the OUTPUT; the tree under it
+    is what feeds it; leaves are inputs or constants. A node's children are the
+    ARGUMENTS passed to it, IN ORDER.
+
+    Report ONLY connections that are ILLOGICAL for the task — bugs that still
+    type-check and pass `funk check`. Look for:
+    - an input that never reaches the output (declared but unused);
+    - the wrong function in a chain for what the task asks;
+    - arguments wired in the WRONG ORDER (e.g. (maths.sub a b) when it should be
+      (maths.sub b a), or a divisor and dividend swapped);
+    - a helper whose result is discarded, or a step that does nothing;
+    - the output not actually derived from the inputs the way the task requires.
+
+    If EVERY connection is logical for the task, output exactly: OK
+    Otherwise output one problem per line as `<fn>: <what is wrong> → <the fix>`.
+    No prose, no preamble.
+  """
+}

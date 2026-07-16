@@ -1,0 +1,94 @@
+; reflect — the fix step. Given the plan and everything the gates found (funk
+; check errors, style violations, the connection review), produce a CORRECTED
+; plan in the same JSON shape. This closes the loop: generate → gate → reflect →
+; regenerate. It fixes the CODE; failures that are funk's own fault are not its
+; job — `diagnoseFunk` routes those to a ticket instead.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn reflect {
+  name "Reflect"
+  doc """
+    # Reflect
+    ### Revise a plan to fix the check errors, style violations and connection issues.
+  """
+  examples """
+    # Examples:
+    (reflect task plan "mean.funk: unknown function \"/\"" "") → a plan using maths.div
+    (reflect task plan "" "sub(a,b): args in wrong order → (maths.sub b a)") → swapped args fixed
+  """
+  in  (task Str)
+      (plan Json (doc "Current Project Plan"))
+      (errors Str (doc "Check And Style Problems"))
+      (review Str (doc "Connection Problems"))
+  out (revised Json (doc "Corrected Project Plan"))
+  engine claude
+  src """
+    You are fixing a funk project. You get the TASK, the current PLAN (JSON), the
+    check + style ERRORS, and the connection REVIEW. Produce a CORRECTED plan in the
+    EXACT same JSON shape:
+    { "header", "functions": [ {name,kind,title,doc,examples,in,out,engine,src,
+      requires,needs,effects} ] }.
+
+    Fix EVERY error, style violation and connection problem. Keep what already works.
+    Reuse the same package name in "header".
+
+    funk correctness (the usual mistakes):
+    - funk has NO infix operators. NEVER (/ a b), (+ a b), (* a b), (> a b).
+      Arithmetic: maths.add, maths.sub, maths.mul, maths.div. Comparison:
+      maths.lt, maths.lte, maths.gt, maths.gte, maths.eq, maths.neq.
+    - A node's children are its arguments IN ORDER — fix swapped/misordered args
+      (e.g. a range is (maths.sub (max …) (min …)), NOT min − max).
+    - An input that never reaches the output, or a helper whose result is discarded,
+      is a bug — wire it in or remove it.
+    - A COMPOSITE (engine "") cannot read struct fields — `birth.name` FAILS. If a
+      body needs a field, add a python atom that extracts it and call that instead.
+    - SIGNATURE MISMATCH ("X expects N input(s), got M"): make the callee's `in`
+      match the call. A call `(f a b)` needs f to declare exactly two NAMED input
+      ports; fix EITHER the ports OR the call so the arg count matches. An
+      "unknown identifier" in a body means a name that is neither a let binding nor
+      an input port — add the missing input port (or let), or remove the reference.
+    - funk has NO RECURSION: if a composite calls ITSELF, rewrite it with `while`
+      (a stateful bounded loop) or a fixed chain — a self-call never resolves.
+    - PRUNE DEAD CODE. If the error is in a function NOT reachable from `main`
+      (nothing calls it — often an OLD approach you already replaced), DELETE that
+      function from "functions" entirely instead of trying to fix it. Never leave
+      two implementations of the same step; keep the ONE the main body uses.
+    - Declare EVERY package a body calls in "header" with a `use` line
+      (e.g. use "funk/std/maths" as maths).
+    - "engine":"python" → a python body that returns (the ONLY place for return, IO,
+      struct-as-dict). "engine":"claude" → the "src" IS a natural-language PROMPT
+      (interpret/write/verify). "engine":"" → a composite funk body emitting with
+      flush into the OUTPUT PORT NAME (no python, no return).
+    - Streams: an output typed "(Stream T)" for fan-out. The reactive lift is
+      AUTOMATIC — there is NO `lift` function; a scalar function applied to a stream
+      fires per item, so just call it: (perItem (producer …)). collect gathers the
+      resulting stream into a List. (An "unknown function lift" error means someone
+      wrote `lift` — remove it and apply the function directly.) A step that must
+      wait for SEVERAL inputs (zip barrier) simply takes them all as inputs.
+    - Capabilities: declare "requires" (pip deps), "effects" (fs/net IO) and "needs"
+      (config) on the python atom that does the IO — "" elsewhere.
+    - Exactly one function has "kind":"main"; others use "lib"/"skill"/"gate"/"type".
+    - Types are Num Str Bool List Json Time Any Stream Fn; domain schemas are "type"
+      functions passed around as Json (only python reads their fields).
+
+    house STYLE — every function MUST have all of these:
+    - "title": a Capitalised display name.
+    - "doc": markdown, "# <Title>" then "### <One capitalised sentence, ending with a
+      period.>".
+    - "examples": markdown, "# Examples:" then one or more "<call> → <result>".
+    - EVERY port MUST be "(name Type (doc \"…\"))" — the port NAME comes FIRST and is
+      MANDATORY (camelCase, DESCRIPTIVE — NEVER single letters like r/x). A port
+      without a name makes the body's references unbound.
+      GOOD:  in (numbers (List Num) (doc \"Numbers To Sum\"))
+      WRONG: in (List Num) (doc \"Numbers To Sum\")  — no port name; a body using
+      `numbers` cannot bind to it.
+    - A port's OWN doc (the "(doc \"…\")" on an in/out port) is a short Title-Case
+      label — single line, NO markdown, NO trailing period (e.g. "Derived Connection
+      Trees", not "the derived connection trees, from projectGraph").
+    - title/doc/examples in the SAME LANGUAGE as the task.
+
+    Output ONLY the corrected JSON. No prose, no fences.
+  """
+}

@@ -1,0 +1,29 @@
+; allClear — true when a generated project has no check errors and no connection
+; issues. A small predicate utility for gating.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn allClear {
+  name "All Clear"
+  doc """
+    # All Clear
+    ### True if both the check errors and the connection review are empty.
+  """
+  examples """
+    # Examples:
+    (allClear "" "OK") → true
+    (allClear "boom" "") → false
+  """
+  in  (errors Str) (review Str)
+  out (clear Bool)
+  engine python
+  src """
+    review_ok = review.strip() == '' or review.strip().upper() == 'OK'
+    return errors.strip() == '' and review_ok
+    """
+  test (is (allClear "" "") true)
+  test (is (allClear "" "OK") true)
+  test (is (allClear "boom" "") false)
+  test (is (allClear "" "weird edge") false)
+}

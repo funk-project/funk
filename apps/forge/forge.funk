@@ -1,0 +1,49 @@
+; funk/forge — a forge that writes funk, written IN funk.
+;
+; The `main` composes the pipeline from functions defined in SIBLING FILES (one
+; function per file) so each is small (shallow nesting → no parenthesis wall),
+; isolated, and testable in parallel with `funk test`. This is the dogfood:
+; funk building funk.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn forge {
+  main
+  name "Forge"
+  doc """
+    # Forge
+    ### Turn a plain-language task into a valid, style-conformant funk project.
+  """
+  examples """
+    # Examples:
+    (forge "sum and mean of a list" "/tmp/stats") → "/tmp/stats"  ; writes main + lib/
+  """
+  in  (task Str (doc "Plain-Language Task Description"))
+      (dir Str (doc "Target Project Folder"))
+  out (path Str (doc "Generated Project Directory"))
+  body
+    (let (p0 (decompose task))
+    (let (r1 c1 (refine task p0 dir))
+    (if c1 (flush (path dir))
+    (let (r2 c2 (refine task r1 dir))
+    (if c2 (flush (path dir))
+    (let (r3 c3 (refine task r2 dir))
+    (if c3 (flush (path dir))
+    (let (r4 c4 (refine task r3 dir))
+    (if c4 (flush (path dir))
+    (let (r5 c5 (refine task r4 dir))
+    (if c5 (flush (path dir))
+    (let (r6 c6 (refine task r5 dir))
+    (if c6 (flush (path dir))
+    (let (r7 c7 (refine task r6 dir))
+    (if c7 (flush (path dir))
+    (let (r8 c8 (refine task r7 dir))
+    (if c8 (flush (path dir))
+    (let (r9 c9 (refine task r8 dir))
+    (if c9 (flush (path dir))
+    (let (r10 c10 (refine task r9 dir))
+    (if c10 (flush (path dir))
+      (do (funkTicket (diagnoseFunk (checkGate dir) (projectSource dir)) dir)
+          (flush (path dir))))))))))))))))))))))))
+}

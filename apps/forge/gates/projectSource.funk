@@ -1,0 +1,32 @@
+; projectSource — the concatenated source of every .funk file in a generated
+; project, so diagnoseFunk can read the actual code behind an error.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn projectSource {
+  name "Project Source"
+  doc """
+    # Project Source
+    ### The concatenated source of every .funk file in a generated project.
+  """
+  examples """
+    # Examples:
+    (projectSource "/tmp/gen") → "; --- mean.funk ---\n…\n; --- lib/sum.funk ---\n…"
+  """
+  in  (dir Str)
+  out (source Str)
+  engine python
+  src """
+    import os
+    parts = []
+    for root, _, files in os.walk(dir):
+        for f in sorted(files):
+            if not f.endswith('.funk'):
+                continue
+            path = os.path.join(root, f)
+            rel = os.path.relpath(path, dir)
+            parts.append('; --- ' + rel + ' ---' + chr(10) + open(path).read())
+    return (chr(10) + chr(10)).join(parts)
+    """
+}

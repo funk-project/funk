@@ -1,0 +1,47 @@
+; diagnoseFunk — tell a GENERATED-CODE bug (which reflect can fix) apart from a
+; funk LANGUAGE limitation (which reflect can't — the fix belongs in funk itself).
+; When it's the language, it produces a ticket so the failure becomes a funk
+; review instead of an endless reflect loop. This is the "correct funk" track,
+; made systematic: the forge surfaces the language's own gaps as it hits them.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn diagnoseFunk {
+  name "Diagnose Funk"
+  doc """
+    # Diagnose Funk
+    ### Decide whether a failure is the generated code's fault or funk's own, and draft a ticket if it's funk's.
+  """
+  examples """
+    # Examples:
+    (diagnoseFunk "unknown function \"/\"" code) → { "funkBug": false }
+    (diagnoseFunk "main: unknown identifier when main shares a line with in" code)
+      → { "funkBug": true, "title": "Parser drops inputs when `main` shares a line with `in`", "body": "…repro…" }
+  """
+  in  (errors Str (doc "Surviving Check Errors"))
+      (code Str (doc "Generated Funk Source"))
+  out (diagnosis Json (doc "Diagnosis Verdict And Draft Ticket"))
+  engine claude
+  src """
+    You triage a funk failure. You get the surviving check ERRORS and the generated
+    CODE. Decide the ROOT CAUSE:
+
+    - GENERATED-CODE bug: a competent funk author would fix it in the code (a wrong
+      function, a swapped argument, a missing `use`, an infix operator, a typo). The
+      forge's reflect step handles these.
+    - funk LANGUAGE limitation: the code is reasonable but funk itself is at fault —
+      a parser bug, a missing feature, a misleading error message, or behaviour that
+      contradicts the docs. reflect CANNOT fix these; they need a change to funk.
+
+    Output ONLY a JSON object:
+    - if it's a generated-code bug: { "funkBug": false }
+    - if it's a funk limitation: {
+        "funkBug": true,
+        "title": "<one-line summary for a funk issue>",
+        "body": "<markdown: what happens, a MINIMAL repro (a tiny .funk + the command
+                 + the wrong output/error), what you expected, and a suggested fix>"
+      }
+    No prose outside the JSON.
+  """
+}

@@ -1,0 +1,137 @@
+; renderFn — an FnSpec → the funk source of that function (the `fn … { }` block).
+; Deterministic and tested: it guarantees the output SHAPE the forge enforces —
+; `main` on its own line, a `name` (display title), a markdown `doc` and
+; `examples` as indented `"""` blocks, descriptive ports, and atomics with an
+; indented `src """…"""`. All the `"""` blocks round-trip through funk's dedent.
+;
+; Note: the emitted `"""` can't appear literally inside this function's own `src`
+; (funk can't nest `"""`), so it's built as `chr(34)*3`.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn renderFn {
+  name "Render Function"
+  doc """
+    # Render Function
+    ### Render an FnSpec as the funk source of its `fn { }` block.
+  """
+  examples """
+    # Examples:
+    (renderFn (mkSpec "f" "" "" "" "" "(x Num)" "(result Num)" "" "(flush (result x))"))
+      → "fn f {\n  in  (x Num)\n  out (result Num)\n  body (flush (result x))\n}"
+  """
+  in  (spec FnSpec)
+  out (source Str)
+  engine python
+  src """
+    import textwrap, re
+    q = chr(34) * 3
+    def block(field, val):
+        return ['  ' + field + ' ' + q, textwrap.indent(val, '    '), '    ' + q]
+    # split a port string "(a Num) (b Str (doc \"x\"))" into its top-level ( … )
+    # groups, respecting nested parens and quotes.
+    def split_ports(s):
+        groups, depth, cur, inq = [], 0, '', False
+        for ch in s:
+            if ch == chr(34):
+                inq = not inq; cur += ch
+            elif inq:
+                cur += ch
+            elif ch == '(':
+                depth += 1; cur += ch
+            elif ch == ')':
+                depth -= 1; cur += ch
+                if depth == 0:
+                    groups.append(cur.strip()); cur = ''
+            elif depth > 0:
+                cur += ch
+        return [g for g in groups if g]
+    # one port per line when there is more than one, aligned under the first.
+    def emit_ports(field, s):
+        ports = split_ports(s)
+        if not ports:
+            return []
+        label = '  ' + field + '  ' if field == 'in' else '  ' + field + ' '
+        indent = ' ' * len(label)
+        return [label + ports[0]] + [indent + p for p in ports[1:]]
+    # a claude src is a natural-language prompt: soft-wrap long lines so it reads in
+    # the editor. Cap the RENDERED line (4-space block indent + text) at 150 chars.
+    def wrap_claude(src, cap=150):
+        width = cap - 4
+        out = []
+        for line in src.split(chr(10)):
+            stripped = line.lstrip(' ')
+            lead = line[:len(line) - len(stripped)]
+            if len(line) <= width or not stripped:
+                out.append(line)
+            else:
+                for w in textwrap.wrap(stripped, width=max(20, width - len(lead)),
+                                       break_long_words=False, break_on_hyphens=False):
+                    out.append(lead + w)
+        return chr(10).join(out)
+    # A schema (kind "type") is a `type Name { field Type … }` block — NOT a fn.
+    # Parse whatever the planner put in src (a field list, or a "Name { … }" shape)
+    # into one "field Type" per line, respecting () in types like "(List Json)".
+    if spec.get('kind') == 'type':
+        raw = spec.get('src') or ''
+        mm = re.search(r'\{(.*)\}', raw, re.S)
+        inner = (mm.group(1) if mm else raw).strip()
+        toks, depth, cur = [], 0, ''
+        for ch in inner:
+            if ch == '(':
+                depth += 1; cur += ch
+            elif ch == ')':
+                depth -= 1; cur += ch
+            elif ch.isspace() and depth == 0:
+                if cur:
+                    toks.append(cur); cur = ''
+            else:
+                cur += ch
+        if cur:
+            toks.append(cur)
+        flds = ['  ' + toks[j] + ' ' + toks[j + 1] for j in range(0, len(toks) - 1, 2)]
+        return 'type ' + spec['name'] + ' {' + chr(10) + chr(10).join(flds) + chr(10) + '}'
+    L = ['fn ' + spec['name'] + ' {']
+    if spec.get('kind') == 'main':
+        L.append('  main')
+    if spec.get('title'):
+        L.append('  name ' + chr(34) + spec['title'] + chr(34))
+    if spec.get('doc'):
+        L += block('doc', spec['doc'])
+    if spec.get('examples'):
+        L += block('examples', spec['examples'])
+    if spec.get('in'):
+        L += emit_ports('in', spec['in'])
+    if spec.get('out'):
+        L += emit_ports('out', spec['out'])
+    # capability blocks (requires/needs/effects) are raw funk snippets — emit as-is,
+    # indented into the fn body. Absent on most specs (composites/skills) → skipped.
+    for cap in ('requires', 'needs', 'effects'):
+        v = spec.get(cap)
+        if v and str(v).strip():
+            L.append(textwrap.indent(str(v).strip(), '  '))
+    if spec.get('engine'):
+        L.append('  engine ' + spec['engine'])
+        body = spec['src']
+        if spec['engine'] == 'claude':
+            body = wrap_claude(body)
+        L += block('src', body)
+    else:
+        L.append('  body ' + spec['src'])
+    L.append('}')
+    return chr(10).join(L)
+    """
+  test (is (renderFn (mkSpec "f" "" "" "" "" "(x Num)" "(result Num)" "" "(flush (result x))"))
+           "fn f {\n  in  (x Num)\n  out (result Num)\n  body (flush (result x))\n}")
+  test (is (renderFn (mkSpec "x" "main" "X" "" "" "(n Num)" "(result Num)" "" "(flush (result n))"))
+           "fn x {\n  main\n  name \"X\"\n  in  (n Num)\n  out (result Num)\n  body (flush (result n))\n}")
+  test (is (renderFn (mkSpec "dbl" "lib" "" "" "" "(n Num)" "(result Num)" "python" "return n * 2"))
+           "fn dbl {\n  in  (n Num)\n  out (result Num)\n  engine python\n  src \"\"\"\n    return n * 2\n    \"\"\"\n}")
+  test (is (renderFn (mkSpec "add" "lib" "" "" "" "(a Num) (b Num)" "(result Num)" "" "(flush (result (maths.add a b)))"))
+           "fn add {\n  in  (a Num)\n      (b Num)\n  out (result Num)\n  body (flush (result (maths.add a b)))\n}")
+  test (is (renderFn (mkSpec "Point" "type" "" "" "" "" "" "" "x Num y Num"))
+           "type Point {\n  x Num\n  y Num\n}")
+  test (is (renderFn (mkSpec "Carta" "type" "" "" "" "" "" "" "Carta { planetas (List Json) casas (List Num) }"))
+           "type Carta {\n  planetas (List Json)\n  casas (List Num)\n}")
+}

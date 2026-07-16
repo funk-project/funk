@@ -1,0 +1,33 @@
+; writeFile — write text to a path, creating parent folders. The ONE place the
+; forge touches disk; it declares its `fs write` effect so the capability shows in
+; the graph/effects. Smoke-tested through `scaffold`.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn writeFile {
+  name "Write File"
+  doc """
+    # Write File
+    ### Write text to a path, creating parent folders, and return the path.
+  """
+  examples """
+    # Examples:
+    (writeFile "/tmp/x/a.funk" "fn a { … }") → /tmp/x/a.funk
+  """
+  in  (path Str) (text Str)
+  out (writtenPath Str)
+  engine python
+  effects {
+    fs write "*"
+  }
+  src """
+    import os
+    d = os.path.dirname(path)
+    if d:
+        os.makedirs(d, exist_ok=True)
+    with open(path, 'w') as f:
+        f.write(text)
+    return path
+    """
+}

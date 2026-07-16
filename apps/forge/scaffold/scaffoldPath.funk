@@ -1,0 +1,42 @@
+; scaffoldPath — the LAYOUT POLICY: given a function's spec, where its file goes.
+; The `main` goes at the ROOT; every other function goes under its kind's
+; subfolder. The single source of truth the scaffolder uses to place files, so a
+; generated project always has the same shape. Takes an FnSpec (not loose strings)
+; so the composite `scaffold` can pass whole specs — only python can pluck fields.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn scaffoldPath {
+  name "Scaffold Path"
+  doc """
+    # Scaffold Path
+    ### Where a generated function's file goes: main at the root, others grouped by kind.
+  """
+  examples """
+    # Examples:
+    (scaffoldPath (mkSpec "forge" "main" "" "" "" "" "" "" "")) → forge.funk
+    (scaffoldPath (mkSpec "lintSrc" "gate" "" "" "" "" "" "" "")) → gates/lintsrc.funk
+  """
+  in  (spec FnSpec)
+  out (path Str (doc "Project-Relative Funk Path"))
+  engine python
+  src """
+    import re
+    stem = re.sub(r'[^a-z0-9]+', '-', spec['name'].lower())
+    stem = re.sub(r'-+', '-', stem).strip('-')
+    folder = {
+        'skill': 'skills',
+        'gate': 'gates',
+        'type': 'types',
+        'scaffold': 'scaffold',
+        'lib': 'lib',
+    }.get(spec['kind'], '')
+    return (folder + '/' + stem + '.funk') if folder else (stem + '.funk')
+    """
+  test (is (scaffoldPath (mkSpec "forge" "main" "" "" "" "" "" "" ""))          "forge.funk")
+  test (is (scaffoldPath (mkSpec "Decompose Task" "skill" "" "" "" "" "" "" "")) "skills/decompose-task.funk")
+  test (is (scaffoldPath (mkSpec "lintSrc" "gate" "" "" "" "" "" "" ""))         "gates/lintsrc.funk")
+  test (is (scaffoldPath (mkSpec "FnSpec" "type" "" "" "" "" "" "" ""))          "types/fnspec.funk")
+  test (is (scaffoldPath (mkSpec "columnMeans" "lib" "" "" "" "" "" "" ""))       "lib/columnmeans.funk")
+}

@@ -1,0 +1,44 @@
+; projectGraph — the DERIVED connection tree of every function in a generated
+; project (what `funk graph` draws: which node feeds which). This is what the
+; connection reviewer reads to catch wiring that type-checks but makes no sense —
+; the failure mode plain `funk check` misses.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn projectGraph {
+  name "Project Graph"
+  doc """
+    # Project Graph
+    ### The funk graph (connection tree) of every function in a generated project.
+  """
+  examples """
+    # Examples:
+    (projectGraph "/tmp/stats") → the connection trees of mean, sum, count …
+  """
+  in  (dir Str)
+  out (graph Str)
+  engine python
+  src """
+    import subprocess, os, shutil
+    funk = os.environ.get('FUNK_BIN') or shutil.which('funk') or 'funk'
+    names = []
+    for root, _, files in os.walk(dir):
+        for f in files:
+            if not f.endswith('.funk'):
+                continue
+            for line in open(os.path.join(root, f)).read().splitlines():
+                s = line.strip()
+                if s.startswith('fn '):
+                    n = s[3:].split()[0].rstrip('{').strip()
+                    if n:
+                        names.append(n)
+    trees = []
+    for n in names:
+        p = subprocess.run([funk, 'graph', '-f', dir, n], capture_output=True, text=True, timeout=30)
+        t = (p.stdout or '').rstrip()
+        if t:
+            trees.append(t)
+    return (chr(10) + chr(10)).join(trees)
+    """
+}

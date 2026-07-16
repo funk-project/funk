@@ -1,0 +1,137 @@
+; decompose — the "thinking" step: a task → a plan of small funk functions.
+; A `claude` skill (the prompt IS the src). It emits JSON that the deterministic
+; half parses (planHeader / planFunctions) and scaffolds. The gates (checkGate /
+; styleGate / rate) enforce quality on what it produces. This prompt teaches the
+; FULL funk vocabulary — python facts, claude skills, streams, capabilities — so a
+; plain-language brief becomes a correct, idiomatic, multi-file project.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn decompose {
+  name "Decompose"
+  doc """
+    # Decompose
+    ### Decompose a plain-language task into a complete multi-file funk project plan.
+  """
+  examples """
+    # Examples:
+    (decompose "carta astrológica a partir dos dados de nascimento") → { header, functions: [ cartaDoCeu(main), localizar(lib), interpretarCarta(skill), … ] }
+  """
+  in  (task Str (doc "Plain-Language Task Description"))
+  out (plan Json (doc "Project Plan"))
+  engine claude
+  src """
+    You turn a plain-language brief into a COMPLETE funk project. funk is a workflow
+    language: a program is small typed functions wired together. Read the brief for
+    intent and pick the funk constructs below that fit — don't ask the user for funk.
+
+    Output ONLY a JSON object — no prose, no code fences:
+
+    {
+      "header": "<the package block ALL files share, as one JSON string>",
+      "functions": [
+        { "name","kind","title","doc","examples","in","out","engine","src",
+          "requires","needs","effects" }
+      ]
+    }
+
+    ── THE THREE KINDS OF FUNCTION ──────────────────────────────────────────────
+    Decide, per piece, which engine it is:
+
+    1. DETERMINISTIC FACT (engine "python"): computation that must be exact and
+       repeatable — maths, dates, positions, parsing, formatting, IO. "src" is a
+       python function body; each input port is already a local; you MUST `return`
+       the result. This is the ONLY place that may touch structs as dicts, do IO,
+       or use `return`.
+
+    2. AI INTERPRETATION (engine "claude"): turn typed facts into prose/judgement.
+       "src" IS THE PROMPT (natural language telling the model what to write, in the
+       task's voice/language). It receives its typed inputs and returns the output
+       value. Use this for "interpret", "write", "summarise", "verify", "review",
+       "rate", "decide" style steps. No python, no code — just the instruction.
+
+    3. COMPOSITE (engine ""): wiring. "src" is a funk BODY expression that calls
+       other functions BY NAME and emits with `flush` into the OUTPUT PORT NAME.
+       NO python, NO `return` — only funk forms. The `main` entry point is a
+       composite.
+
+    ── COMPOSITE (funk body) RULES — where projects usually break ────────────────
+    - Emit with flush into the output port: (flush (result (mean numbers))).
+    - NO infix operators, ever. NEVER (/ a b) (+ a b) (* a b) (> a b). Arithmetic:
+      maths.add maths.sub maths.mul maths.div. Comparison: maths.lt maths.lte
+      maths.gt maths.gte maths.eq maths.neq.
+    - A composite CANNOT read struct fields. `birth.name`, `chart.planets` FAIL —
+      only python sees a struct as a dict. If a composite needs a field, add a tiny
+      python atom that extracts it (e.g. extractName(birth) → name) and call THAT.
+    - Bind intermediate values with let: (let (x (f a)) (let (y (g x)) (flush (out y)))).
+    - Independent lets run in PARALLEL automatically — no special syntax; just don't
+      make one depend on another.
+    - zip = a BARRIER: a step that must wait for SEVERAL inputs fires only when all
+      have arrived. Model "assemble only when every section is ready" by having the
+      assembling function take all of them as inputs (it naturally waits for all).
+    - if for branching: (if (maths.gt x 0) (flush (out a)) (flush (out b))).
+
+    ── CONTRACTS — signatures MUST match call sites (the #1 cause of broken plans) ─
+    - Before you finish, CHECK every call against its callee's ports. A call
+      `(f a b c)` REQUIRES that f declares EXACTLY three input ports (in that order).
+      If a body calls `(uniformizarEstilo sec)`, uniformizarEstilo MUST have one
+      input port; `(montarDocumento seccoes nascimento)` MUST have two. Count the
+      args at EVERY call site and give the callee that many NAMED input ports —
+      never `in (List Json)` with no name, never 0 inputs for something you call
+      with args. A name used in a body (seccoes, factos, ciclo) MUST be either a let
+      binding or an input port of THAT function — otherwise it's an unbound error.
+    - funk has NO RECURSION — a function must NOT call itself. For a bounded
+      loop/retry ("repeat up to 3 times", "until X"), use `while` (a stateful loop)
+      or a small fixed chain of helpers; NEVER make a composite call its own name.
+    - `while (state init) cond step`: `state` is the loop variable, `cond` a
+      predicate on it, `step` the next value. Keep loop state a single value.
+
+    ── STREAMS (fan-out over many items) ────────────────────────────────────────
+    - A producer that yields many items has an output typed `Stream<T>`
+      (e.g. out (months (Stream Json))).
+    - The reactive lift is AUTOMATIC — there is NO `lift` function/keyword. A scalar
+      function applied to a stream simply FIRES PER ITEM. So to map perItem over a
+      stream, just call it: (perItem (producer …)). collect gathers the resulting
+      stream into a `List`. Model "do X for each of the 12 months, then gather" as
+      one composite helper: (flush (out (collect (perItem (producer …))))).
+
+    ── TYPES ────────────────────────────────────────────────────────────────────
+    Built-ins: Num Str Bool List Json Time Any Stream Fn (write generics as
+    "(List Num)", "(Stream Json)"). A domain schema (Birth, Chart, Section, …) is a
+    "type" function (kind "type") that documents its shape, but bodies pass it around
+    as Json and only python atoms read its fields.
+
+    ── CAPABILITIES — declare side effects (as JSON strings; "" when none) ────────
+    - "requires": python deps, e.g. "requires {\\n  pip pyswisseph\\n}".
+    - "effects": IO the body performs, e.g. "effects {\\n  fs write \\"*\\"\\n}" or
+      "effects {\\n  net nominatim.openstreetmap.org\\n}".
+    - "needs": injected config/secrets, e.g. "needs {\\n  config userAgent Str\\n}".
+    Declare these on the python atom that actually does the IO (file write, network,
+    geocode). Composites and claude skills usually have all three "".
+
+    ── STYLE — every function MUST have all of these ────────────────────────────
+    - "name": camelCase identifier, e.g. "interpretarCarta".
+    - "title": short display name, Capitalised, e.g. "Interpretar Carta".
+    - "doc": markdown, TWO lines: "# <Title>" then "### <One capitalised sentence.>"
+      (encode newline as \\n).
+    - "examples": markdown "# Examples:\\n(call …) → …".
+    - "in"/"out": EVERY port MUST be "(name Type (doc \\"…\\"))" — the port NAME comes
+      FIRST and is MANDATORY (camelCase, DESCRIPTIVE, never single letters). A port
+      without a name makes the body's references unbound.
+      GOOD:  in (numbers (List Num) (doc \\"Numbers To Sum\\"))
+      WRONG: in (List Num) (doc \\"Numbers To Sum\\")  — no port name; a body using
+      `numbers` cannot bind to it. Each port's own doc, when present, is a short
+      Title-Case label: "(grau Num (doc \\"Grau Dentro Do Signo\\"))".
+    - Write title/doc/examples/claude-prompts in the SAME LANGUAGE as the task.
+
+    ── STRUCTURE ────────────────────────────────────────────────────────────────
+    - EXACTLY ONE function has "kind":"main" — the entry composite (goes at the root).
+    - Others: "lib" (python atom or composite helper), "skill" (claude), "type", "gate".
+    - Keep each function small and single-purpose. Split a long body into helpers.
+    - "header" is the package block ALL files share, e.g.
+      package "gen/astros" { version 0.1.0 use "funk/std/maths" as maths }
+      EVERY alias any body uses MUST be declared there with a `use` line
+      (in JSON, encode its newlines as \\n).
+  """
+}

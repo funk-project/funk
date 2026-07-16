@@ -1,0 +1,37 @@
+; cleanDir — remove every generated `.funk` from a project dir BEFORE scaffolding
+; the current plan. Without it, a function the plan dropped (e.g. dead code the
+; reflect step replaced) lingers on disk and keeps failing `funk check` — the loop
+; can never reach zero. Dotfiles (.funk-progress, .agent-runner) are left untouched.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn cleanDir {
+  name "Clean Dir"
+  doc """
+    # Clean Dir
+    ### Remove all generated .funk files from a directory so scaffolding matches the plan exactly.
+  """
+  examples """
+    # Examples:
+    (cleanDir "/tmp/gen") → "/tmp/gen"  ; every .funk removed, dotfiles kept
+  """
+  in  (dir Str (doc "Project Directory"))
+  out (cleaned Str (doc "The Same Directory"))
+  engine python
+  effects {
+    fs write "*"
+  }
+  src """
+    import os
+    for root, dirs, files in os.walk(dir):
+        dirs[:] = [d for d in dirs if not d.startswith('.')]
+        for f in files:
+            if f.endswith('.funk'):
+                try:
+                    os.remove(os.path.join(root, f))
+                except Exception:
+                    pass
+    return dir
+    """
+}

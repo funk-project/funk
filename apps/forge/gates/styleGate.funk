@@ -1,0 +1,83 @@
+; styleGate — enforce the house STYLE on a generated project, deterministically:
+; every function needs a `name` (display title), a markdown `doc` ("# Title"
+; capitalised), `examples`, and DESCRIPTIVE port names (no single letters like
+; `r`). It reads the parsed AST (funk parse) — the function's FIELDS — not the raw
+; text, so a "name" mentioned inside a `src`/prompt never false-matches. Returns
+; the violations (empty when conformant); feeds the reflect loop like checkGate.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn styleGate {
+  name "Style Gate"
+  doc """
+    # Style Gate
+    ### Report a generated project's style violations: missing name/doc/examples, single-letter ports, or non-Title port docs.
+  """
+  examples """
+    # Examples:
+    (styleGate "/tmp/clean") → ""
+    (styleGate "/tmp/rough") → "mean.funk [mean]: missing `name` (display title); single-letter port `r`"
+  """
+  in  (dir Str)
+  out (violations Str)
+  engine python
+  src """
+    import subprocess, os, json, shutil
+    funk = os.environ.get('FUNK_BIN') or shutil.which('funk') or 'funk'
+    problems = []
+    for root, _, files in os.walk(dir):
+        for f in sorted(files):
+            if not f.endswith('.funk'):
+                continue
+            path = os.path.join(root, f)
+            rel = os.path.relpath(path, dir)
+            p = subprocess.run([funk, 'parse', path], capture_output=True, text=True, timeout=30)
+            if p.returncode != 0:
+                continue  # a parse error is checkGate's job, not style's
+            try:
+                blocks = json.loads(p.stdout)
+            except Exception:
+                continue
+            for b in blocks:
+                if b.get('Head') != 'fn':
+                    continue
+                name = b.get('Name', f)
+                fields = {}
+                for fld in (b.get('Fields') or []):
+                    fields[fld['Key']] = fld.get('Values') or []
+                issues = []
+                nm = fields.get('name') or []
+                if not (nm and str(nm[0].get('Value', '')).strip()):
+                    issues.append('missing `name` (display title)')
+                doc = fields.get('doc') or []
+                if not doc:
+                    issues.append('missing `doc`')
+                else:
+                    dv = str(doc[0].get('Value', '')).lstrip()
+                    if not dv.startswith('#'):
+                        issues.append('`doc` must be markdown starting with `# Title`')
+                    else:
+                        head = dv.lstrip('#').lstrip()
+                        if head and not head[0].isupper():
+                            issues.append('`doc` title must start with a capital letter')
+                if not (fields.get('examples') or []):
+                    issues.append('missing `examples`')
+                for pf in ('in', 'out'):
+                    for v in fields.get(pf, []):
+                        if not isinstance(v, dict):
+                            continue
+                        h = v.get('Head', '')
+                        if h and len(h) == 1:
+                            issues.append('single-letter port `' + h + '` in `' + pf + '` — use a descriptive name')
+                        for arg in (v.get('Args') or []):
+                            if isinstance(arg, dict) and arg.get('Head') == 'doc':
+                                dargs = arg.get('Args') or []
+                                dtxt = str(dargs[0].get('Value', '')).strip() if dargs else ''
+                                if dtxt and not dtxt[0].isupper():
+                                    issues.append('port `' + h + '` doc must be a Title-Case label (start with a capital)')
+                if issues:
+                    problems.append(rel + ' [' + name + ']: ' + '; '.join(issues))
+    return chr(10).join(problems)
+    """
+}

@@ -1,0 +1,35 @@
+; lintSrc — the src-validity gate: compiles an atomic function's embedded python
+; `src` (as a function body) to catch syntax AND indentation errors that
+; `funk check` (which only parses the funk shell) misses. Deterministic, so it
+; carries real inline tests.
+package "funk/forge" {
+  version 0.1.0
+}
+
+fn lintSrc {
+  name "Lint Source"
+  doc """
+    # Lint Source
+    ### True if a python `src` compiles as a function body (syntax and indentation).
+  """
+  examples """
+    # Examples:
+    (lintSrc "return name.lower()") → true
+    (lintSrc "return 1 +") → false
+    (lintSrc "if True:\nreturn 1") → false
+  """
+  in  (src Str)
+  out (valid Bool)
+  engine python
+  src """
+    import textwrap
+    try:
+        compile('def _f():' + chr(10) + textwrap.indent(src, '    '), '<lint>', 'exec')
+        return True
+    except SyntaxError:
+        return False
+    """
+  test (is (lintSrc "return name.lower()") true)
+  test (is (lintSrc "return 1 +") false)
+  test (is (lintSrc "if True:\nreturn 1") false)
+}
