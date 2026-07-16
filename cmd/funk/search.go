@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -40,6 +41,14 @@ func cmdSearch(args []string) error {
 		lib, err := loadLibrary(files)
 		if err != nil {
 			return err
+		}
+		// the commons: published funktions (funk publish) are searchable too.
+		// Best-effort and additive — a missing or broken registry never breaks search.
+		if reg := registryDir(""); reg != "" {
+			if fi, err := os.Stat(reg); err == nil && fi.IsDir() {
+				_ = lib.LoadDir(reg)
+				_ = lib.Finalize()
+			}
 		}
 		rows = searchResults(lib, query, limit)
 	}
@@ -104,7 +113,12 @@ func searchResults(lib *funk.Library, query string, limit int) []searchRow {
 		hits = hits[:limit]
 	}
 	rows := make([]searchRow, 0, len(hits))
+	seen := map[string]bool{} // a registry copy of a loaded package would double-list
 	for _, h := range hits {
+		if seen[h.f.Address()] {
+			continue
+		}
+		seen[h.f.Address()] = true
 		rows = append(rows, searchRow{h.f.Address(), h.f.Name, h.f.Display, signature(h.f), docSummary(h.f.Doc)})
 	}
 	return rows

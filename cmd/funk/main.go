@@ -67,6 +67,8 @@ func main() {
 		err = cmdServe(args)
 	case "get":
 		err = cmdGet(args)
+	case "publish":
+		err = cmdPublish(args)
 	case "help", "-h", "--help":
 		usage()
 	default:
@@ -118,9 +120,15 @@ usage:
                              and records a content-hash in funk.lock (verified on load).
                              With NO args, installs every versioned use "url" "vX" as a
                              dependency declared in the current dir's .funk files
+  funk publish -f <dir> [--registry <path>]
+                             verify a project (check + test must be green) and
+                             publish its package into the registry — a git-backed
+                             commons of verified funktions (FUNK_REGISTRY or
+                             ~/.funk/registry); funk search indexes it
 
 env:
   FUNK_STD      path to the std library (default: ./std)
+  FUNK_REGISTRY path to the published-funktions registry (default: ~/.funk/registry)
   FUNK_SERVER   run against a funkd server instead of locally
   FUNK_CACHE    package cache dir (default: ~/.funk/pkg)
 `)
