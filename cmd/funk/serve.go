@@ -80,6 +80,27 @@ func serveMux(lib *funk.Library) *http.ServeMux {
 		}
 		writeJSON(w, in)
 	})
+	// /graph?fn=NAME returns the DERIVED node/edge graph (the Go port of the
+	// IDE's build.ts) — the same JSON `funk graph` prints.
+	mux.HandleFunc("/graph", func(w http.ResponseWriter, r *http.Request) {
+		f, ok := lib.Lookup(r.URL.Query().Get("fn"))
+		if !ok {
+			http.Error(w, "unknown function", http.StatusNotFound)
+			return
+		}
+		g, err := funk.DeriveGraph(lib, f)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if g.Nodes == nil {
+			g.Nodes = []*funk.GraphNode{}
+		}
+		if g.Edges == nil {
+			g.Edges = []*funk.GraphEdge{}
+		}
+		writeJSON(w, g)
+	})
 	mux.HandleFunc("/run", func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
 			Ref    string                 `json:"ref"`

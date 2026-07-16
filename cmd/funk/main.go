@@ -8,7 +8,9 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/funk-project/funk/internal/funk"
 )
@@ -372,11 +374,21 @@ func cmdRun(args []string) error {
 	sandboxes, rest := takeFlag(rest, "--sandbox")
 	binds, rest := takeFlag(rest, "--bind")
 	trace, rest := takeBool(rest, "--trace")
+	progress, rest := takeBool(rest, "--progress")
+	progressFiles, rest := takeFlag(rest, "--progress-file")
 	server := os.Getenv("FUNK_SERVER")
 	if len(servers) > 0 {
 		server = servers[len(servers)-1]
 	}
 	opts := funk.ExecOpts{}
+	// FUNK_TIMEOUT (seconds) raises the per-body engine timeout — needed for slow,
+	// large claude bodies (e.g. a forge decompose of a big project) that exceed the
+	// 120s default. Applies to every engine in this run.
+	if v := os.Getenv("FUNK_TIMEOUT"); v != "" {
+		if secs, err := strconv.Atoi(v); err == nil && secs > 0 {
+			opts.Timeout = time.Duration(secs) * time.Second
+		}
+	}
 	if len(sandboxes) > 0 {
 		opts.Sandbox = sandboxes[len(sandboxes)-1]
 	}
@@ -455,6 +467,52 @@ func cmdRun(args []string) error {
 		printValue(res.Value)
 		out, _ := json.MarshalIndent(rep, "", "  ")
 		fmt.Fprintln(os.Stderr, string(out))
+		return nil
+	}
+	// --progress surfaces funk's live self-observation to stderr: each node prints
+	// as it ENTERS (→, before it runs — the glow) and when it returns (✓). Turns a
+	// long run (e.g. a slow AI pipeline) from a silent "working…" into a live trace.
+	if progress || len(progressFiles) > 0 {
+		var pf *os.File
+		if len(progressFiles) > 0 {
+			// truncate at start so each run is fresh; the IDE tails this file.
+			pfPath := progressFiles[len(progressFiles)-1]
+			os.MkdirAll(filepath.Dir(pfPath), 0o755) // e.g. <project>/.agent-runner
+			pf, _ = os.Create(pfPath)
+			if pf != nil {
+				defer pf.Close()
+			}
+		}
+		onEvent := func(ev funk.TraceEvent) {
+			// skip the noise: unnamed nodes and qualified std calls (maths.add, …).
+			if ev.Fn == "" || strings.Contains(ev.Fn, ".") {
+				return
+			}
+			var line string
+			switch ev.Kind {
+			case "enter":
+				line = "→ " + ev.Fn
+			case "call":
+				line = "✓ " + ev.Fn
+			default:
+				return
+			}
+			if progress {
+				fmt.Fprintln(os.Stderr, line)
+			}
+			if pf != nil {
+				fmt.Fprintln(pf, line)
+				pf.Sync() // flush so the IDE sees it immediately
+			}
+		}
+		res, _ := funk.RunLive(lib, target, inputs, opts, onEvent, printValue)
+		if pf != nil {
+			fmt.Fprintln(pf, "● done")
+			pf.Sync()
+		}
+		if !res.OK {
+			return fmt.Errorf("%s", res.Error)
+		}
 		return nil
 	}
 	res := funk.RunStreaming(lib, target, inputs, opts, printValue)

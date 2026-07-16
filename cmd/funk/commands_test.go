@@ -112,11 +112,11 @@ func TestCmdRun(t *testing.T) {
 
 func TestCmdGraphAndDoc(t *testing.T) {
 	p := writeLib(t)
-	if out, err := captureStdout(t, func() error { return cmdGraph([]string{"-f", p, "bump"}) }); err != nil || !strings.Contains(out, "bump") {
+	if out, err := captureStdout(t, func() error { return cmdGraph([]string{"-f", p, "bump"}) }); err != nil || !strings.Contains(out, `"nodes"`) || !strings.Contains(out, `"edges"`) {
 		t.Fatalf("cmdGraph: err=%v out=%q", err, out)
 	}
-	if out, err := captureStdout(t, func() error { return cmdGraph([]string{"-f", p, "--json", "bump"}) }); err != nil || !strings.Contains(out, `"id"`) {
-		t.Fatalf("cmdGraph --json: err=%v out=%q", err, out)
+	if out, err := captureStdout(t, func() error { return cmdGraph([]string{"-f", p, "--tree", "bump"}) }); err != nil || !strings.Contains(out, "bump") {
+		t.Fatalf("cmdGraph --tree: err=%v out=%q", err, out)
 	}
 	if out, err := captureStdout(t, func() error { return cmdDoc([]string{"-f", p}) }); err != nil || !strings.Contains(out, "bump") {
 		t.Fatalf("cmdDoc: err=%v out=%q", err, out)
