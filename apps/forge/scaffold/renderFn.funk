@@ -119,6 +119,13 @@ fn renderFn {
         L += block('src', body)
     else:
         L.append('  body ' + spec['src'])
+    # inline test assertions — the acceptance contract testGate runs. One
+    # `test (is …)` per line, emitted verbatim after the body/src.
+    tv = spec.get('tests')
+    if tv and str(tv).strip():
+        for tl in str(tv).strip().split(chr(10)):
+            if tl.strip():
+                L.append('  ' + tl.strip())
     L.append('}')
     return chr(10).join(L)
     """

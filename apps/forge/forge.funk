@@ -13,37 +13,43 @@ fn forge {
   name "Forge"
   doc """
     # Forge
-    ### Turn a plain-language task into a valid, style-conformant funk project.
+    ### Turn a plain-language task into a valid, style-conformant funk project that passes its own tests.
   """
   examples """
     # Examples:
-    (forge "sum and mean of a list" "/tmp/stats") → "/tmp/stats"  ; writes main + lib/
+    (forge "sum and mean of a list" "/tmp/stats" "") → "/tmp/stats"  ; writes main + lib/
+    (forge "min and max of a list" "/tmp/mm" "(main [3,1,4]) → min 1 and max 4") → tests seeded from the intent
   """
   in  (task Str (doc "Plain-Language Task Description"))
       (dir Str (doc "Target Project Folder"))
+      (intent Str (default "") (doc "Acceptance Examples — The Convergence Target"))
   out (path Str (doc "Generated Project Directory"))
   body
-    (let (p0 (decompose task))
-    (let (r1 c1 (refine task p0 dir))
-    (if c1 (flush (path dir))
-    (let (r2 c2 (refine task r1 dir))
-    (if c2 (flush (path dir))
-    (let (r3 c3 (refine task r2 dir))
-    (if c3 (flush (path dir))
-    (let (r4 c4 (refine task r3 dir))
-    (if c4 (flush (path dir))
-    (let (r5 c5 (refine task r4 dir))
-    (if c5 (flush (path dir))
-    (let (r6 c6 (refine task r5 dir))
-    (if c6 (flush (path dir))
-    (let (r7 c7 (refine task r6 dir))
-    (if c7 (flush (path dir))
-    (let (r8 c8 (refine task r7 dir))
-    (if c8 (flush (path dir))
-    (let (r9 c9 (refine task r8 dir))
-    (if c9 (flush (path dir))
-    (let (r10 c10 (refine task r9 dir))
-    (if c10 (flush (path dir))
+    ; NOTE: a multi-output let destructures BY NAME — the binding names must be
+    ; the callee's out-port names (revised/clean), shadowed at each level. Binding
+    ; them as r1/c1 silently yields nils (the old bug: the chain could never take
+    ; an early exit and crashed the next refine on a nil plan).
+    (let (p0 (decompose task intent))
+    (let (revised clean (refine task p0 dir))
+    (if clean (flush (path dir))
+    (let (revised clean (refine task revised dir))
+    (if clean (flush (path dir))
+    (let (revised clean (refine task revised dir))
+    (if clean (flush (path dir))
+    (let (revised clean (refine task revised dir))
+    (if clean (flush (path dir))
+    (let (revised clean (refine task revised dir))
+    (if clean (flush (path dir))
+    (let (revised clean (refine task revised dir))
+    (if clean (flush (path dir))
+    (let (revised clean (refine task revised dir))
+    (if clean (flush (path dir))
+    (let (revised clean (refine task revised dir))
+    (if clean (flush (path dir))
+    (let (revised clean (refine task revised dir))
+    (if clean (flush (path dir))
+    (let (revised clean (refine task revised dir))
+    (if clean (flush (path dir))
       (do (funkTicket (diagnoseFunk (checkGate dir) (projectSource dir)) dir)
           (flush (path dir))))))))))))))))))))))))
 }

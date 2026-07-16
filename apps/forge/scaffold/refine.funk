@@ -1,9 +1,10 @@
-; refine — ONE fix step, gated on the DETERMINISTIC check (not an AI rating).
-; Scaffold the plan, run funk check + the style gate: if it's CLEAN, the plan is
-; returned unchanged (a no-op — this is what makes chaining safe); otherwise reflect
-; on the real check errors + the connection review to produce a corrected plan.
+; refine — ONE fix step, gated on the DETERMINISTIC checks (not an AI rating).
+; Scaffold the plan, run funk check + the style gate; only once those are CLEAN,
+; run the test gate (the human's acceptance assertions). Clean on ALL gates → the
+; plan is returned unchanged (a no-op — this is what makes chaining safe);
+; otherwise reflect on the real errors/failures to produce a corrected plan.
 ; Chaining refine calls in `forge` gives a fix-until-green loop whose cap = the
-; number of links in the chain — it keeps reflecting until `funk check` passes.
+; number of links in the chain — converged = check green AND tests green.
 package "funk/forge" {
   version 0.1.0
   use "funk/std/strings" as strings
@@ -13,19 +14,22 @@ fn refine {
   name "Refine"
   doc """
     # Refine
-    ### Scaffold a plan and, while `funk check` reports errors, reflect it into a corrected one.
+    ### Scaffold a plan and, while `funk check` or `funk test` reports problems, reflect it into a corrected one.
   """
   examples """
     # Examples:
-    (refine task plan "/tmp/out") → the same plan when check is clean, else a reflected plan
+    (refine task plan "/tmp/out") → the same plan when check and tests are green, else a reflected plan
   """
   in  (task Str) (plan Json) (dir Str)
   out (revised Json)
-      (clean Bool (doc "True When The Scaffolded Plan Passed Check"))
+      (clean Bool (doc "True When The Scaffolded Plan Passed Check And Tests"))
   body
     (let (d (scaffold (planFunctions plan) dir (planHeader plan)))
     (let (errs (strings.concat (checkGate d) (strings.concat "\n" (styleGate d))))
       (if (hasErrors errs)
         (flush (revised (pickPlan (reflect task plan errs "") plan)) (clean false))
-        (flush (revised plan) (clean true)))))
+        (let (fails (testGate d))
+          (if (hasErrors fails)
+            (flush (revised (pickPlan (reflect task plan fails "") plan)) (clean false))
+            (flush (revised plan) (clean true)))))))
 }

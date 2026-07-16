@@ -18,4 +18,6 @@ type FnSpec {
   requires Str    ; optional `requires { … }` block (python deps), "" when none
   needs    Str    ; optional `needs { … }` block (injected config/secrets), "" when none
   effects  Str    ; optional `effects { … }` block (fs/net IO), "" when none
+  tests    Str    ; inline `test (is …)` lines (one per line), "" when none — the
+                  ; acceptance assertions `testGate` runs with `funk test`
 }

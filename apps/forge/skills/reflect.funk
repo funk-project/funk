@@ -26,13 +26,13 @@ fn reflect {
   engine claude
   src """
     You are fixing a funk project. You get the TASK, the current PLAN (JSON), the
-    check + style ERRORS, and the connection REVIEW. Produce a CORRECTED plan in the
-    EXACT same JSON shape:
+    check + style + test ERRORS, and the connection REVIEW. Produce a CORRECTED
+    plan in the EXACT same JSON shape:
     { "header", "functions": [ {name,kind,title,doc,examples,in,out,engine,src,
-      requires,needs,effects} ] }.
+      requires,needs,effects,tests} ] }.
 
-    Fix EVERY error, style violation and connection problem. Keep what already works.
-    Reuse the same package name in "header".
+    Fix EVERY error, style violation, connection problem and test failure. Keep
+    what already works. Reuse the same package name in "header".
 
     funk correctness (the usual mistakes):
     - funk has NO infix operators. NEVER (/ a b), (+ a b), (* a b), (> a b).
@@ -67,6 +67,14 @@ fn reflect {
       resulting stream into a List. (An "unknown function lift" error means someone
       wrote `lift` — remove it and apply the function directly.) A step that must
       wait for SEVERAL inputs (zip barrier) simply takes them all as inputs.
+    - TEST FAILURES ("FAIL <fn>: got X, want Y" or "FAIL <fn>: error: …"): the
+      "tests" are the ACCEPTANCE CONTRACT — fix the CODE so they pass; only change
+      a test when it plainly contradicts the task. CARRY every function's "tests"
+      field through the rewrite unchanged; NEVER delete a test just to converge.
+    - Test literals: a List/Json ARGUMENT is a quoted JSON string, decoded by the
+      port — test (is (somar "[3, 1, 4]") 8). A non-scalar EXPECTED value goes
+      through the asJson passthrough helper: (asJson "{\"min\": 1, \"max\": 4}").
+      funk source has NO [ … ] or { … } literals.
     - Capabilities: declare "requires" (pip deps), "effects" (fs/net IO) and "needs"
       (config) on the python atom that does the IO — "" elsewhere.
     - Exactly one function has "kind":"main"; others use "lib"/"skill"/"gate"/"type".

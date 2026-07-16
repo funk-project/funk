@@ -19,12 +19,14 @@ fn decompose {
     (decompose "carta astrológica a partir dos dados de nascimento") → { header, functions: [ cartaDoCeu(main), localizar(lib), interpretarCarta(skill), … ] }
   """
   in  (task Str (doc "Plain-Language Task Description"))
+      (intent Str (default "") (doc "Acceptance Examples — The Convergence Target"))
   out (plan Json (doc "Project Plan"))
   engine claude
   src """
     You turn a plain-language brief into a COMPLETE funk project. funk is a workflow
     language: a program is small typed functions wired together. Read the brief for
     intent and pick the funk constructs below that fit — don't ask the user for funk.
+    Your inputs: `task` (the brief) and `intent` (acceptance examples, may be "").
 
     Output ONLY a JSON object — no prose, no code fences:
 
@@ -32,7 +34,7 @@ fn decompose {
       "header": "<the package block ALL files share, as one JSON string>",
       "functions": [
         { "name","kind","title","doc","examples","in","out","engine","src",
-          "requires","needs","effects" }
+          "requires","needs","effects","tests" }
       ]
     }
 
@@ -109,6 +111,29 @@ fn decompose {
     - "needs": injected config/secrets, e.g. "needs {\\n  config userAgent Str\\n}".
     Declare these on the python atom that actually does the IO (file write, network,
     geocode). Composites and claude skills usually have all three "".
+
+    ── TESTS — the convergence target (as a JSON string; "" when none) ──────────
+    - "tests": inline funk assertions, ONE per line (\\n-separated in the JSON
+      string), each exactly: test (is (<fnName> <args…>) <expected>). They run
+      with `funk test` and GATE convergence — a failing test sends the plan back
+      for correction, so only write assertions you have REASONED to be true.
+    - EVERY public deterministic function (engine "python", or a composite wired
+      from deterministic parts) MUST have at least one test. NEVER put tests on
+      claude-engine skills (non-deterministic) or on functions with fs/net effects.
+    - Literals: numbers, "strings", true/false. A List/Json ARGUMENT is a quoted
+      JSON string — the port decodes it: test (is (somar "[3, 1, 4]") 8). funk
+      source has NO [ … ] or { … } literals.
+    - A non-scalar EXPECTED value can't be written directly: include the tiny
+      helper asJson (kind "lib", engine "python", in "(a Json)", out "(r Json)",
+      src "return a") and write: test (is (main "[3, 1, 4]") (asJson "{\\"min\\": 1, \\"max\\": 4}"))
+      (inside the JSON string, escape its quotes).
+    - INTENT: when the `intent` input is non-empty it is the ACCEPTANCE CONTRACT.
+      Translate EVERY example in it into a test on the MAIN function — main's
+      "tests" MUST cover every intent example (same inputs, same expected values);
+      give main ONE output port so each example is one assertion. An intent
+      example that expects an ERROR ("empty list → error") cannot be an `is`
+      assertion: implement the guard (exit with a clear message) and record the
+      case in "examples" instead.
 
     ── STYLE — every function MUST have all of these ────────────────────────────
     - "name": camelCase identifier, e.g. "interpretarCarta".
