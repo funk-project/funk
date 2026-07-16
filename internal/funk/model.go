@@ -110,11 +110,42 @@ func (f *Fn) Address() string {
 	return f.Package + "/" + f.Name
 }
 
+// portSpecKeys are the per-port spec form heads (docs/07 §2.2): `(doc "…")`,
+// `(min n)`, … They qualify a port; they never name one.
+var portSpecKeys = map[string]bool{
+	"doc": true, "min": true, "max": true, "default": true, "policy": true,
+}
+
+// nonPortForm reports whether a form inside an `in`/`out` field does NOT declare
+// a port. Two port-less shapes exist (the forge emits both):
+//   - a bare type, e.g. `(List Num)` — the head is a builtin type constructor,
+//     not a port name;
+//   - a per-port spec floated to the top level of the field, e.g. `(doc "…")` /
+//     `(min 3)` — a spec key head whose single argument is a LITERAL. The literal
+//     is what separates it from a real port that happens to be named after a spec
+//     key: `(doc Json (doc "…"))` declares a port `doc` of type Json (its first
+//     argument is a type, not a string/number), and must stay a port.
+//
+// Treating these as ports would fabricate ports named "doc"/"List" whose Type is
+// the doc text, so port extraction ignores them. (zip/latest group forms are
+// unwrapped by inPortsFromField before this predicate is consulted.)
+func nonPortForm(f Form) bool {
+	if builtinTypeSet[f.Head] {
+		return true
+	}
+	if !portSpecKeys[f.Head] || len(f.Args) != 1 {
+		return false
+	}
+	a, ok := f.Args[0].(Atom)
+	return ok && a.Kind != "id" // (doc "…") / (min 3) — a literal, not a type name
+}
+
 // portFromForm builds one port from a `(name Type spec…)` form, tagging it with
-// the given firing policy/group. Returns false for `()` / non-forms.
+// the given firing policy/group. Returns false for `()` / non-forms, and for
+// spec/type forms that don't declare a port (see nonPortForm).
 func portFromForm(n Node, policy string, group int) (Port, bool) {
 	form, ok := n.(Form)
-	if !ok || form.Head == "" {
+	if !ok || form.Head == "" || nonPortForm(form) {
 		return Port{}, false
 	}
 	p := Port{Name: form.Head, Policy: policy, Group: group}
@@ -193,6 +224,9 @@ func inPortsFromField(f Field) []Port {
 			}
 			continue
 		}
+		if nonPortForm(form) {
+			continue // a top-level spec / bare type form — not a port
+		}
 		// a bare port → the implicit zip group
 		if implicit < 0 {
 			implicit = next
@@ -261,9 +295,18 @@ func FnFromBlock(b Block, pkg string) (*Fn, error) {
 		f.Body = body.Values[0]
 	}
 	if req, ok := b.Field("requires"); ok {
+		// `requires (pip numpy) (go github.com/x) (os ffmpeg)` — keep the KIND and
+		// the package name(s): "pip numpy". The kind alone (dropping the package)
+		// is useless to whoever installs the dep.
 		for _, v := range req.Values {
 			if form, ok := v.(Form); ok {
-				f.Requires = append(f.Requires, form.Head)
+				parts := []string{form.Head}
+				for _, a := range form.Args {
+					if s := atomStr(a); s != "" {
+						parts = append(parts, s)
+					}
+				}
+				f.Requires = append(f.Requires, strings.Join(parts, " "))
 			}
 		}
 	}

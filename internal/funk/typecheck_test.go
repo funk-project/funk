@@ -152,6 +152,49 @@ func TestCheckTypeNamesBadElement(t *testing.T) {
 	}
 }
 
+// Top-level spec forms in an in/out field — `in (List Num) (doc "…")`, the style
+// the forge generates — parse into bogus ports named after the spec key ("doc"),
+// whose Type is the doc text. checkTypeNames must skip those, while a genuinely
+// bad type on a real port in the same fn still flags.
+func TestCheckTypeNamesSkipsSpecKeyPorts(t *testing.T) {
+	lib := NewLibrary()
+	clean := `
+fn f {
+  in  (List Num)
+      (doc "Numbers To Sum")
+  out (doc "Sum Of All Numbers")
+  engine python
+  src "return 0"
+}`
+	if err := lib.LoadString(clean); err != nil {
+		t.Fatal(err)
+	}
+	if issues := Check(lib); len(issues) != 0 {
+		t.Fatalf("expected spec-key ports to be skipped, got %d: %v", len(issues), issues)
+	}
+	lib2 := NewLibrary()
+	bad := `
+fn g {
+  in  (x Number)
+      (doc "A Number")
+  out (r Num)
+  engine python
+  src "return x"
+}`
+	if err := lib2.LoadString(bad); err != nil {
+		t.Fatal(err)
+	}
+	issues := Check(lib2)
+	if !hasIssue(issues, `unknown type "Number"`) {
+		t.Fatalf("expected the real bad type to still flag, got %v", issues)
+	}
+	for _, i := range issues {
+		if hasIssue([]Issue{i}, `on port "doc"`) {
+			t.Fatalf("spec-key port leaked into type-name check: %v", i)
+		}
+	}
+}
+
 // Issue.String locates the issue at file:line:col when known, degrading to
 // line:col, then to just the fn name.
 func TestIssueStringAllForms(t *testing.T) {
