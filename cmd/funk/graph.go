@@ -13,6 +13,9 @@ import (
 // AST paths — "b", "b.0", "b.t"). `--tree` keeps the older human-readable AST
 // tree of the composing expression.
 func cmdGraph(args []string) error {
+	if len(args) > 0 && args[0] == "diff" {
+		return cmdGraphDiff(args[1:])
+	}
 	files, rest := takeFlag(args, "-f")
 	asTree, rest := takeBool(rest, "--tree")
 	if len(rest) != 1 {

@@ -102,6 +102,10 @@ usage:
   funk doc [pkg]             generate markdown reference for the stdlib
   funk introspect [-f path] <fn>    print a function's structure (JSON)
   funk graph [-f path] <fn>         draw the graph the function derives from its code
+  funk graph diff -f <fileA> (-f2 <fileB> | --git <rev>) [--json] [fn]
+                             semantic graph diff — a change as a picture-level delta
+                             (added/removed nodes, re-wired edges, changed labels);
+                             exit 1 when the graphs differ
   funk run [-f path] [--server url] [--sandbox docker] [--bind k.a=v] [--trace] <fn> [k=v …]
                              run a function (streams live; --trace prints the RunReport)
   funk make "<task>" [name]  funk writes a new funk function (architect→

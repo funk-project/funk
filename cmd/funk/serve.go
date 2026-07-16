@@ -101,6 +101,55 @@ func serveMux(lib *funk.Library) *http.ServeMux {
 		}
 		writeJSON(w, g)
 	})
+	// /graphdiff?fn=NAME&rev=REV diffs a function's CURRENT derived graph
+	// against the graph derived from its file at a git rev — the same semantic
+	// delta `funk graph diff --git` reports, for one fn.
+	mux.HandleFunc("/graphdiff", func(w http.ResponseWriter, r *http.Request) {
+		name, rev := r.URL.Query().Get("fn"), r.URL.Query().Get("rev")
+		if name == "" || rev == "" {
+			http.Error(w, "missing ?fn= or ?rev=", http.StatusBadRequest)
+			return
+		}
+		f, ok := lib.Lookup(name)
+		if !ok {
+			http.Error(w, "unknown function", http.StatusNotFound)
+			return
+		}
+		if f.File == "" {
+			http.Error(w, "function has no source file", http.StatusBadRequest)
+			return
+		}
+		oldSrc, err := gitFileAt(f.File, rev)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		oldLib, err := libFromSource(oldSrc)
+		if err != nil {
+			http.Error(w, "old side: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+		gb, err := funk.DeriveGraph(lib, f)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		rep := fnGraphDiff{Fn: f.Name, Status: "added"} // not present at rev
+		if fa, hasA := oldLib.Lookup(f.Name); hasA {
+			ga, err := funk.DeriveGraph(oldLib, fa)
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			d := funk.DiffGraphs(ga, gb)
+			if d.Identical() {
+				rep = fnGraphDiff{Fn: f.Name, Status: "identical"}
+			} else {
+				rep = fnGraphDiff{Fn: f.Name, Status: "changed", Diff: d}
+			}
+		}
+		writeJSON(w, rep)
+	})
 	mux.HandleFunc("/run", func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
 			Ref    string                 `json:"ref"`

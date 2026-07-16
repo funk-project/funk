@@ -122,3 +122,35 @@ func TestCmdGraphAndDoc(t *testing.T) {
 		t.Fatalf("cmdDoc: err=%v out=%q", err, out)
 	}
 }
+
+func TestCmdGraphDiff(t *testing.T) {
+	p := writeLib(t)
+	// a variant of the same library: bump's add now reads (mul x 2), not x.
+	variant := strings.Replace(cliLib, "(add x 100)", "(add (mul x 2) 100)", 1)
+	p2 := filepath.Join(t.TempDir(), "lib2.funk")
+	if err := os.WriteFile(p2, []byte(variant), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	// identical inputs: no error (exit 0), an "identical" summary.
+	out, err := captureStdout(t, func() error { return cmdGraph([]string{"diff", "-f", p, "-f2", p}) })
+	if err != nil || !strings.Contains(out, "identical") {
+		t.Fatalf("graph diff identical: err=%v out=%q", err, out)
+	}
+
+	// different inputs: an error (exit 1) and a picture-level delta — the new
+	// mul node appears and x is re-wired to feed it.
+	out, err = captureStdout(t, func() error { return cmdGraph([]string{"diff", "-f", p, "-f2", p2}) })
+	if err == nil {
+		t.Fatalf("graph diff should report a difference; out=%q", out)
+	}
+	if !strings.Contains(out, "+ call mul") || !strings.Contains(out, "fn bump — changed") {
+		t.Fatalf("graph diff output missing delta: %q", out)
+	}
+
+	// --json emits per-fn machine-readable reports.
+	out, err = captureStdout(t, func() error { return cmdGraph([]string{"diff", "--json", "-f", p, "-f2", p2, "bump"}) })
+	if err == nil || !strings.Contains(out, `"status": "changed"`) || !strings.Contains(out, `"addedNodes"`) {
+		t.Fatalf("graph diff --json: err=%v out=%q", err, out)
+	}
+}
