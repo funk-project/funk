@@ -63,6 +63,9 @@ func Check(lib *Library) []Issue {
 			issues = append(issues, Issue{Fn: f.Name, File: f.File, Pos: f.Pos, Warn: true,
 				Msg: "raw secret + network egress — the body could exfiltrate the secret (docs/06 §6); prefer a brokered integration, or drop the net effect"})
 		}
+		// port type names must resolve (builtin or a declared type) — applies to
+		// atomic and composite fns alike, so run it before the composite gate.
+		issues = append(issues, checkTypeNames(lib, f)...)
 		if !f.Composite() {
 			continue
 		}
@@ -284,6 +287,90 @@ func checkTypes(lib *Library, f *Fn) []Issue {
 	var issues []Issue
 	inferType(lib, f, f.Body, env, &issues)
 	return issues
+}
+
+// builtinTypeOrder is the set of built-in value type names, in the canonical
+// order the diagnostics list them (docs/04 §3). A port type's base must be one of
+// these or a declared type name.
+var builtinTypeOrder = []string{"Num", "Str", "Bool", "List", "Json", "Time", "Any", "Bytes", "Fn", "Stream"}
+
+var builtinTypeSet = func() map[string]bool {
+	m := map[string]bool{}
+	for _, t := range builtinTypeOrder {
+		m[t] = true
+	}
+	return m
+}()
+
+// checkTypeNames validates that every port type in f names a real type: a builtin
+// value type or a type declared in the library. It handles unions (`Num|Str`) and
+// parameterized types (`List<Num>`, `Stream<Json>`) by validating each union part's
+// base and recursing into the element. An unknown name is a real error (Warn:false)
+// — the checker is the language's central promise, and a typo like `Number` for
+// `Num` must not slip through.
+func checkTypeNames(lib *Library, f *Fn) []Issue {
+	var issues []Issue
+	for _, p := range f.In {
+		issues = append(issues, checkTypeName(lib, f, p.Name, p.Type)...)
+	}
+	for _, p := range f.Out {
+		issues = append(issues, checkTypeName(lib, f, p.Name, p.Type)...)
+	}
+	return issues
+}
+
+func checkTypeName(lib *Library, f *Fn, port, t string) []Issue {
+	if strings.TrimSpace(t) == "" {
+		return nil // "" ⇒ Any, always valid
+	}
+	var issues []Issue
+	for _, part := range strings.Split(t, "|") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		base, elem := splitType(part)
+		if !validTypeName(lib, base) {
+			issues = append(issues, Issue{Fn: f.Name, File: f.File, Pos: f.Pos, Warn: false,
+				Msg: unknownTypeMsg(base, port)})
+		}
+		if elem != "" {
+			issues = append(issues, checkTypeName(lib, f, port, elem)...)
+		}
+	}
+	return issues
+}
+
+// validTypeName reports whether name is a builtin value type or a declared type
+// (by bare name or fully-qualified address — Library.Types keys both).
+func validTypeName(lib *Library, name string) bool {
+	if builtinTypeSet[name] {
+		return true
+	}
+	if lib != nil && lib.Types != nil {
+		if _, ok := lib.Types[name]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+// unknownTypeMsg builds the diagnostic for an unresolved type base. A trivial
+// did-you-mean fires only when the unknown name has a valid builtin as a prefix
+// (e.g. "Number" → "Num"); otherwise the suggestion is omitted.
+func unknownTypeMsg(name, port string) string {
+	suggest := ""
+	for _, b := range builtinTypeOrder {
+		if b != name && strings.HasPrefix(name, b) {
+			suggest = b
+			break
+		}
+	}
+	valid := strings.Join(builtinTypeOrder, " ") + " or a declared type"
+	if suggest != "" {
+		return fmt.Sprintf("unknown type %q on port %q (did you mean %q? valid: %s)", name, port, suggest, valid)
+	}
+	return fmt.Sprintf("unknown type %q on port %q (valid: %s)", name, port, valid)
 }
 
 // baseScalar returns the type if it is a plain scalar element type, else "".

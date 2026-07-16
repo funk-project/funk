@@ -85,6 +85,73 @@ func TestCheckTypeMismatch(t *testing.T) {
 	}
 }
 
+// A port typed `Number` (a typo for `Num`) is flagged exactly once, with a
+// did-you-mean pointing at `Num`.
+func TestCheckUnknownTypeName(t *testing.T) {
+	lib := NewLibrary()
+	if err := lib.LoadString(`fn f { in (x1 Number) out (r Num) engine builtin src "x" }`); err != nil {
+		t.Fatal(err)
+	}
+	issues := Check(lib)
+	n := 0
+	for _, i := range issues {
+		if hasIssue([]Issue{i}, `unknown type "Number"`) {
+			n++
+			if !hasIssue([]Issue{i}, `did you mean "Num"`) {
+				t.Fatalf("expected a did-you-mean for Num, got %v", i)
+			}
+			if i.Warn {
+				t.Fatalf("unknown type must be a real error (Warn=false), got %v", i)
+			}
+		}
+	}
+	if n != 1 {
+		t.Fatalf("expected exactly one unknown-type issue, got %d: %v", n, issues)
+	}
+}
+
+// Parameterized types, unions, and streams over valid bases all pass.
+func TestCheckTypeNamesValidShapes(t *testing.T) {
+	lib := NewLibrary()
+	src := `
+fn a { in (xs List<Num>) out (r Num)     engine builtin src "a" }
+fn b { in (x Num|Str)    out (r Bool)     engine builtin src "b" }
+fn c { in (s Stream<Json>) out (r Stream) engine builtin src "c" }
+`
+	if err := lib.LoadString(src); err != nil {
+		t.Fatal(err)
+	}
+	if issues := Check(lib); len(issues) != 0 {
+		t.Fatalf("expected valid type shapes to pass, got %d: %v", len(issues), issues)
+	}
+}
+
+// A declared custom type name is a valid port type.
+func TestCheckTypeNamesDeclaredType(t *testing.T) {
+	lib := NewLibrary()
+	src := `
+type Widget { id Str }
+fn f { in (w Widget) out (r Num) engine builtin src "f" }
+`
+	if err := lib.LoadString(src); err != nil {
+		t.Fatal(err)
+	}
+	if issues := Check(lib); len(issues) != 0 {
+		t.Fatalf("expected a declared type to pass, got %d: %v", len(issues), issues)
+	}
+}
+
+// An undeclared element inside a parameterized type is flagged.
+func TestCheckTypeNamesBadElement(t *testing.T) {
+	lib := NewLibrary()
+	if err := lib.LoadString(`fn f { in (xs List<Foo>) out (r Num) engine builtin src "f" }`); err != nil {
+		t.Fatal(err)
+	}
+	if !hasIssue(Check(lib), `unknown type "Foo"`) {
+		t.Fatalf("expected the undeclared element Foo to be flagged, got %v", Check(lib))
+	}
+}
+
 // Issue.String locates the issue at file:line:col when known, degrading to
 // line:col, then to just the fn name.
 func TestIssueStringAllForms(t *testing.T) {
