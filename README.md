@@ -36,6 +36,7 @@ its own notation. funk makes itself.
 
 ## Documents
 
+- [`docs/DEMO.md`](docs/DEMO.md) — **the five-minute demo**: intent → forge → graph → run → test → publish → studio
 - [`docs/01-the-idea.md`](docs/01-the-idea.md) — the idea / the invention
 - [`docs/02-the-objective.md`](docs/02-the-objective.md) — what we're building, and why (a gift)
 - [`docs/03-architecture.md`](docs/03-architecture.md) — the shape: `cmd`+`std`, CLI↔server,
